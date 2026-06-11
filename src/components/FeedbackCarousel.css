@@ -1,0 +1,300 @@
+.feedback-carousel-section {
+  position: relative;
+  padding: clamp(56px, 7vw, 88px) 0;
+  overflow-x: hidden;
+  overflow-y: visible;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.08), transparent 34%),
+    linear-gradient(180deg, #0b0c10 0%, #0d0f15 100%);
+  border-bottom: 1px solid var(--border);
+  font-family: inherit;
+}
+
+.feedback-marquee-header {
+  max-width: 760px;
+  margin: 0 auto 34px;
+  text-align: center;
+}
+
+.feedback-marquee-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 6px 12px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: var(--radius-full);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.carousel-title {
+  margin: 16px 0 10px;
+  text-align: center;
+  color: var(--text-primary);
+  font-size: clamp(26px, 4vw, 38px);
+  line-height: 1.08;
+}
+
+.feedback-marquee-subtitle {
+  max-width: 640px;
+  margin: 0 auto;
+  color: var(--text-secondary);
+  font-size: clamp(14px, 2vw, 16px);
+}
+
+.feedback-marquee-shell {
+  --marquee-gap: 18px;
+  --marquee-offset: 9px;
+  position: relative;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 18px;
+  overflow-x: hidden;
+  overflow-y: visible;
+  padding: 18px 0 22px;
+}
+
+.feedback-marquee-shell::before,
+.feedback-marquee-shell::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  width: clamp(42px, 9vw, 96px);
+  pointer-events: none;
+}
+
+.feedback-marquee-shell::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(13, 15, 21, 0.82) 0%, rgba(13, 15, 21, 0) 100%);
+}
+
+.feedback-marquee-shell::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(13, 15, 21, 0.82) 0%, rgba(13, 15, 21, 0) 100%);
+}
+
+.feedback-marquee-row {
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: visible;
+  padding: 12px 0 22px;
+}
+
+.feedback-marquee-track {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  gap: var(--marquee-gap);
+  animation: feedback-marquee-scroll 28s linear infinite;
+  will-change: transform;
+}
+
+.feedback-marquee-row--reverse .feedback-marquee-track {
+  animation-direction: reverse;
+}
+
+.feedback-marquee-row:hover .feedback-marquee-track {
+  animation-play-state: paused;
+}
+
+.feedback-marquee-card {
+  position: relative;
+  flex: 0 0 clamp(260px, 24vw, 318px);
+  min-height: 178px;
+  margin: 0;
+  padding: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(245, 158, 11, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.08), transparent 38%),
+    rgba(19, 21, 28, 0.88);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.22);
+  cursor: default;
+  font-family: inherit;
+  transition:
+    border-color var(--transition-normal),
+    box-shadow var(--transition-normal),
+    transform var(--transition-normal),
+    background var(--transition-normal);
+}
+
+.feedback-marquee-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 18px 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.48), transparent);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.feedback-marquee-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(245, 158, 11, 0.36);
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.13), transparent 42%),
+    rgba(19, 21, 28, 0.95);
+  box-shadow:
+    0 22px 42px rgba(0, 0, 0, 0.28),
+    0 0 26px rgba(245, 158, 11, 0.12);
+}
+
+.feedback-marquee-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.feedback-marquee-card__avatar {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-input);
+}
+
+.feedback-marquee-card__identity {
+  min-width: 0;
+}
+
+.feedback-marquee-card__name {
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.feedback-marquee-card__username {
+  margin: 2px 0 0;
+  color: rgba(156, 163, 175, 0.86);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.feedback-marquee-card__text {
+  display: -webkit-box;
+  margin: 14px 0 0;
+  overflow: hidden;
+  color: rgba(243, 244, 246, 0.78);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+@keyframes feedback-marquee-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(calc(-50% - var(--marquee-offset)), 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback-marquee-shell {
+    overflow: visible;
+  }
+
+  .feedback-marquee-shell::before,
+  .feedback-marquee-shell::after {
+    display: none;
+  }
+
+  .feedback-marquee-row {
+    overflow: visible;
+  }
+
+  .feedback-marquee-track {
+    animation: none;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    transform: none;
+  }
+
+  .feedback-marquee-card[aria-hidden="true"] {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .feedback-carousel-section {
+    padding: 50px 0;
+  }
+
+  .feedback-marquee-header {
+    margin-bottom: 28px;
+  }
+
+  .feedback-marquee-shell {
+    --marquee-gap: 14px;
+    --marquee-offset: 7px;
+    gap: 14px;
+    width: calc(100% + 32px);
+    margin-left: -16px;
+    padding: 14px 0 18px;
+  }
+
+  .feedback-marquee-row {
+    padding: 10px 0 18px;
+  }
+
+  .feedback-marquee-shell::before,
+  .feedback-marquee-shell::after {
+    width: 34px;
+  }
+
+  .feedback-marquee-card {
+    flex-basis: min(278px, 76vw);
+    min-height: 168px;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .feedback-marquee-card__text {
+    font-size: 13px;
+    line-height: 1.48;
+    -webkit-line-clamp: 4;
+  }
+}
+
+@media (max-width: 420px) {
+  .feedback-carousel-section {
+    padding: 44px 0;
+  }
+
+  .feedback-marquee-card {
+    flex-basis: min(252px, 74vw);
+    min-height: 158px;
+  }
+
+  .feedback-marquee-card__avatar {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
+
+  .feedback-marquee-card__text {
+    font-size: 12.5px;
+    -webkit-line-clamp: 4;
+  }
+}

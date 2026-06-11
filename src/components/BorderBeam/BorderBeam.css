@@ -1,0 +1,52 @@
+.border-beam {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.auth-beam-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+.auth-beam-card > :not(.border-beam) {
+  position: relative;
+  z-index: 1;
+}
+
+.border-beam::before {
+  content: "";
+  position: absolute;
+  width: var(--border-beam-size);
+  height: var(--border-beam-size);
+  background: linear-gradient(90deg, var(--border-beam-color-from), var(--border-beam-color-to), transparent);
+  filter: blur(8px);
+  opacity: 0.9;
+  offset-path: rect(0 auto auto 0 round 18px);
+  animation: border-beam var(--border-beam-duration) linear infinite;
+}
+
+.border-beam::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: var(--bg-card);
+}
+
+@keyframes border-beam {
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .border-beam::before {
+    animation: none;
+    opacity: 0;
+  }
+}

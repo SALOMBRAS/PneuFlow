@@ -1,0 +1,602 @@
+import { supabase } from '../lib/supabase';
+import { optimizeImageToWebp } from '../utils/imageOptimizer';
+
+// Database Access Functions using Supabase
+export const storageService = {
+  // --- Auth & Session ---
+  
+  login: async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  logout: async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    localStorage.removeItem('pneuflow_current_user'); // Clean up old legacy key if exists
+    localStorage.removeItem('pneuflow_remember_session');
+  },
+
+  getCurrentUser: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
+  },
+
+  getSession: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+  },
+
+  resetPasswordEmail: async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
+    return true;
+  },
+
+  updatePassword: async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    if (error) throw error;
+    return true;
+  },
+
+  // --- Store & Profile Management ---
+
+  getStoreMemberRole: async (storeId, userId) => {
+    const { data, error } = await supabase
+      .from('store_members')
+      .select('id, role, status, ref_code, nome, email')
+      .eq('store_id', storeId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (error) return null;
+    return data;
+  },
+
+  getStoreMembers: async (storeId) => {
+    const { data, error } = await supabase
+      .from('store_members')
+      .select('*')
+      .eq('store_id', storeId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  normalizeWhatsapp: (value) => {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (!digits) return '';
+    return digits.startsWith('55') ? digits : `55${digits}`;
+  },
+
+  inviteSeller: async (storeId, sellerData) => {
+    // Call the Edge Function to handle validation, member creation and admin invite
+    const { data, error } = await supabase.functions.invoke('invite-seller', {
+      body: { 
+        email: sellerData.email.toLowerCase(), 
+        nome: sellerData.nome,
+        store_id: storeId,
+        password: sellerData.password // Added password field
+      }
+    });
+    
+    console.log('Resposta invite-seller:', { data, error });
+
+    if (error) {
+      let message = error.message || 'Erro ao chamar Edge Function';
+
+      try {
+        if (error.context) {
+          const errorBody = await error.context.json();
+
+          console.log('Erro detalhado invite-seller:', errorBody);
+
+          message =
+            errorBody?.error ||
+            errorBody?.message ||
+            errorBody?.details ||
+            message;
+
+          if (errorBody?.step) {
+            message += ` | etapa: ${errorBody.step}`;
+          }
+        }
+      } catch (parseError) {
+        console.warn('Não foi possível ler o corpo do erro:', parseError);
+      }
+
+      throw new Error(message);
+    }
+
+    if (data?.error) {
+      let message = data.error;
+
+      if (data.step) {
+        message += ` | etapa: ${data.step}`;
+      }
+
+      throw new Error(message);
+    }
+
+    return data;
+  },
+
+  manageSellerAccess: async ({ storeId, memberId, action }) => {
+    const { data, error } = await supabase.functions.invoke('manage-seller-access', {
+      body: {
+        store_id: storeId,
+        member_id: memberId,
+        action
+      }
+    });
+
+    if (error) {
+      let message = error.message || 'Erro ao gerenciar vendedor';
+
+      try {
+        if (error.context) {
+          const errorText = await error.context.text();
+          const errorBody = JSON.parse(errorText);
+          message = errorBody?.error || errorBody?.message || message;
+        }
+      } catch {}
+
+      throw new Error(message);
+    }
+
+    if (data?.error) throw new Error(data.error);
+
+    return data;
+  },
+
+  updateMemberStatus: async (memberId, status) => {
+    const { data, error } = await supabase
+      .from('store_members')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', memberId)
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  updateSellerRefCode: async (memberId, refCode) => {
+    const cleanRef = refCode.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-');
+    const { data, error } = await supabase
+      .from('store_members')
+      .update({ ref_code: cleanRef, updated_at: new Date().toISOString() })
+      .eq('id', memberId)
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  updateSellerWhatsapp: async (memberId, whatsapp) => {
+    const { data, error } = await supabase
+      .from('store_members')
+      .update({
+        whatsapp: storageService.normalizeWhatsapp(whatsapp),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', memberId)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  getSellerByRefCode: async (storeId, refCode) => {
+    const { data, error } = await supabase.rpc('get_public_referral_seller', {
+      p_store_id: storeId,
+      p_ref_code: refCode
+    });
+    
+    if (error) {
+      console.error('Erro ao buscar vendedor por ref RPC:', error);
+      return null;
+    }
+
+    return Array.isArray(data) ? data[0] || null : data;
+  },
+
+  registerReferralVisit: async (storeId, refCode, path) => {
+    const { error } = await supabase.rpc('registrar_visita_referral', {
+      p_store_id: storeId,
+      p_ref_code: refCode,
+      p_path: path
+    });
+    
+    if (error) console.error('Erro ao registrar visita referral RPC:', error);
+    return !error;
+  },
+
+  createStore: async (data) => {
+    const { storeName, ownerEmail, ownerPassword, phone, name } = data;
+
+    // 1. Sign up user only
+    // We store the extra data in user_metadata so we can use it after email confirmation
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: ownerEmail,
+      password: ownerPassword,
+      options: {
+        emailRedirectTo: `${window.location.origin}/login`,
+        data: {
+          full_name: name,
+          store_name: storeName,
+          phone_number: phone
+        }
+      }
+    });
+
+    if (authError) {
+      console.error('Erro no Supabase Auth:', authError);
+      throw authError;
+    }
+    
+    return authData;
+  },
+
+  completeRegistration: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+
+    const user = session.user;
+    const userId = user.id;
+    const metadata = user.user_metadata;
+
+    // 1. Check if Profile exists
+    const { data: profile, error: profileCheckError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+      throw profileCheckError;
+    }
+
+    if (!profile) {
+      // Create Profile using metadata
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          { 
+            id: userId,
+            user_id: userId, 
+            nome: metadata.full_name || 'Usuário', 
+            telefone: metadata.phone_number || '',
+            role: 'lojista'
+          }
+        ]);
+
+      if (profileError) throw profileError;
+    }
+
+    // 2. Check if Store exists
+    const { data: store, error: storeCheckError } = await supabase
+      .from('stores')
+      .select('id')
+      .eq('owner_id', userId)
+      .maybeSingle();
+
+    if (storeCheckError && storeCheckError.code !== 'PGRST116') {
+      throw storeCheckError;
+    }
+
+    if (!store) {
+      const storeName = metadata.store_name || 'Minha Loja';
+      const slug = storeName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      
+      const { data: newStore, error: storeError } = await supabase
+        .from('stores')
+        .insert([
+          {
+            owner_id: userId,
+            nome: storeName,
+            slug: slug,
+            whatsapp: metadata.phone_number || '',
+            plano: 'free',
+            cor_principal: '#f59e0b',
+            cor_secundaria: '#121214'
+          }
+        ])
+        .select()
+        .maybeSingle();
+
+      if (storeError) throw storeError;
+      return newStore;
+    }
+
+    return store;
+  },
+
+  getStoreByOwner: async (userId) => {
+    const { data, error } = await supabase
+      .from('stores')
+      .select('*')
+      .eq('owner_id', userId)
+      .maybeSingle();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  getStoreByMember: async (userId) => {
+    const { data, error } = await supabase
+      .from('store_members')
+      .select('stores (*)')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .maybeSingle();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data?.stores || null;
+  },
+
+  getStoreById: async (id) => {
+    const { data, error } = await supabase
+      .from('stores')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) return null;
+    return data;
+  },
+
+  getStoreBySlug: async (slug) => {
+    const { data, error } = await supabase
+      .from('stores')
+      .select('*')
+      .eq('slug', slug)
+      .maybeSingle();
+    if (error) return null;
+    return data;
+  },
+
+  updateStore: async (id, updateData) => {
+    // Map frontend camelCase to DB snake_case for Supabase using REAL column names
+    const mappedData = {
+      nome: updateData.name ?? updateData.nome,
+      whatsapp: updateData.whatsapp,
+      telefone: updateData.phone ?? updateData.telefone,
+      endereco: updateData.address ?? updateData.endereco,
+      cidade: updateData.city ?? updateData.cidade,
+      estado: updateData.state ?? updateData.estado,
+      logo: updateData.logo,
+      banner: updateData.banner,
+      foto_capa: updateData.cover ?? updateData.foto_capa,
+      cor_principal: updateData.cor_principal ?? updateData.primaryColor,
+      cor_secundaria: updateData.cor_secundaria ?? updateData.secondaryColor,
+      seo_titulo: updateData.seoTitle ?? updateData.seo_titulo,
+      seo_descricao: updateData.seoDescription ?? updateData.seo_descricao,
+      tipo_vitrine: updateData.tipo_vitrine ?? updateData.tipoVitrine ?? 'carro'
+    };
+
+    // Remove undefined values to prevent overwriting with null
+    Object.keys(mappedData).forEach(key => mappedData[key] === undefined && delete mappedData[key]);
+
+    const { data, error } = await supabase
+      .from('stores')
+      .update(mappedData)
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // --- Pneus (Tires) CRUD ---
+  
+  normalizePneuImages: (pneuData) => {
+    const uniqueImages = [
+      pneuData.foto_principal_url,
+      ...(Array.isArray(pneuData.fotos) ? pneuData.fotos : [])
+    ].filter(Boolean);
+
+    const limitedImages = [...new Set(uniqueImages)].slice(0, 2);
+
+    return {
+      ...pneuData,
+      foto_principal_url: limitedImages[0] || '',
+      fotos: limitedImages
+    };
+  },
+
+  getPneus: async (storeId) => {
+    const { data, error } = await supabase
+      .from('pneus')
+      .select('*')
+      .eq('loja_id', storeId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Erro ao buscar pneus:', error);
+      return [];
+    }
+    return data;
+  },
+
+  getPneuById: async (id) => {
+    const { data, error } = await supabase
+      .from('pneus')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  createPneu: async (pneuData) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const normalizedData = storageService.normalizePneuImages(pneuData);
+    const { data, error } = await supabase
+      .from('pneus')
+      .insert([{
+        ...normalizedData,
+        tipo_veiculo: normalizedData.tipo_veiculo || 'carro',
+        created_by: session.user.id,
+        updated_by: session.user.id
+      }])
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  updatePneu: async (id, pneuData) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const normalizedData = storageService.normalizePneuImages(pneuData);
+    const { data, error } = await supabase
+      .from('pneus')
+      .update({ 
+        ...normalizedData, 
+        updated_at: new Date().toISOString(),
+        tipo_veiculo: normalizedData.tipo_veiculo || 'carro',
+        updated_by: session.user.id
+      })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  deletePneu: async (id) => {
+    const { error } = await supabase
+      .from('pneus')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    return true;
+  },
+
+  // --- Leads ---
+  getLeads: async (storeId) => {
+    const { data, error } = await supabase.rpc('get_leads_com_vendedor', { 
+      p_store_id: storeId 
+    });
+    
+    if (error) {
+      console.error('Erro RPC get_leads_com_vendedor:', error);
+      throw error;
+    }
+    return data || [];
+  },
+
+  createLead: async (payload) => {
+    const { data, error } = await supabase.rpc('registrar_lead', {
+      p_loja_id: payload.loja_id,
+      p_produto_id: payload.produto_id || null,
+      p_nome_cliente: payload.nome_cliente,
+      p_produto_nome: payload.produto_nome || '',
+      p_produto_medida: payload.produto_medida || '',
+      p_produto_preco: Number(payload.produto_preco || 0),
+      p_origem: payload.origem || 'whatsapp',
+      p_seller_id: payload.seller_id || null,
+      p_ref_code: payload.ref_code || null,
+      p_attribution_source: payload.attribution_source || 'product'
+    });
+
+    if (error) {
+      console.error('Supabase registrar_lead RPC error:', error, payload);
+      throw error;
+    }
+
+    return data;
+  },
+
+  deleteLead: async (id) => {
+    const { error } = await supabase
+      .from('leads')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    return true;
+  },
+
+  updateLeadSaleStatus: async (leadId, vendaConfirmada) => {
+    const { data, error } = await supabase.rpc('atualizar_status_venda_lead', {
+      p_lead_id: leadId,
+      p_venda_confirmada: vendaConfirmada
+    });
+
+    if (error) {
+      console.error('Erro ao atualizar status de venda RPC:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  // --- Legacy Aliases ---
+  getTires: async (storeId) => storageService.getPneus(storeId),
+
+  // --- Storage & Uploads ---
+  uploadPneuImages: async (files, storeId) => {
+    const uploadPromises = Array.from(files).map(async (file, index) => {
+      const optimizedFile = await optimizeImageToWebp(file);
+      const safeFileName = `${Date.now()}-${index}-${optimizedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const filePath = `${storeId}/${safeFileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('pneus-fotos')
+        .upload(filePath, optimizedFile, {
+          cacheControl: '3600',
+          contentType: 'image/webp',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('pneus-fotos')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    });
+
+    return Promise.all(uploadPromises);
+  },
+
+  uploadStoreImage: async (file) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Sessão não encontrada. Faça login novamente.');
+
+    const userId = session.user.id;
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+    const filePath = `${userId}/${Date.now()}-${safeFileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('stores')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('stores')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  }
+};
