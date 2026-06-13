@@ -1,10 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  MessageSquare, 
-  Search, 
-  Smartphone, 
-  TrendingUp, 
   CheckCircle, 
   HelpCircle, 
   ChevronDown, 
@@ -14,19 +10,196 @@ import {
 } from 'lucide-react';
 import './LandingPage.css';
 import FeedbackCarousel from '../components/FeedbackCarousel';
-import BorderGlow from '../components/BorderGlow/BorderGlow';
-import ElectricBorder from '../components/ElectricBorder/ElectricBorder';
+import InteractiveDemo from '../components/InteractiveDemo/InteractiveDemo';
 
 const CardSwapHero = lazy(() => import('../components/CardSwap/CardSwapHero'));
-const TextType = lazy(() => import('../components/TextType/TextType'));
 
-const StaticHeroTitle = () => (
-  <>
-    Parem de perder clientes no WhatsApp. Crie sua{' '}
-    <span className="hero-title-type__highlight">Vitrine Inteligente</span>
-    {' '}em 5 minutos.
-  </>
-);
+const heroPhrases = [
+  {
+    text: 'Pare de perder clientes no WhatsApp. Crie sua vitrine online.',
+    highlights: ['WhatsApp', 'vitrine online'],
+  },
+  {
+    text: 'Organize seus pneus em minutos. Venda mais pelo WhatsApp.',
+    highlights: ['Venda mais', 'WhatsApp'],
+  },
+  {
+    text: 'Mostre seu catálogo online. Receba clientes prontos para comprar.',
+    highlights: ['catálogo online', 'clientes prontos'],
+  },
+];
+
+const HERO_MOBILE_PHRASE_KEY = 'pneuflowHeroPhraseIndex';
+
+const getPrefersReducedMotion = () => {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+};
+
+const getNextMobilePhraseIndex = () => {
+  if (typeof window === 'undefined') return 0;
+
+  try {
+    const lastIndex = Number(window.localStorage.getItem(HERO_MOBILE_PHRASE_KEY));
+    const nextIndex = Number.isInteger(lastIndex)
+      ? (lastIndex + 1) % heroPhrases.length
+      : Math.floor(Math.random() * heroPhrases.length);
+
+    window.localStorage.setItem(HERO_MOBILE_PHRASE_KEY, String(nextIndex));
+    return nextIndex;
+  } catch {
+    return Math.floor(Math.random() * heroPhrases.length);
+  }
+};
+
+const getHighlightRanges = (phrase) => {
+  const ranges = phrase.highlights
+    .map((term) => {
+      const start = phrase.text.indexOf(term);
+      return start >= 0 ? { start, end: start + term.length } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.start - b.start);
+
+  return ranges;
+};
+
+const renderHeroText = (phrase, visibleText) => {
+  const ranges = getHighlightRanges(phrase);
+  const visibleLength = visibleText.length;
+  const parts = [];
+  let cursor = 0;
+
+  ranges.forEach((range, index) => {
+    if (range.start >= visibleLength) return;
+
+    const highlightStart = Math.max(range.start, 0);
+    const highlightEnd = Math.min(range.end, visibleLength);
+
+    if (cursor < highlightStart) {
+      parts.push(visibleText.slice(cursor, highlightStart));
+    }
+
+    if (highlightEnd > highlightStart) {
+      parts.push(
+        <span key={`highlight-${index}`} className="hero-title-type__highlight">
+          {visibleText.slice(highlightStart, highlightEnd)}
+        </span>
+      );
+    }
+
+    cursor = Math.max(cursor, highlightEnd);
+  });
+
+  if (cursor < visibleLength) {
+    parts.push(visibleText.slice(cursor));
+  }
+
+  return parts;
+};
+
+const HeroTypewriter = ({ isMobile }) => {
+  const [staticPhraseIndex, setStaticPhraseIndex] = useState(() => (
+    isMobile ? getNextMobilePhraseIndex() : 0
+  ));
+  const staticPhraseReadyRef = useRef(isMobile);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(getPrefersReducedMotion);
+  const isStaticHero = isMobile || prefersReducedMotion;
+  const [phraseIndex, setPhraseIndex] = useState(() => (isStaticHero ? staticPhraseIndex : 0));
+  const [displayedText, setDisplayedText] = useState(() => (
+    isStaticHero ? heroPhrases[staticPhraseIndex].text : ''
+  ));
+  const [phase, setPhase] = useState('typing');
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleMotionPreference = (event) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    setPrefersReducedMotion(mediaQuery.matches);
+    mediaQuery.addEventListener('change', handleMotionPreference);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleMotionPreference);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      const nextIndex = staticPhraseReadyRef.current
+        ? staticPhraseIndex
+        : getNextMobilePhraseIndex();
+
+      staticPhraseReadyRef.current = true;
+      setStaticPhraseIndex(nextIndex);
+      setPhraseIndex(nextIndex);
+      setDisplayedText(heroPhrases[nextIndex].text);
+      setPhase('typing');
+      return undefined;
+    }
+
+    if (prefersReducedMotion) {
+      setStaticPhraseIndex(0);
+      setPhraseIndex(0);
+      setDisplayedText(heroPhrases[0].text);
+      setPhase('typing');
+      return undefined;
+    }
+
+    setPhraseIndex(0);
+    setDisplayedText('');
+    setPhase('typing');
+    staticPhraseReadyRef.current = false;
+    return undefined;
+  }, [isMobile, prefersReducedMotion, staticPhraseIndex]);
+
+  useEffect(() => {
+    if (isStaticHero) return undefined;
+
+    const phrase = heroPhrases[phraseIndex].text;
+    let timeout;
+
+    if (phase === 'typing') {
+      if (displayedText.length < phrase.length) {
+        timeout = window.setTimeout(() => {
+          setDisplayedText(phrase.slice(0, displayedText.length + 1));
+        }, 55);
+      } else {
+        timeout = window.setTimeout(() => setPhase('deleting'), 1650);
+      }
+    }
+
+    if (phase === 'deleting') {
+      if (displayedText.length > 0) {
+        timeout = window.setTimeout(() => {
+          setDisplayedText((current) => current.slice(0, -1));
+        }, 32);
+      } else {
+        timeout = window.setTimeout(() => {
+          setPhraseIndex((current) => (current + 1) % heroPhrases.length);
+          setPhase('typing');
+        }, 320);
+      }
+    }
+
+    return () => window.clearTimeout(timeout);
+  }, [displayedText, phase, phraseIndex, isStaticHero]);
+
+  const renderedPhraseIndex = isMobile ? staticPhraseIndex : phraseIndex;
+  const phrase = heroPhrases[renderedPhraseIndex];
+
+  return (
+    <span className="hero-title-type hero-title-type--full" aria-live={isStaticHero ? undefined : 'off'}>
+      <span className="hero-title-type__text">
+        {renderHeroText(phrase, displayedText)}
+      </span>
+      {!isStaticHero && (
+        <span className="hero-title-type__cursor" aria-hidden="true">▎</span>
+      )}
+    </span>
+  );
+};
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -68,8 +241,8 @@ export default function LandingPage() {
       a: "Sim. O cliente escolhe o pneu, clica em 'Tenho interesse' e é redirecionado para o seu WhatsApp com uma mensagem automática detalhada com marca, medida, preço e veículo."
     },
     {
-      q: "O PneuFlow cobra comissão por venda?",
-      a: "Não. Você paga apenas uma mensalidade fixa de acordo com o plano escolhido. Todo o lucro das vendas geradas é 100% seu."
+      q: "Preciso escolher um plano agora?",
+      a: "Não. Você pode testar o PneuFlow por 7 dias e escolher o plano ideal dentro do painel depois. Todo o lucro das vendas geradas é 100% seu."
     }
   ];
 
@@ -109,8 +282,8 @@ export default function LandingPage() {
           
           <nav className="landing-nav" style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
             <a href="#problemas" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Problemas</a>
-            <a href="#solucao" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Solução</a>
-            <a href="#planos" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Planos</a>
+            <a href="#demo-interativa" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Demonstração</a>
+            <a href="#planos" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Teste grátis</a>
             <a href="#faq" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>FAQ</a>
           </nav>
 
@@ -122,7 +295,7 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="section-padding" style={{ borderBottom: '1px solid var(--border)' }}>
+      <section className="section-padding landing-hero-section">
         <div className="container hero-grid">
           <div>
             <span style={{ 
@@ -141,35 +314,16 @@ export default function LandingPage() {
               <Zap size={12} fill="var(--primary)" /> VENDEDOR DIGITAL DE PNEUS
             </span>
             <h1 className="hero-title">
-              {isMobileHero ? (
-                <StaticHeroTitle />
-              ) : (
-                <Suspense fallback={<StaticHeroTitle />}>
-              <TextType
-                as="span"
-                text="Parem de perder clientes no WhatsApp. Crie sua Vitrine Inteligente em 5 minutos."
-                typingSpeed={42}
-                initialDelay={250}
-                pauseDuration={1800}
-                loop={false}
-                showCursor
-                cursorCharacter="▎"
-                highlightText="Vitrine Inteligente"
-                highlightClassName="hero-title-type__highlight"
-                className="hero-title-type hero-title-type--full"
-                cursorClassName="hero-title-type__cursor"
-              />
-                </Suspense>
-              )}
+              <HeroTypewriter isMobile={isMobileHero} />
             </h1>
             <p className="hero-description">
               Guie seu cliente de forma autônoma: ele pesquisa pneus pela medida ou pelo modelo do veículo, tira todas as dúvidas e chega no seu WhatsApp pronto para fechar a compra.
             </p>
             <div className="hero-buttons">
               <button onClick={() => navigate('/register')} className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '16px' }}>
-                Criar Minha Vitrine Grátis
+                Começar teste grátis de 7 dias
               </button>
-              <a href="#solucao" className="btn btn-secondary" style={{ padding: '14px 28px', fontSize: '16px' }}>
+              <a href="#demo-interativa" className="btn btn-secondary" style={{ padding: '14px 28px', fontSize: '16px' }}>
                 Ver Como Funciona
               </a>
             </div>
@@ -181,7 +335,7 @@ export default function LandingPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckCircle size={16} style={{ color: 'var(--success)' }} />
-                <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Instalação em 5 minutos</span>
+                <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Vitrine pronta em 5 minutos</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckCircle size={16} style={{ color: 'var(--success)' }} />
@@ -200,8 +354,50 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <InteractiveDemo />
+
+      {/* Free Trial */}
+      <section id="planos" className="section-padding landing-trial-section">
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+            <h2 className="title-lg">Comece com 7 dias grátis</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '16px', maxWidth: '650px', margin: '0 auto' }}>
+              Teste sua vitrine, cadastre seus pneus e veja se o PneuFlow faz sentido para sua loja antes de escolher um plano.
+            </p>
+          </div>
+
+          <div className="trial-offer-card">
+            <div className="trial-offer-badge">7 dias grátis</div>
+            <div className="trial-offer-content">
+              <div>
+                <h3>Teste o PneuFlow antes de escolher qualquer plano</h3>
+                <p>
+                  Comece sem cobrança, cadastre seus pneus, publique sua vitrine e veja se o fluxo combina com a rotina real da sua loja.
+                </p>
+              </div>
+
+              <ul className="trial-offer-list">
+                <li><CheckCircle size={16} /><span>7 dias para testar a plataforma</span></li>
+                <li><CheckCircle size={16} /><span>Vitrine pública para divulgar sua loja</span></li>
+                <li><CheckCircle size={16} /><span>Catálogo com marcas, medidas e estoque</span></li>
+                <li><CheckCircle size={16} /><span>Depois do teste, você escolhe o plano dentro do painel</span></li>
+              </ul>
+            </div>
+
+            <div className="trial-offer-actions">
+              <button onClick={() => navigate('/register')} className="btn btn-primary">
+                Começar teste grátis de 7 dias
+              </button>
+              <a href="#demo-interativa" className="btn btn-secondary">
+                Ver demonstração
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Problems Section */}
-      <section id="problemas" className="section-padding" style={{ borderBottom: '1px solid var(--border)', backgroundColor: '#0d0f15' }}>
+      <section id="problemas" className="section-padding landing-problems-section">
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '56px' }}>
             <h2 className="title-lg">Por que as lojas de pneus perdem vendas todos os dias?</h2>
@@ -280,219 +476,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Solution Section */}
-      <section id="solucao" className="section-padding" style={{ borderBottom: '1px solid var(--border)' }}>
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <h2 className="title-lg">Apresentamos o PneuFlow: Seu Vendedor Digital de Pneus</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '16px', maxWidth: '650px', margin: '0 auto' }}>
-              Uma plataforma simples para organizar seu estoque, criar um link público elegante e automatizar a pesquisa do cliente.
-            </p>
-          </div>
-
-          <div className="solution-grid">
-            {/* Features list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                <div style={{ 
-                  backgroundColor: 'var(--primary-glow)', 
-                  color: 'var(--primary)', 
-                  padding: '10px', 
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid rgba(245, 158, 11, 0.2)',
-                  flexShrink: 0
-                }}>
-                  <Search size={20} />
-                </div>
-                <div style={{ textAlign: 'left' }}>
-                  <h3 style={{ fontSize: '18px', marginBottom: '8px' }}>Busca inteligente por veículo</h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                    O cliente seleciona o carro e o sistema exibe os pneus certos. Sem margem para erros de medida e sem perda de tempo do seu atendente.
-                  </p>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                <div style={{ 
-                  backgroundColor: 'var(--primary-glow)', 
-                  color: 'var(--primary)', 
-                  padding: '10px', 
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid rgba(245, 158, 11, 0.2)',
-                  flexShrink: 0
-                }}>
-                  <MessageSquare size={20} />
-                </div>
-                <div style={{ textAlign: 'left' }}>
-                  <h3 style={{ fontSize: '18px', marginBottom: '8px' }}>Contato Direto via WhatsApp</h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                    Ao demonstrar interesse por um pneu, o cliente envia uma mensagem já pronta para o seu WhatsApp com produto, medida e veículo. Só falta você fechar.
-                  </p>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                <div style={{ 
-                  backgroundColor: 'var(--primary-glow)', 
-                  color: 'var(--primary)', 
-                  padding: '10px', 
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid rgba(245, 158, 11, 0.2)',
-                  flexShrink: 0
-                }}>
-                  <TrendingUp size={20} />
-                </div>
-                <div style={{ textAlign: 'left' }}>
-                  <h3 style={{ fontSize: '18px', marginBottom: '8px' }}>Dashboard do Lojista Simplificado</h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                    Acompanhe quais pneus são mais pesquisados, número de visitas e histórico de leads. Tenha total controle do seu negócio.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Illustration */}
-            <div className="card" style={{ padding: '32px', backgroundColor: '#13151c', textAlign: 'center' }}>
-              <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', backgroundColor: 'var(--primary-glow)', color: 'var(--primary)', marginBottom: '24px' }}>
-                <Smartphone size={48} />
-              </div>
-              <h3 style={{ fontSize: '22px', marginBottom: '12px' }}>Disponível onde seu cliente está</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
-                A vitrine foi desenvolvida com foco total em smartphones. O carregamento é instantâneo e a navegação é limpa para maximizar as vendas.
-              </p>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <span className="badge badge-warning">Aro</span>
-                <span className="badge badge-warning">Medida</span>
-                <span className="badge badge-warning">Marca</span>
-                <span className="badge badge-warning">Veículo</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing / Planos */}
-      <section id="planos" className="section-padding" style={{ borderBottom: '1px solid var(--border)', backgroundColor: '#0d0f15' }}>
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <h2 className="title-lg">Planos Simples e Transparentes</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '16px', maxWidth: '650px', margin: '0 auto' }}>
-              Escolha o plano ideal para o tamanho da sua loja. Comece hoje mesmo a vender mais.
-            </p>
-          </div>
-
-          <div className="pricing-grid">
-            {/* Plan 1 - Free Teste */}
-            <BorderGlow
-              className="pricing-border-glow"
-              edgeSensitivity={28}
-              glowColor="156 78 68"
-              backgroundColor="#11141b"
-              borderRadius={16}
-              glowRadius={34}
-              glowIntensity={0.8}
-              coneSpread={24}
-              colors={['#22c55e', '#38bdf8', '#f59e0b']}
-              fillOpacity={0.22}
-            >
-            <div className="pricing-card-content">
-              <h3 style={{ fontSize: '20px', marginBottom: '8px' }}>Free Teste</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '24px' }}>Ideal para conhecer a plataforma e testar as funcionalidades básicas.</p>
-              <div style={{ marginBottom: '24px' }}>
-                <span style={{ fontSize: '36px', fontWeight: 800, color: 'var(--text-primary)' }}>R$ 0</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>/grátis</span>
-              </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'left', flexGrow: 1 }}>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Teste gratuito da plataforma</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Cadastro limitado de pneus</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Página pública simples da loja</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Botão para WhatsApp</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Visualização básica do catálogo</span></li>
-              </ul>
-              <button onClick={() => navigate('/register')} className="btn btn-outline" style={{ width: '100%' }}>Começar agora</button>
-            </div>
-            </BorderGlow>
-            {/* Plan 2 - Start */}
-            <BorderGlow
-              className="pricing-border-glow"
-              edgeSensitivity={28}
-              glowColor="198 82 70"
-              backgroundColor="#11141b"
-              borderRadius={16}
-              glowRadius={34}
-              glowIntensity={0.8}
-              coneSpread={24}
-              colors={['#38bdf8', '#22c55e', '#f59e0b']}
-              fillOpacity={0.22}
-            >
-            <div className="pricing-card-content">
-              <h3 style={{ fontSize: '20px', marginBottom: '8px' }}>Start</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '24px' }}>Ideal para lojas pequenas que querem um catálogo digital organizado.</p>
-              <div style={{ marginBottom: '24px' }}>
-                <span style={{ fontSize: '36px', fontWeight: 800, color: 'var(--text-primary)' }}>R$ 30</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>/mês</span>
-              </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'left', flexGrow: 1 }}>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Cadastro de pneus, marcas e medidas</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Página pública da loja completa</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Botão direto para WhatsApp</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Filtros básicos no catálogo</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Personalização (nome, logo e telefone)</span></li>
-              </ul>
-              <button onClick={() => navigate('/register')} className="btn btn-outline" style={{ width: '100%' }}>Começar agora</button>
-            </div>
-            </BorderGlow>
-            {/* Plan 3 - Pro (Recommended) */}
-            <ElectricBorder
-              className="pricing-electric-border"
-              color="#EAB308"
-              speed={0.4}
-              chaos={0.12}
-              thickness={2}
-              borderRadius={16}
-              style={{ borderRadius: 16 }}
-            >
-            <div className="pricing-card-content pricing-card-content--featured">
-              <span style={{
-                position: 'absolute',
-                top: '-12px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                backgroundColor: 'var(--primary)',
-                color: '#000',
-                padding: '4px 12px',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '11px',
-                fontWeight: 800,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em'
-              }}>RECOMENDADO</span>
-              <h3 style={{ fontSize: '20px', marginBottom: '8px' }}>Pro</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '24px' }}>Vitrine completa com busca por veículo e recursos avançados.</p>
-              <div style={{ marginBottom: '24px' }}>
-                <span style={{ fontSize: '36px', fontWeight: 800, color: 'var(--primary)' }}>R$ 70</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>/mês</span>
-              </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'left', flexGrow: 1 }}>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Tudo do plano Start</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>Busca inteligente por veículo</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Dashboard com métricas e leads</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Controle de cliques no WhatsApp</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Destaque para produtos</span></li>
-                <li style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><CheckCircle size={14} style={{ color: 'var(--success)', flexShrink: 0 }} /><span>Maior personalização da vitrine</span></li>
-              </ul>
-              <button onClick={() => navigate('/register')} className="btn btn-primary" style={{ width: '100%' }}>Experimentar grátis</button>
-            </div>
-            </ElectricBorder>
-          </div>
-        </div>
-      </section>
-
       {/* Feedback Carousel Section */}
       <FeedbackCarousel />
 
       {/* FAQ Section */}
-      <section id="faq" className="section-padding" style={{ borderBottom: '1px solid var(--border)' }}>
+      <section id="faq" className="section-padding landing-faq-section">
         <div className="container" style={{ maxWidth: '800px' }}>
           <div style={{ textAlign: 'center', marginBottom: '56px' }}>
             <h2 className="title-lg">Perguntas Frequentes</h2>
@@ -541,14 +529,14 @@ export default function LandingPage() {
       </section>
 
       {/* CTA final */}
-      <section className="section-padding" style={{ background: 'linear-gradient(180deg, var(--bg-dark) 0%, #13151c 100%)', textAlign: 'center' }}>
+      <section className="section-padding landing-final-cta-section" style={{ textAlign: 'center' }}>
         <div className="container">
           <h2 style={{ fontSize: 'clamp(28px, 5vw, 36px)', marginBottom: '20px' }}>Pronto para decolar as vendas da sua loja?</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(16px, 2vw, 18px)', marginBottom: '32px', maxWidth: '600px', margin: '0 auto 32px' }}>
             Crie sua vitrine em menos de 5 minutos e comece com o nosso Plano Free para conhecer todas as funcionalidades.
           </p>
           <button onClick={() => navigate('/register')} className="btn btn-primary" style={{ padding: '14px 32px', fontSize: '16px' }}>
-            Começar agora grátis
+            Começar teste grátis de 7 dias
           </button>
         </div>
       </section>
@@ -564,8 +552,8 @@ export default function LandingPage() {
           </div>
           <div className="landing-footer-links" style={{ display: 'flex', gap: '24px', fontSize: '13px' }}>
             <Link to="/login" style={{ color: 'var(--text-secondary)' }}>Painel do Lojista</Link>
-            <a href="#solucao" style={{ color: 'var(--text-secondary)' }}>Como Funciona</a>
-            <a href="#planos" style={{ color: 'var(--text-secondary)' }}>Preços</a>
+            <a href="#demo-interativa" style={{ color: 'var(--text-secondary)' }}>Como Funciona</a>
+            <a href="#planos" style={{ color: 'var(--text-secondary)' }}>Teste grátis</a>
           </div>
         </div>
       </footer>

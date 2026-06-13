@@ -1,7 +1,30 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
 import { MessageSquare, Calendar, Car, Search, Trash2 } from 'lucide-react';
+
+const PAGE_SIZE_OPTIONS = [10, 50, 100, 'all'];
+
+const getPageNumbers = (currentPage, totalPages) => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = [1];
+  const start = Math.max(2, currentPage - 1);
+  const end = Math.min(totalPages - 1, currentPage + 1);
+
+  if (start > 2) pages.push('start-ellipsis');
+
+  for (let page = start; page <= end; page += 1) {
+    pages.push(page);
+  }
+
+  if (end < totalPages - 1) pages.push('end-ellipsis');
+  pages.push(totalPages);
+
+  return pages;
+};
 
 export default function Leads() {
   const { store, isOwner } = useStore();
@@ -9,6 +32,10 @@ export default function Leads() {
   const [filterText, setFilterText] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [isLoading, setIsLoading] = useState(true);
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [deletingLeadId, setDeletingLeadId] = useState(null);
+  const [feedbackMessage, setFeedbackMessage] = useState(null);
 
   const loadData = useCallback(async () => {
     if (!store) return;
@@ -30,9 +57,29 @@ export default function Leads() {
   }, [loadData]);
 
   const handleDeleteLead = async (leadId) => {
-    if (window.confirm('Tem certeza que deseja remover este lead do histórico?')) {
-      await storageService.deleteLead(leadId);
-      setLeads(leads.filter(l => l.id !== leadId));
+    if (!store?.id) return;
+
+    const confirmed = window.confirm(
+      'Tem certeza que deseja excluir este lead? Essa ação é permanente e não poderá ser desfeita.'
+    );
+
+    if (!confirmed) return;
+
+    setDeletingLeadId(leadId);
+    setFeedbackMessage(null);
+
+    try {
+      await storageService.deleteLead(leadId, store.id);
+      setFeedbackMessage({ type: 'success', text: 'Lead removido com sucesso.' });
+      await loadData();
+    } catch (err) {
+      console.error('Erro ao excluir lead:', err);
+      setFeedbackMessage({
+        type: 'error',
+        text: err.message || 'Não foi possível remover este lead. Tente novamente.'
+      });
+    } finally {
+      setDeletingLeadId(null);
     }
   };
 
@@ -54,8 +101,12 @@ export default function Leads() {
     }
   };
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterText, statusFilter, pageSize]);
+
   // Filter logic
-  const filteredLeads = leads.filter(l => {
+  const filteredLeads = useMemo(() => leads.filter(l => {
     // 1. Text filter
     const text = filterText.toLowerCase();
     const productName = (l.produto_nome || '').toLowerCase();
@@ -76,7 +127,26 @@ export default function Leads() {
     if (statusFilter === 'vendidos') matchesStatus = l.venda_confirmada;
 
     return matchesText && matchesStatus;
-  });
+  }), [leads, filterText, statusFilter]);
+
+  const totalPages = pageSize === 'all'
+    ? 1
+    : Math.max(1, Math.ceil(filteredLeads.length / pageSize));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedLeads = useMemo(() => {
+    if (pageSize === 'all') return filteredLeads;
+
+    const start = (currentPage - 1) * pageSize;
+    return filteredLeads.slice(start, start + pageSize);
+  }, [filteredLeads, currentPage, pageSize]);
+
+  const paginationItems = getPageNumbers(currentPage, totalPages);
 
   return (
     <div className="animate-fade">
@@ -102,7 +172,8 @@ export default function Leads() {
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="leads-filter-row" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {['todos', 'pendentes', 'vendidos'].map((status) => (
             <button
               key={status}
@@ -113,7 +184,44 @@ export default function Leads() {
               {status}
             </button>
           ))}
+          </div>
+
+          <div className="leads-page-size-control" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 600 }}>Mostrar:</span>
+            {PAGE_SIZE_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setPageSize(option)}
+                className={`btn ${pageSize === option ? 'btn-primary' : 'btn-outline'}`}
+                style={{ padding: '6px 12px', fontSize: '13px' }}
+              >
+                {option === 'all' ? 'Todos' : option}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {feedbackMessage && (
+          <div
+            role={feedbackMessage.type === 'error' ? 'alert' : 'status'}
+            style={{
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-md)',
+              border: feedbackMessage.type === 'error'
+                ? '1px solid rgba(239, 68, 68, 0.24)'
+                : '1px solid rgba(34, 197, 94, 0.24)',
+              backgroundColor: feedbackMessage.type === 'error'
+                ? 'rgba(239, 68, 68, 0.1)'
+                : 'rgba(34, 197, 94, 0.1)',
+              color: feedbackMessage.type === 'error' ? 'var(--error)' : 'var(--success)',
+              fontSize: '13px',
+              fontWeight: 600
+            }}
+          >
+            {feedbackMessage.text}
+          </div>
+        )}
       </div>
 
       {/* Leads Table/List */}
@@ -128,6 +236,7 @@ export default function Leads() {
             <p>Nenhum lead encontrado.</p>
           </div>
         ) : (
+          <>
           <div className="leads-table-wrap" style={{ overflowX: 'auto', position: 'relative' }}>
             <div className="leads-swipe-hint">
               <span>Arraste para o lado para ver cliente, produto, vendedor, compra, valor e ações.</span>
@@ -145,10 +254,7 @@ export default function Leads() {
                 </tr>
               </thead>
               <tbody>
-                {filteredLeads.map((lead) => {
-                  console.log('Lead rendering:', lead.id, 'venda_confirmada:', lead.venda_confirmada);
-                  console.log('Lead venda_confirmada:', lead.id, lead.venda_confirmada);
-                  
+                {paginatedLeads.map((lead) => {
                   const isSold = lead.venda_confirmada;
                   const rowStyle = isSold ? {
                     backgroundColor: 'rgba(34, 197, 94, 0.08)',
@@ -303,9 +409,11 @@ export default function Leads() {
                           {isOwner && (
                             <button 
                               onClick={() => handleDeleteLead(lead.id)}
+                              disabled={deletingLeadId === lead.id}
                               className="btn btn-outline" 
-                              style={{ padding: '6px 8px', borderColor: 'rgba(239,68,68,0.2)', color: 'var(--error)' }}
-                              title="Remover Lead"
+                              style={{ padding: '6px 8px', borderColor: 'rgba(239,68,68,0.2)', color: 'var(--error)', opacity: deletingLeadId === lead.id ? 0.6 : 1 }}
+                              title="Excluir lead"
+                              aria-label="Excluir lead"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -318,6 +426,55 @@ export default function Leads() {
               </tbody>
             </table>
           </div>
+          <div className="leads-pagination">
+            <div className="leads-pagination__summary">
+              <span>
+                Mostrando {pageSize === 'all' ? filteredLeads.length : paginatedLeads.length} de {filteredLeads.length} lead{filteredLeads.length === 1 ? '' : 's'}
+              </span>
+              <strong>Página {currentPage} de {totalPages}</strong>
+            </div>
+
+            {pageSize !== 'all' && totalPages > 1 && (
+              <div className="leads-pagination__controls" aria-label="Paginação de leads">
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </button>
+
+                <div className="leads-pagination__pages">
+                  {paginationItems.map((item) => (
+                    typeof item === 'number' ? (
+                      <button
+                        key={item}
+                        type="button"
+                        className={`btn ${currentPage === item ? 'btn-primary' : 'btn-outline'}`}
+                        onClick={() => setCurrentPage(item)}
+                        aria-current={currentPage === item ? 'page' : undefined}
+                      >
+                        {item}
+                      </button>
+                    ) : (
+                      <span key={item} className="leads-pagination__ellipsis">...</span>
+                    )
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Próxima
+                </button>
+              </div>
+            )}
+          </div>
+          </>
         )}
       </div>
       
@@ -343,6 +500,51 @@ export default function Leads() {
 
         .leads-swipe-hint {
           display: none;
+        }
+
+        .leads-pagination {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 16px 20px;
+          border-top: 1px solid var(--border);
+          background: rgba(255, 255, 255, 0.01);
+          flex-wrap: wrap;
+        }
+
+        .leads-pagination__summary {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          color: var(--text-secondary);
+          font-size: 13px;
+        }
+
+        .leads-pagination__summary strong {
+          color: var(--text-primary);
+          font-size: 13px;
+        }
+
+        .leads-pagination__controls,
+        .leads-pagination__pages {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .leads-pagination__controls .btn,
+        .leads-pagination__pages .btn {
+          min-height: 36px;
+          padding: 6px 12px;
+          font-size: 13px;
+        }
+
+        .leads-pagination__ellipsis {
+          color: var(--text-muted);
+          padding: 0 2px;
+          font-weight: 700;
         }
 
         @media (max-width: 768px) {
@@ -376,6 +578,22 @@ export default function Leads() {
             color: var(--primary);
             font-size: 14px;
             font-weight: 700;
+          }
+
+          .leads-pagination {
+            align-items: stretch;
+            padding: 14px 14px 16px;
+          }
+
+          .leads-pagination__controls {
+            width: 100%;
+            justify-content: space-between;
+          }
+
+          .leads-pagination__pages {
+            order: 3;
+            width: 100%;
+            justify-content: center;
           }
         }
       `}</style>

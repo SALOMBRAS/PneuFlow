@@ -523,13 +523,18 @@ export const storageService = {
     return data;
   },
 
-  deleteLead: async (id) => {
-    const { error } = await supabase
-      .from('leads')
-      .delete()
-      .eq('id', id);
+  deleteLead: async (id, storeId) => {
+    if (!id || !storeId) {
+      throw new Error('Lead ou loja inválidos.');
+    }
+
+    const { data, error } = await supabase.rpc('excluir_lead', {
+      p_lead_id: id,
+      p_store_id: storeId
+    });
     
     if (error) throw error;
+    if (data !== true) throw new Error('Não foi possível remover este lead.');
     return true;
   },
 
@@ -544,6 +549,62 @@ export const storageService = {
       throw error;
     }
     return data;
+  },
+
+  getDashboardCommercialMetrics: async (storeId) => {
+    const safeSelect = async (label, queryBuilder) => {
+      try {
+        const { data, error } = await queryBuilder;
+        if (error) {
+          console.error(`[DashboardMetrics] Erro ao buscar ${label}:`, error);
+          return [];
+        }
+        return data || [];
+      } catch (error) {
+        console.error(`[DashboardMetrics] Falha inesperada ao buscar ${label}:`, error);
+        return [];
+      }
+    };
+
+    const requests = {
+      leads: supabase
+        .from('leads')
+        .select('id, loja_id, produto_id, seller_id, ref_code, attribution_source, nome_cliente, produto_nome, produto_medida, produto_preco, origem, created_at, venda_confirmada, venda_confirmada_em, venda_confirmada_por')
+        .eq('loja_id', storeId),
+      pneus: supabase
+        .from('pneus')
+        .select('id, loja_id, status, estoque, created_by')
+        .eq('loja_id', storeId),
+      sellers: supabase
+        .from('store_members')
+        .select('id, store_id, user_id, email, nome, role, status, ref_code, whatsapp')
+        .eq('store_id', storeId),
+      visits: supabase
+        .from('store_referral_visits')
+        .select('id, store_id, seller_id, ref_code, path, created_at')
+        .eq('store_id', storeId)
+    };
+
+    const entries = Object.entries(requests);
+    const results = await Promise.allSettled(
+      entries.map(([label, query]) => safeSelect(label, query))
+    );
+
+    return entries.reduce((acc, [label], index) => {
+      const result = results[index];
+      if (result.status === 'fulfilled') {
+        acc[label] = Array.isArray(result.value) ? result.value : [];
+      } else {
+        console.error(`[DashboardMetrics] Query ${label} rejeitada:`, result.reason);
+        acc[label] = [];
+      }
+      return acc;
+    }, {
+      leads: [],
+      pneus: [],
+      sellers: [],
+      visits: []
+    });
   },
 
   // --- Legacy Aliases ---

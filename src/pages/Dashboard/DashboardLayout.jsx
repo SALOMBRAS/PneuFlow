@@ -135,7 +135,17 @@ export default function DashboardLayout({ children }) {
   }
 
   return (
-    <div className="dashboard-layout" style={{ backgroundColor: 'var(--bg-dark)', overflowX: 'hidden', position: 'relative' }}>
+    <div
+      className="dashboard-layout"
+      style={{
+        backgroundColor: 'var(--bg-dark)',
+        display: 'flex',
+        minHeight: '100dvh',
+        overflowX: 'hidden',
+        position: 'relative',
+        width: '100%'
+      }}
+    >
       <div
         style={{
           display: 'none',
@@ -214,17 +224,36 @@ export default function DashboardLayout({ children }) {
         style={{
           backgroundColor: '#0d0f15',
           borderRight: '1px solid var(--border)',
-          height: '100vh',
-          position: 'sticky',
+          width: '240px',
+          height: '100dvh',
+          maxHeight: '100dvh',
+          position: 'fixed',
           top: 0,
+          left: 0,
+          bottom: 0,
+          alignSelf: 'flex-start',
+          flexShrink: 0,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: '24px',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          padding: 0,
           zIndex: 40
         }}
       >
-        <div>
+        <div
+          className="sidebar-inner"
+          style={{
+            height: '100%',
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            boxSizing: 'border-box',
+            padding: '24px 24px calc(24px + env(safe-area-inset-bottom))',
+            overflow: 'hidden'
+          }}
+        >
+        <div className="sidebar-top" style={{ flexShrink: 0, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '40px', minWidth: 0 }}>
             <div
               style={{
@@ -271,8 +300,22 @@ export default function DashboardLayout({ children }) {
               {store.name}
             </p>
           </div>
+        </div>
 
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
+          <nav
+            className="sidebar-nav"
+            style={{
+              display: 'flex',
+              flex: 1,
+              flexDirection: 'column',
+              gap: '8px',
+              minHeight: 0,
+              minWidth: 0,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              paddingRight: '2px'
+            }}
+          >
             {filteredMenuItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
@@ -302,9 +345,17 @@ export default function DashboardLayout({ children }) {
               );
             })}
           </nav>
-        </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div
+          className="sidebar-footer"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            flexShrink: 0,
+            paddingTop: '18px'
+          }}
+        >
           <a
             href={publicStoreUrl}
             target="_blank"
@@ -349,21 +400,87 @@ export default function DashboardLayout({ children }) {
             <span>Sair do Painel</span>
           </button>
         </div>
+        </div>
       </aside>
 
-      <main className="dashboard-main" style={{ minHeight: '100vh', paddingTop: '40px', minWidth: 0 }}>
+      <main
+        className="dashboard-main"
+        style={{
+          flex: 1,
+          marginLeft: '240px',
+          minHeight: '100dvh',
+          minWidth: 0,
+          overflowX: 'hidden',
+          paddingTop: '40px',
+          width: 'calc(100% - 240px)'
+        }}
+      >
         {children}
       </main>
 
       <style>{`
+        @media (min-width: 769px) {
+          .dashboard-layout {
+            display: flex !important;
+            min-height: 100vh !important;
+            min-height: 100dvh !important;
+            overflow-x: hidden !important;
+          }
+
+          .dashboard-sidebar {
+            position: fixed !important;
+            inset: 0 auto 0 0 !important;
+            width: 240px !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            min-height: 100vh !important;
+            min-height: 100dvh !important;
+            max-height: none !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+          }
+
+          .dashboard-sidebar .sidebar-inner {
+            height: 100vh !important;
+            height: 100dvh !important;
+            min-height: 0 !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+          }
+
+          .dashboard-sidebar .sidebar-nav {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+          }
+
+          .dashboard-sidebar .sidebar-footer {
+            flex-shrink: 0 !important;
+          }
+
+          .dashboard-main {
+            flex: 1 1 auto !important;
+            margin-left: 240px !important;
+            min-width: 0 !important;
+            width: calc(100% - 240px) !important;
+          }
+        }
+
         @media (max-width: 768px) {
           .mobile-header {
             display: flex !important;
           }
 
           .dashboard-layout {
+            display: block !important;
             grid-template-columns: 1fr !important;
             padding-top: 60px;
+          }
+
+          .dashboard-main {
+            margin-left: 0 !important;
+            width: 100% !important;
           }
 
           .dashboard-sidebar {
@@ -372,12 +489,19 @@ export default function DashboardLayout({ children }) {
             left: 0 !important;
             bottom: 0 !important;
             width: min(88vw, 320px) !important;
-            height: calc(100vh - 60px) !important;
+            height: calc(100dvh - 60px) !important;
+            max-height: calc(100dvh - 60px) !important;
+            padding-bottom: calc(28px + env(safe-area-inset-bottom)) !important;
             transform: translateX(-100%);
             transition: transform var(--transition-normal);
             display: flex !important;
             box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-            overflow-y: auto;
+            overflow: hidden;
+          }
+
+          .dashboard-sidebar .sidebar-inner {
+            height: 100%;
+            padding: 24px 24px calc(24px + env(safe-area-inset-bottom)) !important;
           }
 
           .dashboard-sidebar.mobile-open {
@@ -388,7 +512,10 @@ export default function DashboardLayout({ children }) {
         @media (max-width: 480px) {
           .dashboard-sidebar {
             width: min(92vw, 300px) !important;
-            padding: 20px 16px !important;
+          }
+
+          .dashboard-sidebar .sidebar-inner {
+            padding: 20px 16px calc(24px + env(safe-area-inset-bottom)) !important;
           }
         }
       `}</style>
