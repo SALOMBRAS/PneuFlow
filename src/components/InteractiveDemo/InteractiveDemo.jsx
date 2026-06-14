@@ -55,10 +55,47 @@ const demoTabs = [
   },
 ];
 
-const products = [
-  { brand: 'Michelin', size: '195/55 R16', price: 'R$ 329,90' },
-  { brand: 'Pirelli', size: '175/65 R14', price: 'R$ 249,90' },
-  { brand: 'Goodyear', size: '205/55 R16', price: 'R$ 359,90' },
+const demoTires = [
+  {
+    id: 'michelin-energy-xm2',
+    brand: 'Michelin',
+    model: 'Energy XM2',
+    size: '175/65 R14',
+    rim: '14',
+    condition: 'Novo',
+    price: 'R$ 329,90',
+    stock: '8 em estoque',
+  },
+  {
+    id: 'pirelli-cinturato-p1',
+    brand: 'Pirelli',
+    model: 'Cinturato P1',
+    size: '185/60 R15',
+    rim: '15',
+    condition: 'Novo',
+    price: 'R$ 389,90',
+    stock: '5 em estoque',
+  },
+  {
+    id: 'goodyear-efficientgrip',
+    brand: 'Goodyear',
+    model: 'EfficientGrip',
+    size: '205/55 R16',
+    rim: '16',
+    condition: 'Novo',
+    price: 'R$ 489,90',
+    stock: '3 em estoque',
+  },
+  {
+    id: 'firestone-f600-usado',
+    brand: 'Firestone',
+    model: 'F-600',
+    size: '175/70 R14',
+    rim: '14',
+    condition: 'Usado',
+    price: 'R$ 189,90',
+    stock: '2 em estoque',
+  },
 ];
 
 const catalogItems = [
@@ -80,7 +117,25 @@ const metrics = [
   { label: 'Conversão', value: '12%' },
 ];
 
+const rimFilters = [
+  { id: 'all', label: 'Todos' },
+  { id: '14', label: 'Aro 14' },
+  { id: '15', label: 'Aro 15' },
+  { id: '16', label: 'Aro 16' },
+];
+
+const conditionFilters = ['Todos', 'Novo', 'Usado'];
+
 function VitrinePanel({ onInterest }) {
+  const [activeRim, setActiveRim] = useState('all');
+  const [activeCondition, setActiveCondition] = useState('Todos');
+
+  const filteredTires = demoTires.filter((tire) => {
+    const matchesRim = activeRim === 'all' || tire.rim === activeRim;
+    const matchesCondition = activeCondition === 'Todos' || tire.condition === activeCondition;
+    return matchesRim && matchesCondition;
+  });
+
   return (
     <div className="demo-screen demo-screen--store">
       <div className="demo-store-header">
@@ -100,26 +155,48 @@ function VitrinePanel({ onInterest }) {
         <span>Digite medida, aro ou veículo</span>
       </div>
 
-      <div className="demo-chip-row" aria-label="Filtros de exemplo">
-        <span>Aro 14</span>
-        <span>Aro 15</span>
-        <span>Aro 16</span>
+      <div className="demo-chip-row" aria-label="Filtros por aro">
+        {rimFilters.map((filter) => (
+          <button
+            type="button"
+            key={filter.id}
+            className={activeRim === filter.id ? 'is-active' : ''}
+            onClick={() => setActiveRim(filter.id)}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="demo-condition-row" aria-label="Filtros por condição">
+        {conditionFilters.map((condition) => (
+          <button
+            type="button"
+            key={condition}
+            className={activeCondition === condition ? 'is-active' : ''}
+            onClick={() => setActiveCondition(condition)}
+          >
+            {condition}
+          </button>
+        ))}
       </div>
 
       <div className="demo-product-grid">
-        {products.map((product) => (
-          <article className="demo-product-card" key={`${product.brand}-${product.size}`}>
+        {filteredTires.map((product) => (
+          <article className="demo-product-card" key={product.id}>
             <div className="demo-product-thumb">
               <span />
             </div>
             <div>
               <strong>{product.size}</strong>
-              <p>{product.brand}</p>
+              <p>{product.brand} {product.model}</p>
+              <small>{product.condition} · {product.stock}</small>
             </div>
             <div className="demo-product-footer">
               <span>{product.price}</span>
-              <button type="button" onClick={onInterest}>
-                Tenho interesse
+              <button type="button" onClick={() => onInterest(product)}>
+                <MessageSquare size={13} />
+                WhatsApp
               </button>
             </div>
           </article>
@@ -289,16 +366,13 @@ export default function InteractiveDemo() {
 
             <div className="interactive-demo-cta">
               <Link to="/register" className="btn btn-primary interactive-demo-primary-cta">
-                Começar teste grátis de 7 dias
+                Criar minha vitrine grátis
                 <ArrowRight size={17} />
               </Link>
               <a href="#demo-interativa" className="btn btn-secondary interactive-demo-secondary-cta">
                 Ver demonstração
               </a>
             </div>
-            <p className="interactive-demo-trial-note">
-              Teste grátis por 7 dias. Sem compromisso.
-            </p>
           </aside>
 
           <div className="interactive-demo-stage">

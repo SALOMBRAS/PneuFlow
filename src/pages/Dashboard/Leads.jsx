@@ -41,9 +41,7 @@ export default function Leads() {
     if (!store) return;
     setIsLoading(true);
     try {
-      console.log('Store usada para buscar leads:', store);
       const storeLeads = await storageService.getLeads(store.id);
-      console.log('Leads retornados pela RPC para este usuário:', storeLeads);
       setLeads(storeLeads);
     } catch (err) {
       console.error('Erro ao carregar dados dos leads:', err);

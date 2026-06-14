@@ -1,6 +1,10 @@
 import { supabase } from '../lib/supabase';
 import { optimizeImageToWebp } from '../utils/imageOptimizer';
 
+const STORE_COLUMNS = 'id, owner_id, nome, whatsapp, telefone, endereco, cidade, estado, logo, banner, foto_capa, cor_principal, cor_secundaria, seo_titulo, seo_descricao, plano, plan_due_date, created_at, slug, tipo_vitrine, template_vitrine';
+const STORE_MEMBER_COLUMNS = 'id, store_id, user_id, email, nome, role, status, invited_by, invited_at, accepted_at, created_at, updated_at, ref_code, disabled_at, removed_at, auth_deleted_at, removed_by, senha_inicial, whatsapp';
+const PNEU_COLUMNS = 'id, loja_id, marca, modelo, medida, preco, estoque, descricao, status, compatibilidade, foto_principal_url, fotos, created_at, updated_at, tipo_veiculo, created_by, updated_by';
+
 // Database Access Functions using Supabase
 export const storageService = {
   // --- Auth & Session ---
@@ -64,7 +68,7 @@ export const storageService = {
   getStoreMembers: async (storeId) => {
     const { data, error } = await supabase
       .from('store_members')
-      .select('*')
+      .select(STORE_MEMBER_COLUMNS)
       .eq('store_id', storeId)
       .order('created_at', { ascending: false });
     
@@ -89,16 +93,12 @@ export const storageService = {
       }
     });
     
-    console.log('Resposta invite-seller:', { data, error });
-
     if (error) {
       let message = error.message || 'Erro ao chamar Edge Function';
 
       try {
         if (error.context) {
           const errorBody = await error.context.json();
-
-          console.log('Erro detalhado invite-seller:', errorBody);
 
           message =
             errorBody?.error ||
@@ -163,7 +163,7 @@ export const storageService = {
       .from('store_members')
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', memberId)
-      .select()
+      .select(STORE_MEMBER_COLUMNS)
       .maybeSingle();
     
     if (error) throw error;
@@ -176,7 +176,7 @@ export const storageService = {
       .from('store_members')
       .update({ ref_code: cleanRef, updated_at: new Date().toISOString() })
       .eq('id', memberId)
-      .select()
+      .select(STORE_MEMBER_COLUMNS)
       .maybeSingle();
     
     if (error) throw error;
@@ -191,7 +191,7 @@ export const storageService = {
         updated_at: new Date().toISOString()
       })
       .eq('id', memberId)
-      .select()
+      .select(STORE_MEMBER_COLUMNS)
       .maybeSingle();
 
     if (error) throw error;
@@ -313,7 +313,7 @@ export const storageService = {
             cor_secundaria: '#121214'
           }
         ])
-        .select()
+        .select(STORE_COLUMNS)
         .maybeSingle();
 
       if (storeError) throw storeError;
@@ -326,7 +326,7 @@ export const storageService = {
   getStoreByOwner: async (userId) => {
     const { data, error } = await supabase
       .from('stores')
-      .select('*')
+      .select(STORE_COLUMNS)
       .eq('owner_id', userId)
       .maybeSingle();
     
@@ -337,7 +337,7 @@ export const storageService = {
   getStoreByMember: async (userId) => {
     const { data, error } = await supabase
       .from('store_members')
-      .select('stores (*)')
+      .select(`stores (${STORE_COLUMNS})`)
       .eq('user_id', userId)
       .eq('status', 'active')
       .maybeSingle();
@@ -349,7 +349,7 @@ export const storageService = {
   getStoreById: async (id) => {
     const { data, error } = await supabase
       .from('stores')
-      .select('*')
+      .select(STORE_COLUMNS)
       .eq('id', id)
       .maybeSingle();
     if (error) return null;
@@ -359,7 +359,7 @@ export const storageService = {
   getStoreBySlug: async (slug) => {
     const { data, error } = await supabase
       .from('stores')
-      .select('*')
+      .select(STORE_COLUMNS)
       .eq('slug', slug)
       .maybeSingle();
     if (error) return null;
@@ -392,7 +392,7 @@ export const storageService = {
       .from('stores')
       .update(mappedData)
       .eq('id', id)
-      .select()
+      .select(STORE_COLUMNS)
       .maybeSingle();
 
     if (error) throw error;
@@ -419,7 +419,7 @@ export const storageService = {
   getPneus: async (storeId) => {
     const { data, error } = await supabase
       .from('pneus')
-      .select('*')
+      .select(PNEU_COLUMNS)
       .eq('loja_id', storeId)
       .order('created_at', { ascending: false });
     
@@ -433,7 +433,7 @@ export const storageService = {
   getPneuById: async (id) => {
     const { data, error } = await supabase
       .from('pneus')
-      .select('*')
+      .select(PNEU_COLUMNS)
       .eq('id', id)
       .maybeSingle();
     
@@ -452,7 +452,7 @@ export const storageService = {
         created_by: session.user.id,
         updated_by: session.user.id
       }])
-      .select()
+      .select(PNEU_COLUMNS)
       .maybeSingle();
     
     if (error) throw error;
@@ -471,7 +471,7 @@ export const storageService = {
         updated_by: session.user.id
       })
       .eq('id', id)
-      .select()
+      .select(PNEU_COLUMNS)
       .maybeSingle();
     
     if (error) throw error;

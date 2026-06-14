@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { Zap, Mail, Lock, Store, Phone, User, AlertTriangle, Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
 import BorderBeam from '../../components/BorderBeam/BorderBeam';
+import TermsAcceptanceModal from '../../components/TermsAcceptanceModal';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [acceptedPolicies, setAcceptedPolicies] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Password requirement checks
   const checks = {
@@ -53,6 +56,11 @@ export default function Register() {
     const cleanPhone = phone.replace(/\D/g, '');
     if (cleanPhone.length < 10) {
       setError('Por favor, informe um número de WhatsApp válido.');
+      return;
+    }
+
+    if (!acceptedPolicies) {
+      setError('Para continuar, leia e aceite os Termos de Uso e a Política de Privacidade.');
       return;
     }
 
@@ -342,6 +350,98 @@ export default function Register() {
                 </ul>
               </div>
 
+              <div
+                role="button"
+                tabIndex={0}
+                aria-pressed={acceptedPolicies}
+                onClick={() => setShowTermsModal(true)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setShowTermsModal(true);
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                  padding: '14px',
+                  marginBottom: '18px',
+                  border: `1px solid ${acceptedPolicies ? 'rgba(245, 158, 11, 0.42)' : 'var(--border)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: acceptedPolicies ? 'rgba(245, 158, 11, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '13px',
+                  lineHeight: 1.5,
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '18px',
+                    height: '18px',
+                    marginTop: '2px',
+                    borderRadius: '5px',
+                    border: `1px solid ${acceptedPolicies ? 'var(--success)' : 'var(--border)'}`,
+                    backgroundColor: acceptedPolicies ? 'rgba(34, 197, 94, 0.18)' : 'transparent',
+                    color: 'var(--success)',
+                    flex: '0 0 auto'
+                  }}
+                >
+                  {acceptedPolicies && <Check size={13} />}
+                </span>
+                <span>
+                  {acceptedPolicies ? (
+                    <strong style={{ color: 'var(--success)' }}>✓ Termos aceitos</strong>
+                  ) : (
+                    <>
+                      Li e aceito os{' '}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setShowTermsModal(true);
+                        }}
+                        style={{
+                          border: 0,
+                          padding: 0,
+                          background: 'transparent',
+                          color: 'var(--primary)',
+                          fontWeight: 800,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Termos de Uso
+                      </button>
+                      {' '}e a{' '}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setShowTermsModal(true);
+                        }}
+                        style={{
+                          border: 0,
+                          padding: 0,
+                          background: 'transparent',
+                          color: 'var(--primary)',
+                          fontWeight: 800,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Política de Privacidade
+                      </button>
+                      {' '}do PneuFlow.
+                    </>
+                  )}
+                </span>
+              </div>
+
               <button 
                 type="submit" 
                 className="btn btn-primary" 
@@ -367,6 +467,16 @@ export default function Register() {
       </div>
       </div>
 
+      <TermsAcceptanceModal
+        open={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={() => {
+          setAcceptedPolicies(true);
+          setShowTermsModal(false);
+          setError('');
+        }}
+      />
+
       <style>{`
         @media (max-width: 480px) {
           .card {
@@ -375,6 +485,15 @@ export default function Register() {
           .grid-responsive-auth {
             grid-template-columns: 1fr !important;
             gap: 0 !important;
+          }
+          .terms-modal-backdrop {
+            padding: 12px !important;
+          }
+          .terms-modal-card footer {
+            flex-direction: column-reverse !important;
+          }
+          .terms-modal-card footer .btn {
+            width: 100% !important;
           }
         }
       `}</style>

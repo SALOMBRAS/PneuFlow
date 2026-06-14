@@ -242,7 +242,7 @@ export default function LandingPage() {
     },
     {
       q: "Preciso escolher um plano agora?",
-      a: "Não. Você pode testar o PneuFlow por 7 dias e escolher o plano ideal dentro do painel depois. Todo o lucro das vendas geradas é 100% seu."
+      a: "Não. Você pode criar sua vitrine, conhecer o fluxo da plataforma e escolher o plano ideal dentro do painel depois. Todo o lucro das vendas geradas é 100% seu."
     }
   ];
 
@@ -283,13 +283,12 @@ export default function LandingPage() {
           <nav className="landing-nav" style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
             <a href="#problemas" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Problemas</a>
             <a href="#demo-interativa" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Demonstração</a>
-            <a href="#planos" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Teste grátis</a>
             <a href="#faq" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>FAQ</a>
           </nav>
 
           <div className="landing-header-actions" style={{ display: 'flex', gap: '12px' }}>
             <Link to="/login" className="btn btn-outline landing-header-login" style={{ padding: '8px 16px', fontSize: '14px' }}>Login</Link>
-            <Link to="/register" className="btn btn-primary landing-header-register" style={{ padding: '8px 16px', fontSize: '14px' }}>Criar Vitrine</Link>
+            <Link to="/register" className="btn btn-primary landing-header-register" style={{ padding: '8px 16px', fontSize: '14px' }}>Criar minha vitrine grátis</Link>
           </div>
         </div>
       </header>
@@ -321,7 +320,7 @@ export default function LandingPage() {
             </p>
             <div className="hero-buttons">
               <button onClick={() => navigate('/register')} className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '16px' }}>
-                Começar teste grátis de 7 dias
+                Criar minha vitrine grátis
               </button>
               <a href="#demo-interativa" className="btn btn-secondary" style={{ padding: '14px 28px', fontSize: '16px' }}>
                 Ver Como Funciona
@@ -355,46 +354,6 @@ export default function LandingPage() {
       </section>
 
       <InteractiveDemo />
-
-      {/* Free Trial */}
-      <section id="planos" className="section-padding landing-trial-section">
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <h2 className="title-lg">Comece com 7 dias grátis</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '16px', maxWidth: '650px', margin: '0 auto' }}>
-              Teste sua vitrine, cadastre seus pneus e veja se o PneuFlow faz sentido para sua loja antes de escolher um plano.
-            </p>
-          </div>
-
-          <div className="trial-offer-card">
-            <div className="trial-offer-badge">7 dias grátis</div>
-            <div className="trial-offer-content">
-              <div>
-                <h3>Teste o PneuFlow antes de escolher qualquer plano</h3>
-                <p>
-                  Comece sem cobrança, cadastre seus pneus, publique sua vitrine e veja se o fluxo combina com a rotina real da sua loja.
-                </p>
-              </div>
-
-              <ul className="trial-offer-list">
-                <li><CheckCircle size={16} /><span>7 dias para testar a plataforma</span></li>
-                <li><CheckCircle size={16} /><span>Vitrine pública para divulgar sua loja</span></li>
-                <li><CheckCircle size={16} /><span>Catálogo com marcas, medidas e estoque</span></li>
-                <li><CheckCircle size={16} /><span>Depois do teste, você escolhe o plano dentro do painel</span></li>
-              </ul>
-            </div>
-
-            <div className="trial-offer-actions">
-              <button onClick={() => navigate('/register')} className="btn btn-primary">
-                Começar teste grátis de 7 dias
-              </button>
-              <a href="#demo-interativa" className="btn btn-secondary">
-                Ver demonstração
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Problems Section */}
       <section id="problemas" className="section-padding landing-problems-section">
@@ -536,7 +495,7 @@ export default function LandingPage() {
             Crie sua vitrine em menos de 5 minutos e comece com o nosso Plano Free para conhecer todas as funcionalidades.
           </p>
           <button onClick={() => navigate('/register')} className="btn btn-primary" style={{ padding: '14px 32px', fontSize: '16px' }}>
-            Começar teste grátis de 7 dias
+            Criar minha vitrine grátis
           </button>
         </div>
       </section>
@@ -548,12 +507,13 @@ export default function LandingPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontWeight: 'bold', fontFamily: 'var(--font-title)', marginBottom: '8px' }}>
               <Zap size={16} fill="var(--primary)" style={{ color: 'var(--primary)' }} /> PneuFlow
             </div>
-            <p style={{ fontSize: '12px' }}>© 2026 PneuFlow SaaS. Todos os direitos reservados.</p>
+            <p style={{ fontSize: '12px' }}>© 2026 PneuFlow. Todos os direitos reservados.</p>
           </div>
           <div className="landing-footer-links" style={{ display: 'flex', gap: '24px', fontSize: '13px' }}>
             <Link to="/login" style={{ color: 'var(--text-secondary)' }}>Painel do Lojista</Link>
             <a href="#demo-interativa" style={{ color: 'var(--text-secondary)' }}>Como Funciona</a>
-            <a href="#planos" style={{ color: 'var(--text-secondary)' }}>Teste grátis</a>
+            <Link to="/privacidade" style={{ color: 'var(--text-secondary)' }}>Política de Privacidade</Link>
+            <Link to="/register" style={{ color: 'var(--text-secondary)' }}>Criar minha vitrine grátis</Link>
           </div>
         </div>
       </footer>

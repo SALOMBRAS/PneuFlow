@@ -40,12 +40,10 @@ serve(async (req) => {
       })
     }
 
-    console.log('Manage seller action:', { store_id, member_id, action });
-
     // 2. Fetch member
     const { data: member, error: memberFetchError } = await supabaseAdmin
       .from('store_members')
-      .select('*')
+      .select('id, user_id, status')
       .eq('id', member_id)
       .eq('store_id', store_id)
       .maybeSingle()

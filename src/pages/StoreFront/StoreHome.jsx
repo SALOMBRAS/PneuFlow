@@ -55,7 +55,7 @@ const hasValidWhatsapp = (value) => stripPhone(value).length >= 10;
 
 const debugReferral = (...args) => {
   if (import.meta.env.DEV) {
-    console.log('[PneuFlow referral]', ...args);
+    void args;
   }
 };
 
@@ -209,7 +209,7 @@ export default function StoreHome() {
   );
 
   const featuredTires = useMemo(() => {
-    const featured = [...tires]
+    return [...tires]
       .filter((t) => Boolean(t.foto_principal_url || t.image))
       .sort((a, b) => {
         const stockScore = Number(Boolean(b.estoque || b.stock)) - Number(Boolean(a.estoque || a.stock));
@@ -217,9 +217,6 @@ export default function StoreHome() {
         return Number(a.preco || 0) - Number(b.preco || 0);
       })
       .slice(0, 3);
-    
-    console.log('Pneus em destaque:', featured);
-    return featured;
   }, [tires]);
 
   const displayedTires = useMemo(() => {
@@ -260,9 +257,6 @@ export default function StoreHome() {
       });
     }
 
-    console.log('Todos os pneus ativos:', tires);
-    console.log('Filtro tipo catálogo:', catalogVehicleType);
-    console.log('Pneus exibidos no catálogo:', result);
     return result;
   }, [tires, vehicleSearchApplied, vehicleType, vehicleBrand, vehicleModel, searchQuery, filterBrand, filterStockOnly, catalogVehicleType]);
 
@@ -399,9 +393,6 @@ export default function StoreHome() {
       ref_code: hasReferralSeller ? currentRefCode : null,
       attribution_source: hasReferralSeller ? 'referral' : 'product'
     };
-
-    console.log('activeRefCode:', activeRefCode);
-    console.log('Payload lead final:', leadPayload);
 
     try {
       await storageService.createLead(leadPayload);

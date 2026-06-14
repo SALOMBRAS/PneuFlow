@@ -60,9 +60,6 @@ export function StoreProvider({ children }) {
       // 1. Try owner_id lookup
       const ownerStore = await storageService.getStoreByOwner(currentUser.id);
       
-      console.log('[StoreContext] session user:', currentUser?.id);
-      console.log('[StoreContext] ownerStore:', ownerStore);
-
       if (ownerStore) {
         finalStore = ownerStore;
         finalRole = 'owner';
@@ -70,12 +67,9 @@ export function StoreProvider({ children }) {
       } else {
         // 2. Fallback: Try store_members lookup
         const memberStore = await storageService.getStoreByMember(currentUser.id);
-        console.log('[StoreContext] memberStore from query:', memberStore);
-        
         if (memberStore) {
           finalStore = memberStore;
           const memberData = await storageService.getStoreMemberRole(memberStore.id, currentUser.id);
-          console.log('[StoreContext] memberData details:', memberData);
           
           if (memberData && memberData.status === 'active') {
             finalMember = memberData;
@@ -91,9 +85,6 @@ export function StoreProvider({ children }) {
       }
 
       if (requestId === fetchRequestRef.current) {
-        console.log('[StoreContext] final role:', finalRole);
-        console.log('[StoreContext] final store:', finalStore);
-        
         setStore(finalStore);
         setRole(finalRole);
         setMember(finalMember);
@@ -124,7 +115,6 @@ export function StoreProvider({ children }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      console.log('[StoreContext] Auth event:', event);
       if (event === 'SIGNED_IN') {
         loadStoreData(newSession, { silent: hasLoadedStoreRef.current });
       } else if (event === 'TOKEN_REFRESHED') {

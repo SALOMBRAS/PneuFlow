@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const Login = lazy(() => import('./pages/Auth/Login'));
 const Register = lazy(() => import('./pages/Auth/Register'));
 const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword'));
@@ -30,6 +31,7 @@ export default function App() {
         <Routes>
           {/* Public SaaS Landing Page */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/privacidade" element={<PrivacyPolicy />} />
 
           {/* Auth routes */}
           <Route path="/login" element={<Login />} />
