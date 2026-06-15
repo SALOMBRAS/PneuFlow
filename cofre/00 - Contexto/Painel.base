@@ -1,0 +1,42 @@
+filters:
+  and:
+    - file.ext == "md"
+    - file.inFolder("cofre")
+properties:
+  tipo:
+    displayName: Tipo
+  area:
+    displayName: Area
+  status:
+    displayName: Status
+  tokens:
+    displayName: Tokens
+  atualizado:
+    displayName: Atualizado
+  prioridade:
+    displayName: Prioridade
+  situacao:
+    displayName: Situacao
+views:
+  - type: table
+    name: Notas ativas
+    filters:
+      and:
+        - status == "ativo"
+    order:
+      - file.name
+      - tipo
+      - area
+      - tokens
+      - atualizado
+  - type: table
+    name: Dividas
+    filters:
+      and:
+        - tipo == "divida"
+    order:
+      - file.name
+      - status
+      - prioridade
+      - situacao
+      - atualizado

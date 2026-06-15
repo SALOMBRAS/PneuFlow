@@ -63,3 +63,11 @@ Interprete os atalhos abaixo carregando o arquivo correspondente em `.aiox-core/
 - `@squad-creator`, `/squad-creator`, `/squad-creator.md` -> `.aiox-core/development/agents/squad-creator.md`
 - `@aiox-master`, `/aiox-master`, `/aiox-master.md` -> `.aiox-core/development/agents/aiox-master.md`
 <!-- AIOX-MANAGED-END: shortcuts -->
+
+Cofre de Contexto
+Antes de realizar análise ampla do código, ler cofre/00 - Contexto/_INDICE.md.
+Consultar primeiro as notas com status: ativo.
+Ler o código apenas quando a nota for inexistente, insuficiente ou desatualizada.
+Quando precisar ler o código para complementar contexto, atualizar a nota correspondente.
+Seguir o protocolo completo disponível em cofre/10 - Meta/protocolo-cofre-contexto.md.
+As regras originais do AGENTS.md permanecem válidas e prevalecem em caso de conflito.
