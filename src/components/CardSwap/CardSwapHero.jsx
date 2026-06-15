@@ -34,6 +34,7 @@ export default function CardSwapHero() {
                   height="600"
                   loading={index === 0 ? 'eager' : 'lazy'}
                   decoding="async"
+                  fetchPriority={index === 0 ? 'high' : 'auto'}
                 />
               </div>
             </div>

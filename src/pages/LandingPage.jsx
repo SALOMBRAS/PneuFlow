@@ -450,13 +450,18 @@ export default function LandingPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {faqs.map((faq, index) => (
-              <div 
+              <article
                 key={index} 
                 className="card" 
-                style={{ padding: '20px', cursor: 'pointer', borderColor: activeFaq === index ? 'var(--primary)' : 'var(--border)' }}
-                onClick={() => toggleFaq(index)}
+                style={{ padding: '20px', borderColor: activeFaq === index ? 'var(--primary)' : 'var(--border)' }}
               >
-                <div className="flex-between" style={{ width: '100%' }}>
+                <button
+                  type="button"
+                  className="landing-faq-trigger flex-between"
+                  aria-expanded={activeFaq === index}
+                  aria-controls={`faq-answer-${index}`}
+                  onClick={() => toggleFaq(index)}
+                >
                   <h3 style={{ fontSize: '16px', fontWeight: 600, textAlign: 'left' }}>{faq.q}</h3>
                   <ChevronDown 
                     size={20} 
@@ -466,9 +471,9 @@ export default function LandingPage() {
                       color: 'var(--text-secondary)'
                     }} 
                   />
-                </div>
+                </button>
                 {activeFaq === index && (
-                  <p style={{ 
+                  <p id={`faq-answer-${index}`} style={{
                     marginTop: '16px', 
                     color: 'var(--text-secondary)', 
                     fontSize: '14px', 
@@ -481,7 +486,7 @@ export default function LandingPage() {
                     {faq.a}
                   </p>
                 )}
-              </div>
+              </article>
             ))}
           </div>
         </div>

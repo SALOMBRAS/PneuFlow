@@ -146,6 +146,24 @@
   background: transparent;
 }
 
+.landing-faq-trigger {
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.landing-faq-trigger:focus-visible {
+  outline: 3px solid rgba(245, 158, 11, 0.34);
+  outline-offset: 8px;
+  border-radius: 12px;
+}
+
 .landing-hero-section > .container,
 .landing-trial-section > .container,
 .landing-problems-section > .container,

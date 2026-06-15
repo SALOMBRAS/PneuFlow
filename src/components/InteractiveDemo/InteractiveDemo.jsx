@@ -161,6 +161,7 @@ function VitrinePanel({ onInterest }) {
             type="button"
             key={filter.id}
             className={activeRim === filter.id ? 'is-active' : ''}
+            aria-pressed={activeRim === filter.id}
             onClick={() => setActiveRim(filter.id)}
           >
             {filter.label}
@@ -174,6 +175,7 @@ function VitrinePanel({ onInterest }) {
             type="button"
             key={condition}
             className={activeCondition === condition ? 'is-active' : ''}
+            aria-pressed={activeCondition === condition}
             onClick={() => setActiveCondition(condition)}
           >
             {condition}
@@ -194,7 +196,11 @@ function VitrinePanel({ onInterest }) {
             </div>
             <div className="demo-product-footer">
               <span>{product.price}</span>
-              <button type="button" onClick={() => onInterest(product)}>
+              <button
+                type="button"
+                onClick={() => onInterest(product)}
+                aria-label={`Simular contato pelo WhatsApp sobre ${product.brand} ${product.model} ${product.size}`}
+              >
                 <MessageSquare size={13} />
                 WhatsApp
               </button>

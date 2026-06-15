@@ -595,6 +595,13 @@
   cursor: pointer;
 }
 
+.demo-product-footer button:focus-visible,
+.demo-actions-box button:focus-visible,
+.demo-mini-action:focus-visible {
+  outline: 3px solid rgba(245, 158, 11, 0.32);
+  outline-offset: 3px;
+}
+
 .demo-list {
   display: flex;
   flex-direction: column;
