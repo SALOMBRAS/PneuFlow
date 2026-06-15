@@ -17,6 +17,12 @@ fonte:
   - src/contexts/StoreContext.jsx
   - src/services/storage.js
   - src/utils/imageOptimizer.js
+  - src/pages/Dashboard/DashboardLayout.jsx
+  - src/pages/Dashboard/DashboardHome.jsx
+  - src/pages/StoreFront/components/VehicleSearchBox.jsx
+  - src/components/InteractiveDemo/InteractiveDemo.jsx
+  - supabase/functions/invite-seller/index.ts
+  - supabase/functions/manage-seller-access/index.ts
   - supabase/migrations/20260604_multi_seller_phase1.sql
   - supabase/migrations/20260604_multi_seller_phase2.sql
   - supabase/migrations/20260612_delete_lead_rpc.sql
@@ -109,9 +115,11 @@ Não copiar valores de `.env`, `.env.local` ou qualquer segredo para o cofre.
 - Upload de imagem converte formatos suportados para WebP antes de enviar.
 - Vitrine pública suporta referral de vendedor via `ref_code` e RPC pública de vendedor.
 - Landing tem demo interativa mockada local, FAQ acessível por botão, metadados sociais/SEO em `index.html` e CardSwap desativado no mobile.
+- `server.js` e `api/index.js` permanecem como backend mock/legado; o fluxo principal atual usa Supabase pelo frontend.
 
 ## Riscos ou dívidas confirmadas
 
 - Alguns textos exibidos no terminal aparecem com mojibake; confirmar encoding antes de editar cópias visíveis.
-- Existe dívida técnica sobre possível conteúdo não SQL em migrations, ainda não confirmada por arquivo exato.
+- `supabase/migrations/20260604_multi_seller_phase2.sql` contém texto de prompt/tarefa, não SQL executável.
+- O schema remoto confirmado contém `store_referral_visits` e `registrar_visita_referral`, mas esses itens não aparecem nas migrations locais atuais.
 - `AGENTS.md` parece originado de template AIOX e menciona diretórios que não são o núcleo do app PneuFlow; preservar regras, mas validar comandos conforme `package.json`.

@@ -12,6 +12,7 @@ fonte:
   - src/pages/StoreFront/components/ProductCard.jsx
   - src/pages/StoreFront/components/StoreFilters.jsx
   - src/services/storage.js
+  - cofre/01 - Arquitetura/fluxos-principais.md
   - supabase/migrations/20260609_public_referral_seller.sql
   - supabase/migrations/20260609_seller_whatsapp.sql
 atualizado: 2026-06-15
@@ -63,6 +64,8 @@ Migrations confirmam RPCs públicas para resolver vendedor ativo por `ref_code`,
 
 O código usa RPC `registrar_visita_referral` e tabela `store_referral_visits`, confirmadas no schema remoto informado, mas essa RPC/tabela não aparecem nas migrations locais atuais. Registrar isso em [[../02 - Banco de Dados/schema-remoto-confirmado|Schema remoto confirmado]] antes de planejar métricas ou migrations.
 
-## Não mapeado ainda
+## Filtros e modal de interesse
 
-- Detalhes completos de todos os filtros e modal de interesse.
+`StoreHome.jsx` mantém filtros por texto, marca, estoque, tipo de veículo e busca por veículo. `StoreFilters.jsx` controla os filtros laterais/drawer. `VehicleSearchBox.jsx` expõe busca rápida por medida/marca/veículo no hero.
+
+O modal de interesse recebe `targetTire` e `customerName`, chama `storageService.createLead` e depois abre WhatsApp com mensagem do produto. Quando há referral válido, o payload usa `ref_code` e `attribution_source: 'referral'`; sem referral, usa `attribution_source: 'product'`.

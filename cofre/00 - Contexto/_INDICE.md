@@ -17,14 +17,19 @@ fonte:
   - src/contexts/StoreContext.jsx
   - src/services/storage.js
   - src/utils/imageOptimizer.js
+  - cofre/01 - Arquitetura/mapa-de-impacto-geral.md
+  - cofre/01 - Arquitetura/mapa-rotas-telas.md
+  - cofre/01 - Arquitetura/fluxos-principais.md
+  - cofre/01 - Arquitetura/inventario-funcoes-componentes.md
+  - cofre/01 - Arquitetura/checklists-regressao.md
   - cofre/02 - Banco de Dados/migrations-rpcs.md
 atualizado: 2026-06-15
 tags: []
 ---
 
 > [!tldr]
-> Cofre inicial do PneuFlow para reduzir leitura repetida do repositorio.
-> Comece por esta nota, depois abra apenas notas ativas da area relacionada.
+> Cofre sincronizado do PneuFlow para reduzir leitura repetida do repositório.
+> Comece por mapas gerais, depois abra apenas notas ativas da área relacionada.
 
 # Indice do Cofre
 
@@ -35,6 +40,12 @@ tags: []
 
 ## Arquitetura
 
+- [[../01 - Arquitetura/mapa-de-impacto-geral|Mapa de impacto geral]]
+- [[../01 - Arquitetura/dependencias-compartilhadas|Dependências compartilhadas]]
+- [[../01 - Arquitetura/mapa-rotas-telas|Mapa de rotas e telas]]
+- [[../01 - Arquitetura/fluxos-principais|Fluxos principais]]
+- [[../01 - Arquitetura/inventario-funcoes-componentes|Inventário de funções e componentes]]
+- [[../01 - Arquitetura/checklists-regressao|Checklists de regressão]]
 - [[../01 - Arquitetura/frontend-rotas-react|Frontend e rotas React]]
 - [[../01 - Arquitetura/auth-store-context|Auth e contexto da loja]]
 - [[../01 - Arquitetura/dashboard|Dashboard]]
@@ -42,7 +53,6 @@ tags: []
 - [[../01 - Arquitetura/landing-page|Landing page]]
 - [[../01 - Arquitetura/cadastro-privacidade|Cadastro e privacidade]]
 - [[../01 - Arquitetura/upload-imagens|Upload e otimizacao de imagens]]
-- [[../01 - Arquitetura/dependencias-compartilhadas|Dependencias compartilhadas]]
 
 ## Banco de dados e integracoes
 
@@ -53,6 +63,7 @@ tags: []
 ## Dividas tecnicas em rascunho
 
 - [[../05 - Dívidas Técnicas/migrations-com-conteudo-nao-sql|Hipotese de migration com conteudo nao SQL]]
+- [[../05 - Dívidas Técnicas/divergencias-cofre-codigo|Divergencias entre cofre, codigo e historico]]
 
 ## Protocolo
 
@@ -61,6 +72,7 @@ tags: []
 ## Como usar
 
 1. Leia esta nota.
-2. Abra apenas a nota ativa da area da tarefa.
-3. Leia codigo somente se a nota estiver ausente, insuficiente ou desatualizada.
-4. Ao ler codigo para complementar contexto, atualize a nota correspondente.
+2. Abra [[../01 - Arquitetura/mapa-de-impacto-geral|Mapa de impacto geral]] e [[../01 - Arquitetura/dependencias-compartilhadas|Dependencias compartilhadas]].
+3. Abra apenas a nota ativa da area da tarefa.
+4. Leia codigo somente se a nota estiver ausente, insuficiente ou desatualizada.
+5. Ao ler codigo para complementar contexto, atualize a nota correspondente.

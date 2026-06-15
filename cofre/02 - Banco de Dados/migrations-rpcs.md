@@ -13,6 +13,7 @@ fonte:
   - supabase/migrations/20260609_public_referral_seller.sql
   - supabase/migrations/20260609_seller_whatsapp.sql
   - supabase/migrations/20260612_delete_lead_rpc.sql
+  - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
 atualizado: 2026-06-15
 tags: []
 ---
@@ -52,6 +53,10 @@ tags: []
 O schema remoto confirmado contém tabela `store_referral_visits` e RPC `registrar_visita_referral(p_store_id uuid, p_ref_code text, p_path text DEFAULT NULL)`.
 
 Esses itens são usados por `src/services/storage.js`, porém não foram localizados nos arquivos em `supabase/migrations/` durante esta auditoria. Tratar como divergência documental/repositório antes de recriar ou alterar migrations.
+
+## Divergência em arquivo local
+
+`supabase/migrations/20260604_multi_seller_phase2.sql` não contém SQL executável: o arquivo guarda texto de uma tarefa/prompt sobre Leads de WhatsApp. Não usar esse arquivo como migration real sem limpeza prévia.
 
 ## Políticas/RLS confirmadas
 

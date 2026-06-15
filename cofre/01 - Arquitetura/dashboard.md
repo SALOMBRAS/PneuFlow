@@ -3,7 +3,7 @@ tipo: arquitetura
 area: dashboard
 camada: frontend-dashboard
 status: ativo
-tokens: baixo
+tokens: medio
 fonte:
   - src/App.jsx
   - src/pages/Dashboard/DashboardShell.jsx
@@ -14,6 +14,8 @@ fonte:
   - src/pages/Dashboard/StoreSettings.jsx
   - src/pages/Dashboard/DashboardLayout.jsx
   - src/services/storage.js
+  - cofre/01 - Arquitetura/mapa-de-impacto-geral.md
+  - cofre/01 - Arquitetura/checklists-regressao.md
 atualizado: 2026-06-15
 tags: []
 ---
@@ -84,5 +86,8 @@ O cálculo local em `DashboardHome.jsx` considera:
 
 ## Não mapeado ainda
 
-- Regras detalhadas de cada formulário em `Catalog`, `Sellers` e `StoreSettings`.
-- Fluxos completos de criação/edição/exclusão.
+As regras gerais e fluxos principais de `Catalog`, `Sellers`, `Leads` e `StoreSettings` foram consolidados em [[fluxos-principais]] e [[inventario-funcoes-componentes]].
+
+## Dívida visual confirmada
+
+`DashboardHome.jsx` ainda contém classes CSS antigas de accordion dentro do bloco `<style>`, mesmo com a UI atual em cards pequenos + painel/bottom sheet. Isso não deve ser removido junto de tarefas funcionais; tratar em limpeza visual isolada.

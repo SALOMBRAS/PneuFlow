@@ -1,26 +1,26 @@
 ---
 tipo: divida
 area: migrations
-status: rascunho
+status: ativo
 tokens: baixo
-fonte: []
+fonte:
+  - supabase/migrations/20260604_multi_seller_phase2.sql
 atualizado: 2026-06-15
 prioridade: media
 esforco: baixo
-situacao: hipotese ainda nao confirmada; divergencia remota documentada em nota separada
+situacao: confirmado em 20260604_multi_seller_phase2.sql; nenhuma correcao aplicada
 tags: []
 ---
 
 > [!tldr]
-> Ha uma hipotese de conteudo nao SQL em alguma migration, mas o arquivo exato ainda nao foi confirmado.
-> Nao tratar como fato ate localizar e verificar o arquivo especifico.
+> `20260604_multi_seller_phase2.sql` contem texto de tarefa/prompt, nao SQL executavel.
+> Nao rodar migrations locais completas sem tratar esse arquivo.
 
 # Hipotese de Migration com Conteudo Nao SQL
 
-## Hipotese pendente
+## Arquivo confirmado
 
-Durante leitura anterior, apareceu no output um bloco de texto de tarefa em portugues junto de conteudo relacionado a migrations.
-Ainda nao foi confirmado se esse texto esta dentro de um arquivo `.sql` ou se foi apenas mistura de saida/terminal.
+`supabase/migrations/20260604_multi_seller_phase2.sql` contem texto de tarefa em portugues pedindo alteracoes na tela de Leads, nao comandos SQL.
 
 ## Impacto possivel
 
@@ -29,7 +29,7 @@ Ainda nao foi confirmado se esse texto esta dentro de um arquivo `.sql` ou se fo
 
 ## Proximo passo recomendado
 
-Localizar o arquivo exato antes de agir. Se confirmado, separar instrucoes humanas de SQL antes de aplicar migrations em qualquer ambiente.
+Separar instrucoes humanas de SQL real antes de aplicar migrations em qualquer ambiente novo.
 
 ## Observacao da auditoria 2026-06-15
 
