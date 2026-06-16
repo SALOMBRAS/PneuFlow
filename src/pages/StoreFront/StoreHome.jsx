@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { storageService } from '../../services/storage';
+import { getOrCreateVisitorId } from '../../utils/visitorId';
 import { VEHICLE_MODELS } from '../../data/vehicleModels';
 import { MOTORCYCLE_MODELS } from '../../data/motorcycleModels';
 import {
@@ -59,6 +60,9 @@ const debugReferral = (...args) => {
   }
 };
 
+const VISIT_SESSION_PREFIX = 'pneuflow_store_visit';
+const VISIT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
 const getStoreStatus = (hoursText) => {
   const now = new Date();
   const day = now.getDay();
@@ -85,12 +89,18 @@ const getCompatibilitySnippet = (tire) =>
 export default function StoreHome() {
   const { storeSlug } = useParams();
   const location = useLocation();
+  const referralCode = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('ref') || searchParams.get('vendedor') || '';
+  }, [location.search]);
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tires, setTires] = useState([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [referralSeller, setReferralSeller] = useState(null);
   const [activeRefCode, setActiveRefCode] = useState(null);
+  const [referralLookupDone, setReferralLookupDone] = useState(false);
+  const visitRegistrationRef = useRef({ key: '', at: 0 });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBrand, setFilterBrand] = useState('');
@@ -138,6 +148,7 @@ export default function StoreHome() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
+      setReferralLookupDone(false);
       try {
         const s = await storageService.getStoreBySlug(storeSlug);
         if (s) {
@@ -151,24 +162,19 @@ export default function StoreHome() {
           setTires(activeList);
           
           // --- Seller referral tracking ---
-          const searchParams = new URLSearchParams(location.search);
-          const refCode = searchParams.get('ref') || searchParams.get('vendedor');
-          debugReferral('ref recebido da URL:', refCode);
+          debugReferral('ref recebido da URL:', referralCode);
           debugReferral('store.id:', s.id);
           
-          if (refCode) {
-            const seller = await storageService.getSellerByRefCode(s.id, refCode);
+          if (referralCode) {
+            const seller = await storageService.getSellerByRefCode(s.id, referralCode);
             debugReferral('resultado da busca do vendedor:', seller);
             debugReferral('whatsapp do vendedor:', seller?.whatsapp || null);
             debugReferral('whatsapp da loja:', s.whatsapp || null);
 
             if (seller && seller.status === 'active' && hasValidWhatsapp(seller.whatsapp)) {
-              setActiveRefCode(seller.ref_code || refCode);
+              setActiveRefCode(seller.ref_code || referralCode);
               setReferralSeller(seller);
               debugReferral('whatsappDestino final:', seller.whatsapp);
-              
-              // Register referral visit using RPC
-              await storageService.registerReferralVisit(s.id, refCode, location.pathname);
             } else {
               setActiveRefCode(null);
               setReferralSeller(null);
@@ -187,16 +193,94 @@ export default function StoreHome() {
             debugReferral('fallback para WhatsApp da loja:', 'URL sem ref/vendedor');
           }
           // -------------------------------
+        } else {
+          setStore(null);
+          setTires([]);
+          setReferralSeller(null);
+          setActiveRefCode(null);
         }
       } catch (err) {
         console.error('Erro ao carregar loja:', err);
+        setStore(null);
+        setTires([]);
+        setReferralSeller(null);
+        setActiveRefCode(null);
       } finally {
+        setReferralLookupDone(true);
         setLoading(false);
       }
     };
 
     loadData();
-  }, [storeSlug, location.search, location.pathname]);
+  }, [storeSlug, referralCode]);
+
+  useEffect(() => {
+    if (!store?.id || loading || !referralLookupDone) return;
+    if (typeof window === 'undefined') return;
+
+    const visitorId = getOrCreateVisitorId();
+    const registrationKey = `${store.id}:${visitorId}`;
+    const sessionKey = `${VISIT_SESSION_PREFIX}:${registrationKey}`;
+    const now = Date.now();
+
+    try {
+      const lastRegisteredAt = Number(window.sessionStorage.getItem(sessionKey) || 0);
+      if (Number.isFinite(lastRegisteredAt) && lastRegisteredAt > 0 && now - lastRegisteredAt < VISIT_COOLDOWN_MS) {
+        visitRegistrationRef.current = { key: registrationKey, at: now };
+        return;
+      }
+    } catch {
+      // If sessionStorage is unavailable, rely on the RPC dedupe + in-memory guard.
+    }
+
+    if (
+      visitRegistrationRef.current.key === registrationKey &&
+      now - visitRegistrationRef.current.at < VISIT_COOLDOWN_MS
+    ) {
+      return;
+    }
+
+    visitRegistrationRef.current = { key: registrationKey, at: now };
+
+    const sellerId = referralSeller?.id || null;
+    const refCode = referralSeller?.ref_code || activeRefCode || referralCode || null;
+    const path = `${location.pathname}${location.search}`;
+    const userAgent = window.navigator?.userAgent || '';
+
+    let cancelled = false;
+
+    const registerVisit = async () => {
+      const registered = await storageService.registerReferralVisit({
+        storeId: store.id,
+        sellerId,
+        refCode,
+        visitorId,
+        path,
+        userAgent,
+      });
+
+      if (!cancelled && registered) {
+        try {
+          window.sessionStorage.setItem(sessionKey, String(Date.now()));
+        } catch {
+          // Ignore sessionStorage failures.
+        }
+      }
+
+      if (!registered) {
+        visitRegistrationRef.current = { key: '', at: 0 };
+      }
+    };
+
+    registerVisit().catch((error) => {
+      visitRegistrationRef.current = { key: '', at: 0 };
+      console.error('Erro ao registrar visita da vitrine:', error);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [store?.id, loading, referralLookupDone, referralSeller?.id, referralSeller?.ref_code, activeRefCode, referralCode, location.pathname, location.search]);
 
   const uniqueBrands = useMemo(
     () => [...new Set(tires.map((t) => t.marca).filter(Boolean))].sort(),

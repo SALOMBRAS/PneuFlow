@@ -13,14 +13,15 @@ fonte:
   - supabase/migrations/20260609_public_referral_seller.sql
   - supabase/migrations/20260609_seller_whatsapp.sql
   - supabase/migrations/20260612_delete_lead_rpc.sql
+  - supabase/migrations/20260615_store_referral_visits_visitor_tracking.sql
   - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
 atualizado: 2026-06-15
 tags: []
 ---
 
 > [!tldr]
-> Migrations confirmam multi-vendedor, leads atribuídos, referral, WhatsApp por vendedor e exclusão RPC de lead.
-> `store_referral_visits` e `registrar_visita_referral` existem no remoto confirmado, mas não aparecem nas migrations locais atuais.
+> Migrations confirmam multi-vendedor, leads atribuidos, referral, WhatsApp por vendedor e exclusao RPC de lead.
+> `store_referral_visits` e `registrar_visita_referral` agora tem migration local nova com `visitor_id`, `user_agent` e dedupe de 24h.
 
 # Migrations e RPCs
 
@@ -35,8 +36,9 @@ tags: []
 - `20260609_public_referral_seller.sql`
 - `20260609_seller_whatsapp.sql`
 - `20260612_delete_lead_rpc.sql`
+- `20260615_store_referral_visits_visitor_tracking.sql`
 
-## Funções/RPCs confirmadas
+## Funcoes/RPCs confirmadas
 
 - `get_leads_com_vendedor`
 - `atualizar_status_venda_lead`
@@ -47,24 +49,25 @@ tags: []
 - `get_public_referral_seller`
 - `get_referral_seller`
 - `excluir_lead`
+- `registrar_visita_referral`
 
-## Diferença remoto vs migrations locais
+## Diferenca remoto vs migrations locais
 
-O schema remoto confirmado contém tabela `store_referral_visits` e RPC `registrar_visita_referral(p_store_id uuid, p_ref_code text, p_path text DEFAULT NULL)`.
+A migration nova define `registrar_visita_referral(p_store_id uuid, p_seller_id uuid DEFAULT NULL, p_ref_code text DEFAULT NULL, p_visitor_id text DEFAULT NULL, p_path text DEFAULT NULL, p_user_agent text DEFAULT NULL)` e acrescenta `visitor_id`/`user_agent` em `store_referral_visits`.
 
-Esses itens são usados por `src/services/storage.js`, porém não foram localizados nos arquivos em `supabase/migrations/` durante esta auditoria. Tratar como divergência documental/repositório antes de recriar ou alterar migrations.
+Se o banco remoto ainda estiver sem essa evolucao, aplicar a migration nova no SQL Editor antes de depender das metricas de visualizacao por visitante.
 
-## Divergência em arquivo local
+## Divergencia em arquivo local
 
-`supabase/migrations/20260604_multi_seller_phase2.sql` não contém SQL executável: o arquivo guarda texto de uma tarefa/prompt sobre Leads de WhatsApp. Não usar esse arquivo como migration real sem limpeza prévia.
+`supabase/migrations/20260604_multi_seller_phase2.sql` nao contem SQL executavel: o arquivo guarda texto de uma tarefa/prompt sobre Leads de WhatsApp. Nao usar esse arquivo como migration real sem limpeza previa.
 
-## Políticas/RLS confirmadas
+## Polticas/RLS confirmadas
 
 - `store_members` tem RLS.
-- `pneus` tem políticas para vitrine pública e membros ativos.
-- `leads` tem políticas para owner/seller e insert público.
+- `pneus` tem politicas para vitrine publica e membros ativos.
+- `leads` tem politicas para owner/seller e insert publico.
 
 ## Cuidados
 
-- Alterações em RPCs podem afetar dashboard, vitrine pública e links de vendedor.
-- `excluir_lead` implementa exclusão direta e valida dono/owner ativo da loja.
+- Alteracoes em RPCs podem afetar dashboard, vitrine publica e links de vendedor.
+- `excluir_lead` implementa exclusao direta e valida dono/owner ativo da loja.

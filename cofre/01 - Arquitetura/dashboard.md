@@ -14,6 +14,7 @@ fonte:
   - src/pages/Dashboard/StoreSettings.jsx
   - src/pages/Dashboard/DashboardLayout.jsx
   - src/services/storage.js
+  - supabase/migrations/20260615_store_referral_visits_visitor_tracking.sql
   - cofre/01 - Arquitetura/mapa-de-impacto-geral.md
   - cofre/01 - Arquitetura/checklists-regressao.md
 atualizado: 2026-06-15
@@ -21,8 +22,8 @@ tags: []
 ---
 
 > [!tldr]
-> Dashboard é área autenticada com shell e páginas de home, catálogo, leads, vendedores e configurações.
-> Home exibe métricas comerciais somente leitura, ranking, leads recentes, pneus procurados e ações rápidas.
+> Dashboard e area autenticada com shell e paginas de home, catalogo, leads, vendedores e configuracoes.
+> Home exibe cards de pneus, leads, faturamento, visualizacoes e taxa de conversao calculada por `(leads / visualizacoes) * 100`.
 
 # Dashboard
 
@@ -40,41 +41,42 @@ tags: []
 
 As rotas filhas vivem sob `/dashboard` em `src/App.jsx`.
 
-## Áreas confirmadas
+## Areas confirmadas
 
-- Home/métricas comerciais.
-- Catálogo de pneus com upload de até 2 imagens por anúncio.
+- Home e metricas comerciais.
+- Catalogo de pneus com upload de ate 2 imagens por anuncio.
 - Leads de WhatsApp com status de venda.
 - Vendedores e convites/acesso.
-- Configurações da loja.
+- Configuracoes da loja.
 
-## Layout e navegação
+## Layout e navegacao
 
-`DashboardShell.jsx` renderiza `DashboardLayout` e mantém o `<Outlet />` das rotas filhas. `DashboardLayout.jsx` contém sidebar desktop/mobile, botão hambúrguer, backdrop, lock de rolagem no menu mobile, link "Ver Minha Vitrine" e ação "Sair do Painel".
+`DashboardShell.jsx` renderiza `DashboardLayout` e mantem o `<Outlet />` das rotas filhas. `DashboardLayout.jsx` contem sidebar desktop/mobile, botao hamburguer, backdrop, lock de rolagem no menu mobile, link "Ver Minha Vitrine" e acao "Sair do Painel".
 
 ## Dashboard Home
 
-`DashboardHome.jsx` usa `storageService.getDashboardMetrics(store.id)` para dados reais e somente leitura. A UI atual mantém cards pequenos no topo:
+`DashboardHome.jsx` usa `storageService.getDashboardCommercialMetrics(store.id)` para dados reais e somente leitura. A UI atual mantem cards pequenos no topo:
 
 - Total de Pneus.
 - Leads no WhatsApp.
 - Faturamento.
-- Visualizações.
+- Visualizacoes.
+- Taxa de conversao.
 
-Ao clicar em um card, abre painel de detalhe no desktop ou bottom sheet no mobile; clicar novamente no mesmo card fecha. Vendas confirmadas e taxa de conversão ficam nos detalhes, não como cards principais.
+Ao clicar em um card, abre painel de detalhe no desktop ou bottom sheet no mobile; clicar novamente no mesmo card fecha.
 
 Blocos abaixo dos cards:
 
 - Leads Recentes.
-- Ações Rápidas compacto abaixo de Leads Recentes.
+- Acoes Rapidas compacto abaixo de Leads Recentes.
 - Pneus Mais Procurados.
 - Ranking Comercial.
 
-## Métricas confirmadas
+## Metricas confirmadas
 
-`storageService.getDashboardMetrics` consulta `leads`, `pneus`, `store_members` e `store_referral_visits` filtrando pela loja atual. Usa `Promise.allSettled` e fallback para arrays vazios quando alguma query falha por RLS/permissão.
+`storageService.getDashboardCommercialMetrics` consulta `leads`, `pneus`, `store_members` e `store_referral_visits` filtrando pela loja atual. Usa `Promise.allSettled` e fallback para arrays vazios quando alguma query falha por RLS/permissao.
 
-O cálculo local em `DashboardHome.jsx` considera:
+O calculo local em `DashboardHome.jsx` considera:
 
 - leads totais;
 - vendas confirmadas por `venda_confirmada === true`;
@@ -82,12 +84,14 @@ O cálculo local em `DashboardHome.jsx` considera:
 - pneus ativos por `status === 'ativo'`;
 - estoque por `Number(estoque || 0)`;
 - ranking por `seller_id`, com fallback por `ref_code` e grupo "Sem vendedor";
-- conversão por vendedor: vendas confirmadas / visitas.
+- visualizacoes totais e visualizacoes de hoje vindas de `store_referral_visits`;
+- conversao geral por `(leads / visualizacoes) * 100`;
+- conversao por vendedor por `(leads / visualizacoes) * 100`.
 
-## Não mapeado ainda
+## Nao mapeado ainda
 
 As regras gerais e fluxos principais de `Catalog`, `Sellers`, `Leads` e `StoreSettings` foram consolidados em [[fluxos-principais]] e [[inventario-funcoes-componentes]].
 
-## Dívida visual confirmada
+## Dica visual confirmada
 
-`DashboardHome.jsx` ainda contém classes CSS antigas de accordion dentro do bloco `<style>`, mesmo com a UI atual em cards pequenos + painel/bottom sheet. Isso não deve ser removido junto de tarefas funcionais; tratar em limpeza visual isolada.
+`DashboardHome.jsx` ainda pode manter CSS legado de accordion em tarefas antigas. Nao remover esse CSS junto de mudancas funcionais sem teste visual do dashboard.

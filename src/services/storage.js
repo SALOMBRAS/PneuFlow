@@ -212,11 +212,14 @@ export const storageService = {
     return Array.isArray(data) ? data[0] || null : data;
   },
 
-  registerReferralVisit: async (storeId, refCode, path) => {
+  registerReferralVisit: async ({ storeId, sellerId = null, refCode = null, visitorId, path = null, userAgent = null }) => {
     const { error } = await supabase.rpc('registrar_visita_referral', {
       p_store_id: storeId,
+      p_seller_id: sellerId,
       p_ref_code: refCode,
-      p_path: path
+      p_visitor_id: visitorId,
+      p_path: path,
+      p_user_agent: userAgent
     });
     
     if (error) console.error('Erro ao registrar visita referral RPC:', error);
@@ -581,7 +584,7 @@ export const storageService = {
         .eq('store_id', storeId),
       visits: supabase
         .from('store_referral_visits')
-        .select('id, store_id, seller_id, ref_code, path, created_at')
+        .select('id, store_id, seller_id, ref_code, visitor_id, user_agent, path, created_at')
         .eq('store_id', storeId)
     };
 

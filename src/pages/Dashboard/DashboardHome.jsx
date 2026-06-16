@@ -27,6 +27,7 @@ const emptyCommercialMetrics = {
   activeTires: 0,
   totalStock: 0,
   totalVisits: 0,
+  totalVisitsToday: 0,
   overallConversionRate: 0,
   sellerRanking: [],
   partialErrors: []
@@ -44,6 +45,19 @@ const formatPercent = (value) => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 1
   });
+};
+
+const isSameCalendarDay = (dateValueA, dateValueB = new Date()) => {
+  if (!dateValueA) return false;
+
+  const a = new Date(dateValueA);
+  const b = new Date(dateValueB);
+
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 };
 
 const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits = [] }) => {
@@ -120,7 +134,7 @@ const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits =
   const sellerRanking = Array.from(ranking.values())
     .map((entry) => ({
       ...entry,
-      conversionRate: entry.visits > 0 ? (entry.sales / entry.visits) * 100 : 0
+      conversionRate: entry.visits > 0 ? (entry.leads / entry.visits) * 100 : 0
     }))
     .sort((a, b) => {
       if (b.sales !== a.sales) return b.sales - a.sales;
@@ -130,6 +144,7 @@ const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits =
 
   const confirmedSales = leads.filter((lead) => lead.venda_confirmada === true);
   const totalVisits = visits.length;
+  const totalVisitsToday = visits.filter((visit) => isSameCalendarDay(visit.created_at)).length;
 
   return {
     totalLeads: leads.length,
@@ -139,7 +154,8 @@ const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits =
     activeTires: pneus.filter((pneu) => pneu.status === 'ativo').length,
     totalStock: pneus.reduce((sum, pneu) => sum + Number(pneu.estoque || 0), 0),
     totalVisits,
-    overallConversionRate: totalVisits > 0 ? (confirmedSales.length / totalVisits) * 100 : 0,
+    totalVisitsToday,
+    overallConversionRate: totalVisits > 0 ? (leads.length / totalVisits) * 100 : 0,
     sellerRanking,
     partialErrors: []
   };
@@ -346,9 +362,9 @@ export default function DashboardHome() {
       tone: 'primary',
       details: [
         { label: 'Valor total confirmado', value: formatCurrency(commercialMetrics.confirmedRevenue) },
-        { label: 'Vendas consideradas', value: commercialMetrics.totalSales },
+        { label: 'Leads gerados', value: commercialMetrics.totalLeads },
         { label: 'Taxa de conversão', value: `${conversionRate}%` },
-        { label: 'Fórmula', value: 'vendas / visualizações' }
+        { label: 'Fórmula', value: '(leads / visualizações) * 100' }
       ],
       note: 'Soma de produto_preco em vendas confirmadas.'
     },
@@ -356,31 +372,34 @@ export default function DashboardHome() {
       id: 'visits',
       label: 'Visualizações',
       value: visits,
-      helper: 'Visitas por indicação/referral',
+      helper: 'Vitrine pública e referral',
       icon: <Eye size={20} />,
       tone: 'blue',
       details: [
         { label: 'Total de visitas', value: visits },
+        { label: 'Visualizações hoje', value: commercialMetrics.totalVisitsToday },
         { label: 'Melhor vendedor', value: bestSeller?.name || 'Sem dados' },
         { label: 'Ranking resumido', value: bestSeller ? `${bestSeller.sales} vendas • ${bestSeller.leads} leads` : 'Sem dados' },
         { label: 'Conversão por vendedor', value: topSellerConversion ? `${topSellerConversion.name}: ${formatPercent(topSellerConversion.conversionRate)}%` : 'Sem dados' }
       ],
-      note: 'Visualizações registradas por links de indicação.'
+      note: 'Visualizações registradas na vitrine pública, com dedupe por visitante e janela de 24 horas.'
     },
     {
       id: 'conversion',
       label: 'Taxa de conversão',
       value: `${conversionRate}%`,
-      helper: 'Vendas confirmadas por visitas',
+      helper: 'Leads por visualizações',
       icon: <Percent size={20} />,
       tone: 'purple',
       details: [
         { label: 'Conversão geral', value: `${conversionRate}%` },
-        { label: 'Fórmula', value: 'vendas / visualizações' }
+        { label: 'Leads', value: commercialMetrics.totalLeads },
+        { label: 'Visualizações', value: visits },
+        { label: 'Fórmula', value: '(leads / visualizações) * 100' }
       ],
       note: 'Se não houver visualizações, a conversão será 0%.'
     }
-  ].filter((metric) => !['sales', 'conversion'].includes(metric.id));
+  ].filter((metric) => metric.id !== 'sales');
   const activeMetric = selectedMetric ? metricCards.find((metric) => metric.id === selectedMetric) : null;
 
   const closeMetricDetail = () => {

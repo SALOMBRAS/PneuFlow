@@ -9,34 +9,35 @@ fonte:
   - api/index.js
   - src/pages/Dashboard/DashboardHome.jsx
   - supabase/migrations/20260604_multi_seller_phase2.sql
+  - supabase/migrations/20260615_store_referral_visits_visitor_tracking.sql
   - src/services/storage.js
   - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
 atualizado: 2026-06-15
 prioridade: media
 esforco: medio
-situacao: divergencias documentadas; nenhuma correcao aplicada nesta auditoria
+situacao: divergencias documentadas; migration nova criada para visitor tracking, mas a confirmacao remota ainda precisa ser aplicada manualmente no Supabase
 tags: []
 ---
 
 > [!tldr]
-> Existem divergências/documentações legadas que podem confundir manutenção futura.
-> Não são bloqueios imediatos, mas devem ser tratados antes de mexer em banco, dashboard ou backend legado.
+> Existem divergencias/documentacoes legadas que podem confundir manutencao futura.
+> Nao sao bloqueios imediatos, mas devem ser tratados antes de mexer em banco, dashboard ou backend legado.
 
-# Divergências Entre Cofre, Código e Histórico
+# Divergencias Entre Cofre, Codigo e Historico
 
 ## 1. `AGENTS.md` cita template AIOX
 
-`AGENTS.md` contém blocos de um projeto/template AIOX com diretórios como `.aiox-core`, `packages`, `tests` e comandos que não representam o app PneuFlow atual.
+`AGENTS.md` contem blocos de um projeto/template AIOX com diretorios como `.aiox-core`, `packages`, `tests` e comandos que nao representam o app PneuFlow atual.
 
-O mesmo arquivo também contém a seção correta do Cofre de Contexto.
+O mesmo arquivo tambem contem a secao correta do Cofre de Contexto.
 
 Risco:
 
-- Um agente pode tentar seguir comandos/diretórios inexistentes.
+- Um agente pode tentar seguir comandos/diretorios inexistentes.
 
-Recomendação futura:
+Recomendacao futura:
 
-- Ajustar `AGENTS.md` para refletir PneuFlow, mantendo a seção do Cofre.
+- Ajustar `AGENTS.md` para refletir PneuFlow, mantendo a secao do Cofre.
 
 ## 2. Backend mock legado convive com Supabase real
 
@@ -49,68 +50,66 @@ Eles implementam uma API mock com `database.json` e entidades `users`, `stores`,
 
 Risco:
 
-- Confundir manutenção e documentação por haver dois modelos de dados (`tires` legado vs `pneus` real).
+- Confundir manutencao e documentacao por haver dois modelos de dados (`tires` legado vs `pneus` real).
 
-Recomendação futura:
+Recomendacao futura:
 
-- Manter documentado como legado/fallback ou remover em uma tarefa própria se o projeto ficar 100% Supabase.
+- Manter documentado como legado/fallback ou remover em uma tarefa propria se o projeto ficar 100% Supabase.
 
-## 3. Migration com conteúdo não SQL
+## 3. Migration com conteudo nao SQL
 
 Arquivo confirmado:
 
 - `supabase/migrations/20260604_multi_seller_phase2.sql`
 
-O arquivo contém texto de prompt/tarefa em português, não SQL executável.
+O arquivo contem texto de prompt/tarefa em portugues, nao SQL executavel.
 
 Risco:
 
-- Rodar migrations locais completas pode falhar ou aplicar um histórico incompleto.
+- Rodar migrations locais completas pode falhar ou aplicar um historico incompleto.
 
-Recomendação futura:
+Recomendacao futura:
 
-- Separar instrução humana de migration SQL real antes de usar Supabase CLI/migrations em ambiente novo.
+- Separar instrucao humana de migration SQL real antes de usar Supabase CLI/migrations em ambiente novo.
 
-## 4. Schema remoto tem itens ausentes nas migrations locais
+## 4. Visitor tracking local novo ainda depende de aplicacao manual no remoto
 
-Confirmado no schema remoto informado pelo usuário:
+Arquivos:
 
-- tabela `store_referral_visits`;
-- RPC `registrar_visita_referral`.
+- `supabase/migrations/20260615_store_referral_visits_visitor_tracking.sql`
+- `src/services/storage.js`
+- `src/pages/StoreFront/StoreHome.jsx`
 
-Usos no código:
-
-- `storageService.registerReferralVisit`;
-- `storageService.getDashboardCommercialMetrics`.
+A base local agora tem migration nova para `visitor_id`, `user_agent` e a RPC `registrar_visita_referral` com dedupe de 24 horas.
 
 Risco:
 
-- Ambiente novo criado apenas pelas migrations locais pode não ter métricas de visualizações/referral.
+- Se o banco remoto nao receber essa migration, a vitrine pode tentar gravar com assinatura nova antes do schema estar pronto.
 
-Recomendação futura:
+Recomendacao futura:
 
-- Criar migration dedicada somente após validar o banco remoto e a assinatura real.
+- Aplicar a migration nova no Supabase SQL Editor e validar a assinatura da RPC no banco remoto.
 
 ## 5. Estilos antigos de accordion permanecem em `DashboardHome.jsx`
 
-`DashboardHome.jsx` voltou para UI de cards pequenos com painel/bottom sheet, mas o bloco `<style>` ainda contém classes antigas de accordion (`dashboard-accordion-*`, `dashboard-section-grid`, etc.).
+`DashboardHome.jsx` voltou para UI de cards pequenos com painel/bottom sheet, mas o bloco `<style>` ainda contem classes antigas de accordion (`dashboard-accordion-*`, `dashboard-section-grid`, etc.).
 
 Risco:
 
-- Baixo no runtime, mas aumenta ruído e chance de conflito visual futuro.
+- Baixo no runtime, mas aumenta ruido e chance de conflito visual futuro.
 
-Recomendação futura:
+Recomendacao futura:
 
 - Remover CSS morto em tarefa isolada, com teste visual do dashboard.
 
-## 6. `CONTEXTO_CODEX.md` está parcialmente antigo
+## 6. `CONTEXTO_CODEX.md` esta parcialmente antigo
 
-O arquivo é útil como histórico, mas cita `VITE_SUPABASE_ANON_KEY` em vez de `VITE_SUPABASE_PUBLISHABLE_KEY` usado em `src/lib/supabase.js`.
+O arquivo e util como historico, mas cita `VITE_SUPABASE_ANON_KEY` em vez de `VITE_SUPABASE_PUBLISHABLE_KEY` usado em `src/lib/supabase.js`.
 
 Risco:
 
-- Configuração errada por copiar variável antiga.
+- Configuracao errada por copiar variavel antiga.
 
-Recomendação futura:
+Recomendacao futura:
 
 - Atualizar ou arquivar `CONTEXTO_CODEX.md`.

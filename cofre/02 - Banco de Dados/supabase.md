@@ -10,6 +10,7 @@ fonte:
   - supabase/migrations/20260609_public_referral_seller.sql
   - supabase/migrations/20260609_seller_whatsapp.sql
   - supabase/migrations/20260612_delete_lead_rpc.sql
+  - supabase/migrations/20260615_store_referral_visits_visitor_tracking.sql
   - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
 atualizado: 2026-06-15
 tags: []
@@ -21,20 +22,20 @@ tags: []
 
 # Supabase
 
-## Configuração frontend
+## Configuracao frontend
 
 `src/lib/supabase.js` usa:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-## Tabelas confirmadas por código/migrations
+## Tabelas confirmadas por codigo/migrations
 
 - `stores`
 - `store_members`
 - `pneus`
 - `leads`
-- `store_referral_visits` foi confirmado no schema remoto e usado pelo código, mas não está representado em migration local atual.
+- `store_referral_visits`
 
 ## Campos confirmados relevantes
 
@@ -76,6 +77,8 @@ tags: []
 - `seller_id`
 - `ref_code`
 - `path`
+- `visitor_id`
+- `user_agent`
 - `created_at`
 
 ## Edge functions confirmadas no frontend
@@ -92,10 +95,10 @@ tags: []
 - `get_referral_seller`
 - `registrar_visita_referral`
 
-`registrar_visita_referral` é chamada em `storage.js` e foi confirmada no schema remoto informado, mas não foi localizada nas migrations locais atuais.
+`registrar_visita_referral` e chamada em `storage.js` com `store_id`, `seller_id`, `ref_code`, `visitor_id`, `path` e `user_agent`.
 
-## Regras de segurança
+## Regras de seguranca
 
-- Não usar service role no frontend.
-- Não copiar valores de `.env` para notas.
+- Nao usar service role no frontend.
+- Nao copiar valores de `.env` para notas.
 - Confirmar impacto antes de alterar RLS/policies.

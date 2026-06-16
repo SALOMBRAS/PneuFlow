@@ -19,18 +19,18 @@ tags: []
 ---
 
 > [!tldr]
-> Use estes checklists para validar mudanças sem testar o projeto inteiro toda vez.
+> Use estes checklists para validar mudancas sem testar o projeto inteiro toda vez.
 > Se mexer em `storage.js`, rode o checklist da tela consumidora e um build.
 
-# Checklists de Regressão
+# Checklists de Regressao
 
-## Base obrigatória para qualquer mudança de UI
+## Base obrigatoria para qualquer mudanca de UI
 
 - Abrir em desktop e mobile.
-- Conferir 340px, 360px, 390px, 412px quando a mudança for mobile.
-- Confirmar ausência de scroll horizontal.
-- Conferir foco/teclado em botões e modais alterados.
-- Executar `npm run build` quando houver alteração de código-fonte.
+- Conferir 340px, 360px, 390px, 412px quando a mudanca for mobile.
+- Confirmar ausencia de scroll horizontal.
+- Conferir foco/teclado em botoes e modais alterados.
+- Executar `npm run build` quando houver alteracao de codigo-fonte.
 
 ## Landing page
 
@@ -39,105 +39,109 @@ tags: []
 - Header mostra login e CTA.
 - Demo interativa troca abas e filtros sem Supabase.
 - FAQ abre/fecha.
-- Footer mantém link `/privacidade`.
-- CardSwap não quebra mobile.
+- Footer mantem link `/privacidade`.
+- CardSwap nao quebra mobile.
 
 ## Cadastro e privacidade
 
-- Tentar cadastrar sem aceite mostra erro amigável.
-- Abrir modal de termos não limpa campos preenchidos.
-- Botão "Li e aceito" só habilita após rolar até o final.
-- Fechar modal sem aceitar mantém aceite desmarcado.
+- Tentar cadastrar sem aceite mostra erro amigavel.
+- Abrir modal de termos nao limpa campos preenchidos.
+- Botao "Li e aceito" so habilita apos rolar ate o final.
+- Fechar modal sem aceitar mantem aceite desmarcado.
 - Aceitar marca estado visual e libera envio.
 - `/privacidade` abre independente de login.
 
-## Login/sessão
+## Login/sessao
 
-- Login inválido mostra erro.
-- Login válido navega para `/dashboard`.
-- "Lembrar-me" salva preferência e e-mail.
-- Logout limpa sessão e volta para `/login`.
+- Login invalido mostra erro.
+- Login valido navega para `/dashboard`.
+- "Lembrar-me" salva preferencia e e-mail.
+- Logout limpa sessao e volta para `/login`.
 
 ## Dashboard layout
 
-- Sidebar desktop permanece visível durante scroll.
+- Sidebar desktop permanece visivel durante scroll.
 - Footer da sidebar mostra "Ver Minha Vitrine" e "Sair do Painel".
-- Conteúdo principal não some.
-- Menu mobile abre/fecha, trava fundo e não corta logout.
-- Vendedor não acessa rotas de owner.
+- Conteudo principal nao some.
+- Menu mobile abre/fecha, trava fundo e nao corta logout.
+- Vendedor nao acessa rotas de owner.
 
 ## Dashboard Home
 
-- Cards principais: Total de Pneus, Leads no WhatsApp, Faturamento, Visualizações.
+- Cards principais: Total de Pneus, Leads no WhatsApp, Faturamento, Visualizacoes e Taxa de conversao.
 - Clique no card abre detalhe; clique no mesmo card fecha.
 - Desktop usa painel abaixo dos cards.
 - Mobile usa bottom sheet.
 - Dados vazios mostram zero.
-- Ranking comercial não quebra com seller/ref ausente.
-- Ações rápidas aparecem abaixo de Leads Recentes.
+- Ranking comercial nao quebra com seller/ref ausente.
+- Acoes rapidas aparecem abaixo de Leads Recentes.
+- Visualizacoes totais e de hoje batem com `store_referral_visits`.
+- Conversao usa `(leads / visualizacoes) * 100`, nao vendas/visualizacoes.
 
-## Catálogo
+## Catalogo
 
 - Listar pneus da loja atual.
 - Buscar por marca/modelo/medida.
 - Filtrar por marca.
-- Criar pneu com campos obrigatórios.
+- Criar pneu com campos obrigatorios.
 - Editar pneu.
 - Owner exclui pneu.
-- Seller visualiza anúncios da loja.
+- Seller visualiza anuncios da loja.
 - Upload respeita limite de 2 fotos.
-- Foto principal e remoção funcionam.
+- Foto principal e remocao funcionam.
 
 ## Upload
 
 - PNG/JPG/WEBP funcionam no upload de pneu.
-- HEIC/HEIF converte ou mostra erro amigável.
-- Arquivos inválidos mostram erro.
+- HEIC/HEIF converte ou mostra erro amigavel.
+- Arquivos invalidos mostram erro.
 - Logo da loja aceita imagem abaixo de 2MB.
-- Preview não estoura largura.
+- Preview nao estoura largura.
 
 ## Leads
 
 - Lista carrega por loja.
 - Busca por cliente, produto e vendedor.
-- Paginação funciona.
+- Paginacao funciona.
 - Confirmar venda muda status.
-- Desfazer venda remove confirmação.
-- Excluir lead pede confirmação e atualiza lista.
-- Vendedor só vê o permitido por RLS/RPC.
+- Desfazer venda remove confirmacao.
+- Excluir lead pede confirmacao e atualiza lista.
+- Vendedor so ve o permitido por RLS/RPC.
 
 ## Vendedores
 
-- Criar vendedor com nome, e-mail e senha válida.
-- Ref code é exibido e pode ser editado.
+- Criar vendedor com nome, e-mail e senha valida.
+- Ref code e exibido e pode ser editado.
 - WhatsApp do vendedor salva normalizado.
 - Link da vitrine com `?ref=` abre.
 - Desativar, reativar e remover acesso funcionam.
-- Vendedor removido/inativo não deve receber referral válido.
+- Vendedor removido/inativo nao deve receber referral valido.
 
-## Configurações
+## Configuracoes
 
 - Salvar nome da loja.
-- Salvar WhatsApp válido.
-- Salvar endereço/cidade/UF.
+- Salvar WhatsApp valido.
+- Salvar endereco/cidade/UF.
 - Salvar tipo de vitrine.
 - Upload de logo.
-- Botão "Visualizar Vitrine" abre `/store/:slug`.
+- Botao "Visualizar Vitrine" abre `/store/:slug`.
 
-## Vitrine pública
+## Vitrine publica
 
 - Abrir `/store/:slug` sem login.
 - Abrir sem ref usa WhatsApp da loja.
-- Abrir com `?ref=` válido usa WhatsApp do vendedor.
-- Abrir com ref inválido usa WhatsApp da loja.
+- Abrir com `?ref=` valido usa WhatsApp do vendedor.
+- Abrir com ref invalido usa WhatsApp da loja.
+- Recarregar a vitrine no mesmo dia nao deve gerar nova visualizacao.
+- Abrir no dia seguinte deve gerar nova visualizacao.
 - Filtros por medida, marca, estoque e tipo funcionam.
-- Busca por veículo aplica/limpa.
-- Card destaque não corta botão/preço em mobile.
+- Busca por veiculo aplica/limpa.
+- Card destaque nao corta botao/preco em mobile.
 - Lead gerado aparece no dashboard.
 
 ## Supabase/RPC
 
-- Não executar SQL sem comparar remoto/local.
+- Nao executar SQL sem comparar remoto/local.
 - Validar assinatura de RPC antes de alterar payload.
-- Se RLS falhar em métrica parcial, dashboard deve seguir funcionando.
+- Se RLS falhar em metrica parcial, dashboard deve seguir funcionando.
 - Nunca colocar service role no frontend.
