@@ -28,8 +28,8 @@ tags: []
 ---
 
 > [!tldr]
-> Cofre sincronizado do PneuFlow para reduzir leitura repetida do repositório.
-> Comece por mapas gerais, depois abra apenas notas ativas da área relacionada.
+> Cofre sincronizado do PneuFlow para reduzir leitura repetida do repositÃ³rio.
+> Comece por mapas gerais, depois abra apenas notas ativas da Ã¡rea relacionada.
 
 # Indice do Cofre
 
@@ -41,11 +41,11 @@ tags: []
 ## Arquitetura
 
 - [[../01 - Arquitetura/mapa-de-impacto-geral|Mapa de impacto geral]]
-- [[../01 - Arquitetura/dependencias-compartilhadas|Dependências compartilhadas]]
+- [[../01 - Arquitetura/dependencias-compartilhadas|DependÃªncias compartilhadas]]
 - [[../01 - Arquitetura/mapa-rotas-telas|Mapa de rotas e telas]]
 - [[../01 - Arquitetura/fluxos-principais|Fluxos principais]]
-- [[../01 - Arquitetura/inventario-funcoes-componentes|Inventário de funções e componentes]]
-- [[../01 - Arquitetura/checklists-regressao|Checklists de regressão]]
+- [[../01 - Arquitetura/inventario-funcoes-componentes|InventÃ¡rio de funÃ§Ãµes e componentes]]
+- [[../01 - Arquitetura/checklists-regressao|Checklists de regressÃ£o]]
 - [[../01 - Arquitetura/frontend-rotas-react|Frontend e rotas React]]
 - [[../01 - Arquitetura/auth-store-context|Auth e contexto da loja]]
 - [[../01 - Arquitetura/dashboard|Dashboard]]
@@ -62,8 +62,8 @@ tags: []
 
 ## Dividas tecnicas em rascunho
 
-- [[../05 - Dívidas Técnicas/migrations-com-conteudo-nao-sql|Hipotese de migration com conteudo nao SQL]]
-- [[../05 - Dívidas Técnicas/divergencias-cofre-codigo|Divergencias entre cofre, codigo e historico]]
+- [[../05 - DÃ­vidas TÃ©cnicas/migrations-com-conteudo-nao-sql|Hipotese de migration com conteudo nao SQL]]
+- [[../05 - DÃ­vidas TÃ©cnicas/divergencias-cofre-codigo|Divergencias entre cofre, codigo e historico]]
 
 ## Protocolo
 

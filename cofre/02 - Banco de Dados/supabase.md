@@ -6,13 +6,14 @@ tokens: medio
 fonte:
   - src/lib/supabase.js
   - src/services/storage.js
-  - supabase/migrations/20260604_multi_seller_phase1.sql
-  - supabase/migrations/20260609_public_referral_seller.sql
-  - supabase/migrations/20260609_seller_whatsapp.sql
-  - supabase/migrations/20260612_delete_lead_rpc.sql
-  - supabase/migrations/20260615_store_referral_visits_visitor_tracking.sql
+  - supabase/migrations/20260604092000_multi_seller_phase1.sql
+  - supabase/migrations/20260609091000_public_referral_seller.sql
+  - supabase/migrations/20260609092000_seller_whatsapp.sql
+  - supabase/migrations/20260612090000_delete_lead_rpc.sql
+  - supabase/migrations/20260615090000_store_referral_visits_visitor_tracking.sql
+  - supabase/migrations/20260618172000_store_subscription_trial.sql
   - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
-atualizado: 2026-06-15
+atualizado: 2026-06-18
 tags: []
 ---
 
@@ -36,6 +37,16 @@ tags: []
 - `pneus`
 - `leads`
 - `store_referral_visits`
+
+## Campos de assinatura em `stores`
+
+- `subscription_status`
+- `trial_started_at`
+- `trial_ends_at`
+- `subscription_started_at`
+- `current_period_end`
+- `payment_provider`
+- `payment_subscription_id`
 
 ## Campos confirmados relevantes
 

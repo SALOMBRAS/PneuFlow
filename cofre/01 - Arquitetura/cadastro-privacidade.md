@@ -16,34 +16,34 @@ tags: []
 
 > [!tldr]
 > Cadastro exige aceite frontend de Termos/Privacidade por modal local.
-> A página pública `/privacidade` existe e não há persistência do aceite no banco.
+> A pÃ¡gina pÃºblica `/privacidade` existe e nÃ£o hÃ¡ persistÃªncia do aceite no banco.
 
 # Cadastro e Privacidade
 
-## Rota pública
+## Rota pÃºblica
 
 `src/App.jsx` define `/privacidade` apontando para `src/pages/PrivacyPolicy.jsx`.
 
-O footer da landing aponta para essa rota por link "Política de Privacidade".
+O footer da landing aponta para essa rota por link "PolÃ­tica de Privacidade".
 
-## Página de privacidade
+## PÃ¡gina de privacidade
 
-`PrivacyPolicy.jsx` é página pública estática. O texto diferencia:
+`PrivacyPolicy.jsx` Ã© pÃ¡gina pÃºblica estÃ¡tica. O texto diferencia:
 
 - PneuFlow como controlador para dados da conta da loja.
 - Loja como controladora e PneuFlow como operador para dados do cliente final tratados em nome da loja.
 - WhatsApp transacional separado de marketing.
-- Fornecedores citados: Vercel, Supabase e WhatsApp/Meta quando aplicável.
+- Fornecedores citados: Vercel, Supabase e WhatsApp/Meta quando aplicÃ¡vel.
 
 ## Aceite no cadastro
 
-`Register.jsx` mantém:
+`Register.jsx` mantÃ©m:
 
 - `acceptedPolicies`
 - `termsModalOpen`
-- validação que bloqueia envio com mensagem amigável se o aceite não foi confirmado.
+- validaÃ§Ã£o que bloqueia envio com mensagem amigÃ¡vel se o aceite nÃ£o foi confirmado.
 
-O usuário não é redirecionado durante o cadastro; o modal abre sobre o formulário e preserva campos preenchidos.
+O usuÃ¡rio nÃ£o Ã© redirecionado durante o cadastro; o modal abre sobre o formulÃ¡rio e preserva campos preenchidos.
 
 ## Modal
 
@@ -51,14 +51,14 @@ O usuário não é redirecionado durante o cadastro; o modal abre sobre o formul
 
 - usa `role="dialog"` e `aria-modal="true"`;
 - tem overlay escuro;
-- tem conteúdo resumido com rolagem interna;
-- habilita "Li e aceito" somente após rolar até o final;
+- tem conteÃºdo resumido com rolagem interna;
+- habilita "Li e aceito" somente apÃ³s rolar atÃ© o final;
 - fecha sem aceitar mantendo `acceptedPolicies` falso;
 - ao aceitar, fecha e marca o estado visual "Termos aceitos".
 
 ## Limites confirmados
 
-- Não altera Supabase Auth.
-- Não cria tabela ou coluna de aceite.
-- Não registra `terms_accepted_at`, versão de política ou user agent.
-- Não cria checkbox obrigatório de marketing.
+- NÃ£o altera Supabase Auth.
+- NÃ£o cria tabela ou coluna de aceite.
+- NÃ£o registra `terms_accepted_at`, versÃ£o de polÃ­tica ou user agent.
+- NÃ£o cria checkbox obrigatÃ³rio de marketing.

@@ -13,11 +13,13 @@ fonte:
   - src/pages/Dashboard/Sellers.jsx
   - src/pages/Dashboard/StoreSettings.jsx
   - src/pages/Dashboard/DashboardLayout.jsx
+  - src/pages/Subscription.jsx
+  - src/utils/subscriptionAccess.js
   - src/services/storage.js
-  - supabase/migrations/20260615_store_referral_visits_visitor_tracking.sql
+  - supabase/migrations/20260615090000_store_referral_visits_visitor_tracking.sql
   - cofre/01 - Arquitetura/mapa-de-impacto-geral.md
   - cofre/01 - Arquitetura/checklists-regressao.md
-atualizado: 2026-06-15
+atualizado: 2026-06-18
 tags: []
 ---
 
@@ -52,6 +54,7 @@ As rotas filhas vivem sob `/dashboard` em `src/App.jsx`.
 ## Layout e navegacao
 
 `DashboardShell.jsx` renderiza `DashboardLayout` e mantem o `<Outlet />` das rotas filhas. `DashboardLayout.jsx` contem sidebar desktop/mobile, botao hamburguer, backdrop, lock de rolagem no menu mobile, link "Ver Minha Vitrine" e acao "Sair do Painel".
+`DashboardLayout.jsx` tambem centraliza aviso de trial e bloqueio do painel quando `subscriptionAccess.hasStoreAccess` e falso.
 
 ## Dashboard Home
 

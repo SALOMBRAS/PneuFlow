@@ -10,24 +10,24 @@ tags: []
 ---
 
 > [!tldr]
-> Protocolo operacional do Cofre de Contexto para reduzir leitura repetida de código.
-> A ordem padrão é índice, TL;DR, nota, fontes e só depois busca pontual no código.
+> Protocolo operacional do Cofre de Contexto para reduzir leitura repetida de cÃ³digo.
+> A ordem padrÃ£o Ã© Ã­ndice, TL;DR, nota, fontes e sÃ³ depois busca pontual no cÃ³digo.
 
 # Protocolo do Cofre de Contexto
 
 ## Objetivo
 
-Reduzir consumo de tokens em tarefas futuras do Codex por meio de notas densas, verificáveis e atualizadas sobre contexto, arquitetura, banco, decisões, aprendizados e dívidas técnicas.
+Reduzir consumo de tokens em tarefas futuras do Codex por meio de notas densas, verificÃ¡veis e atualizadas sobre contexto, arquitetura, banco, decisÃµes, aprendizados e dÃ­vidas tÃ©cnicas.
 
-## Ordem obrigatória antes de análise ampla
+## Ordem obrigatÃ³ria antes de anÃ¡lise ampla
 
 1. Ler `cofre/00 - Contexto/_INDICE.md`.
 2. Consultar primeiro notas com `status: ativo`.
-3. Seguir a escada de custo: índice -> TL;DR -> nota inteira -> arquivos em `fonte:` -> busca pontual no código.
-4. Ler código apenas quando a nota for inexistente, insuficiente ou desatualizada.
-5. Não começar tarefas com `grep`, `rg` ou busca global, salvo pedido explícito de varredura.
-6. Quando o código for consultado por desatualização ou lacuna, corrigir a nota correspondente.
-7. Não copiar segredos, tokens, senhas, chaves, URLs privadas sensíveis ou valores de `.env`.
+3. Seguir a escada de custo: Ã­ndice -> TL;DR -> nota inteira -> arquivos em `fonte:` -> busca pontual no cÃ³digo.
+4. Ler cÃ³digo apenas quando a nota for inexistente, insuficiente ou desatualizada.
+5. NÃ£o comeÃ§ar tarefas com `grep`, `rg` ou busca global, salvo pedido explÃ­cito de varredura.
+6. Quando o cÃ³digo for consultado por desatualizaÃ§Ã£o ou lacuna, corrigir a nota correspondente.
+7. NÃ£o copiar segredos, tokens, senhas, chaves, URLs privadas sensÃ­veis ou valores de `.env`.
 
 ## Escada de custo
 
@@ -35,27 +35,27 @@ Reduzir consumo de tokens em tarefas futuras do Codex por meio de notas densas, 
 2. Callout `> [!tldr]`
 3. Nota inteira
 4. Arquivos listados em `fonte:`
-5. Busca pontual em código relacionado
-6. Busca mais ampla somente se o usuário pedir ou se as etapas anteriores forem insuficientes
+5. Busca pontual em cÃ³digo relacionado
+6. Busca mais ampla somente se o usuÃ¡rio pedir ou se as etapas anteriores forem insuficientes
 
 ## Status das notas
 
-- `ativo`: confiável para uso imediato.
-- `rascunho`: útil, mas incompleto ou pendente de confirmação.
-- `desatualizado`: não usar sem confirmar no código.
-- `arquivado`: histórico.
+- `ativo`: confiÃ¡vel para uso imediato.
+- `rascunho`: Ãºtil, mas incompleto ou pendente de confirmaÃ§Ã£o.
+- `desatualizado`: nÃ£o usar sem confirmar no cÃ³digo.
+- `arquivado`: histÃ³rico.
 
-## Política de leitura de código
+## PolÃ­tica de leitura de cÃ³digo
 
 - Comece por notas do cofre.
-- Leia somente arquivos diretamente relacionados à tarefa.
+- Leia somente arquivos diretamente relacionados Ã  tarefa.
 - Evite busca global indiscriminada.
-- Prefira pontos de entrada, configs e módulos de fronteira.
-- Não transcreva grandes blocos de código para notas.
-- Registre contratos, decisões, caminhos e conclusões.
-- Priorize densidade maior que completude: a nota deve economizar leitura, não substituir o repositório.
+- Prefira pontos de entrada, configs e mÃ³dulos de fronteira.
+- NÃ£o transcreva grandes blocos de cÃ³digo para notas.
+- Registre contratos, decisÃµes, caminhos e conclusÃµes.
+- Priorize densidade maior que completude: a nota deve economizar leitura, nÃ£o substituir o repositÃ³rio.
 
-## Frontmatter obrigatório
+## Frontmatter obrigatÃ³rio
 
 Toda nota Markdown deve ter frontmatter:
 
@@ -72,7 +72,7 @@ tags: []
 ---
 ```
 
-`fonte:` deve apontar para arquivos existentes ou ser uma lista vazia (`fonte: []`). Não apontar para diretórios como se fossem arquivos.
+`fonte:` deve apontar para arquivos existentes ou ser uma lista vazia (`fonte: []`). NÃ£o apontar para diretÃ³rios como se fossem arquivos.
 
 ## Campos adicionais por tipo
 
@@ -82,25 +82,25 @@ tags: []
 
 ## TL;DR
 
-Logo após o frontmatter, iniciar com:
+Logo apÃ³s o frontmatter, iniciar com:
 
 ```markdown
 > [!tldr]
-> Resumo conclusivo de no máximo três linhas.
+> Resumo conclusivo de no mÃ¡ximo trÃªs linhas.
 ```
 
-O TL;DR deve ser conclusivo, com no máximo três linhas. Evite teaser ou frase genérica.
+O TL;DR deve ser conclusivo, com no mÃ¡ximo trÃªs linhas. Evite teaser ou frase genÃ©rica.
 
-## Atualização das notas
+## AtualizaÃ§Ã£o das notas
 
 Atualizar nota quando:
 
-- uma regra de negócio for confirmada no código;
-- uma rota, tabela, RPC ou integração mudar;
-- uma dívida técnica for descoberta;
-- uma decisão arquitetural for tomada;
+- uma regra de negÃ³cio for confirmada no cÃ³digo;
+- uma rota, tabela, RPC ou integraÃ§Ã£o mudar;
+- uma dÃ­vida tÃ©cnica for descoberta;
+- uma decisÃ£o arquitetural for tomada;
 - uma nota estiver incompleta para responder tarefa recorrente;
-- uma nota for consultada e o código provar que ela estava desatualizada.
+- uma nota for consultada e o cÃ³digo provar que ela estava desatualizada.
 
 Sempre atualizar o campo `atualizado:` ao alterar uma nota.
 
@@ -111,58 +111,58 @@ cofre/
 00 - Contexto/
 01 - Arquitetura/
 02 - Banco de Dados/
-03 - Decisões/
+03 - DecisÃµes/
 04 - Aprendizados/2026/
-05 - Dívidas Técnicas/
+05 - DÃ­vidas TÃ©cnicas/
 09 - Templates/
 10 - Meta/
 ```
 
-## Convenção de nomes
+## ConvenÃ§Ã£o de nomes
 
-- Arquivos em minúsculas, com palavras separadas por hífen.
-- Evitar acentos no nome do arquivo quando possível.
-- Uma nota por assunto estável.
-- Não criar notas duplicadas sobre o mesmo tema.
+- Arquivos em minÃºsculas, com palavras separadas por hÃ­fen.
+- Evitar acentos no nome do arquivo quando possÃ­vel.
+- Uma nota por assunto estÃ¡vel.
+- NÃ£o criar notas duplicadas sobre o mesmo tema.
 
 ## Wiki-links
 
 - Use wiki-links para ligar notas relacionadas.
-- Não use extensão `.md` nos wiki-links.
+- NÃ£o use extensÃ£o `.md` nos wiki-links.
 - Prefira alias quando o caminho for longo: `[[../01 - Arquitetura/landing-page|Landing page]]`.
-- Quando houver duplicação, mantenha a informação na nota mais apropriada e use wiki-link nas demais.
+- Quando houver duplicaÃ§Ã£o, mantenha a informaÃ§Ã£o na nota mais apropriada e use wiki-link nas demais.
 
 ## Bases do Obsidian
 
-- Arquivos `.base` devem ser YAML válido.
+- Arquivos `.base` devem ser YAML vÃ¡lido.
 - Use `filters`, `properties` e `views`.
 - Filtros podem ser strings ou objetos `and`, `or`, `not`.
-- Bases servem para painel/consulta; não devem conter contexto narrativo.
+- Bases servem para painel/consulta; nÃ£o devem conter contexto narrativo.
 
 ## Notas EXEMPLO
 
-- Notas marcadas como `EXEMPLO` não são fonte de verdade do projeto.
-- Devem ter `status: rascunho`, `status: arquivado` ou deixar explícito que são modelo.
-- Nunca inferir arquitetura ou decisão a partir de exemplos.
+- Notas marcadas como `EXEMPLO` nÃ£o sÃ£o fonte de verdade do projeto.
+- Devem ter `status: rascunho`, `status: arquivado` ou deixar explÃ­cito que sÃ£o modelo.
+- Nunca inferir arquitetura ou decisÃ£o a partir de exemplos.
 
-## Decisões e ADRs
+## DecisÃµes e ADRs
 
-- Não inventar decisões ou arquitetura.
-- Registrar decisão somente quando confirmada por código, conversa ou documento.
-- Manter o ADR inicial ou primeira nota de decisão como referência histórica.
-- Se uma decisão mudar, criar nova nota ou marcar a anterior como `desatualizado`, sem apagar histórico.
+- NÃ£o inventar decisÃµes ou arquitetura.
+- Registrar decisÃ£o somente quando confirmada por cÃ³digo, conversa ou documento.
+- Manter o ADR inicial ou primeira nota de decisÃ£o como referÃªncia histÃ³rica.
+- Se uma decisÃ£o mudar, criar nova nota ou marcar a anterior como `desatualizado`, sem apagar histÃ³rico.
 
 ## Git
 
-- Não fazer commit ou push apenas por atualizar o cofre, salvo pedido explícito.
-- Se houver mudanças de código e de cofre na mesma tarefa, reportar separadamente.
-- Antes de commit solicitado pelo usuário, revisar se o cofre não contém segredos.
+- NÃ£o fazer commit ou push apenas por atualizar o cofre, salvo pedido explÃ­cito.
+- Se houver mudanÃ§as de cÃ³digo e de cofre na mesma tarefa, reportar separadamente.
+- Antes de commit solicitado pelo usuÃ¡rio, revisar se o cofre nÃ£o contÃ©m segredos.
 
 ## Segredos
 
-- Não copiar valores de `.env`, tokens, senhas, service role keys, database password, connection string ou chaves privadas.
-- Variáveis de ambiente podem ser listadas por nome, sem valor.
+- NÃ£o copiar valores de `.env`, tokens, senhas, service role keys, database password, connection string ou chaves privadas.
+- VariÃ¡veis de ambiente podem ser listadas por nome, sem valor.
 
-## Precedência
+## PrecedÃªncia
 
-As regras originais do `AGENTS.md` permanecem válidas. Em caso de conflito, obedecer `AGENTS.md` e instruções explícitas do usuário.
+As regras originais do `AGENTS.md` permanecem vÃ¡lidas. Em caso de conflito, obedecer `AGENTS.md` e instruÃ§Ãµes explÃ­citas do usuÃ¡rio.

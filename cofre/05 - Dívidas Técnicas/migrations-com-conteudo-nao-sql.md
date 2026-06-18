@@ -4,23 +4,23 @@ area: migrations
 status: ativo
 tokens: baixo
 fonte:
-  - supabase/migrations/20260604_multi_seller_phase2.sql
+  - docs/legacy-migrations/20260604_multi_seller_phase2.txt
 atualizado: 2026-06-15
 prioridade: media
 esforco: baixo
-situacao: confirmado em 20260604_multi_seller_phase2.sql; nenhuma correcao aplicada
+situacao: confirmado em 20260604_multi_seller_phase2.txt; nenhuma correcao aplicada
 tags: []
 ---
 
 > [!tldr]
-> `20260604_multi_seller_phase2.sql` contem texto de tarefa/prompt, nao SQL executavel.
+> `20260604_multi_seller_phase2.txt` contem texto de tarefa/prompt, nao SQL executavel.
 > Nao rodar migrations locais completas sem tratar esse arquivo.
 
 # Hipotese de Migration com Conteudo Nao SQL
 
 ## Arquivo confirmado
 
-`supabase/migrations/20260604_multi_seller_phase2.sql` contem texto de tarefa em portugues pedindo alteracoes na tela de Leads, nao comandos SQL.
+`docs/legacy-migrations/20260604_multi_seller_phase2.txt` contem texto de tarefa em portugues pedindo alteracoes na tela de Leads, nao comandos SQL.
 
 ## Impacto possivel
 

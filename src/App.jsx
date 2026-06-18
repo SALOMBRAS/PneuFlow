@@ -9,6 +9,7 @@ const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/Auth/ResetPassword'));
 const AuthCallback = lazy(() => import('./pages/Auth/AuthCallback'));
 const SetPassword = lazy(() => import('./pages/Auth/SetPassword'));
+const Subscription = lazy(() => import('./pages/Subscription'));
 const StoreHome = lazy(() => import('./pages/StoreFront/StoreHome'));
 
 const DashboardShell = lazy(() => import('./pages/Dashboard/DashboardShell'));
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/auth/set-password" element={<SetPassword />} />
+          <Route path="/assinatura" element={<Subscription />} />
 
           {/* Public Storefront */}
           <Route path="/store/:storeSlug" element={<StoreHome />} />

@@ -12,8 +12,8 @@ tags: []
 ---
 
 > [!tldr]
-> O frontend é uma SPA React/Vite com rotas lazy em `src/App.jsx`.
-> Landing, auth, dashboard e vitrine pública são chunks separados.
+> O frontend Ã© uma SPA React/Vite com rotas lazy em `src/App.jsx`.
+> Landing, auth, dashboard e vitrine pÃºblica sÃ£o chunks separados.
 
 # Frontend e Rotas React
 
@@ -42,7 +42,7 @@ tags: []
 - `/dashboard/sellers`: `Dashboard/Sellers`
 - `/dashboard/settings`: `Dashboard/StoreSettings`
 
-## Observações
+## ObservaÃ§Ãµes
 
 - Fallback global de rota mostra `Carregando...`.
 - Catch-all redireciona para `/`.

@@ -15,13 +15,13 @@ tags: []
 
 > [!tldr]
 > Fotos de pneus aceitam PNG/JPG/JPEG/WEBP/HEIC/HEIF e convertem para WebP no cliente.
-> Imagens de loja seguem fluxo separado em configurações.
+> Imagens de loja seguem fluxo separado em configuraÃ§Ãµes.
 
-# Upload e Otimização de Imagens
+# Upload e OtimizaÃ§Ã£o de Imagens
 
 ## Fotos de pneus
 
-`Catalog.jsx` importa `IMAGE_UPLOAD_ACCEPT` e permite enviar até 2 imagens por anúncio. `storageService.uploadPneuImages` otimiza cada arquivo com `optimizeImageToWebp` e envia para o bucket `pneus-fotos`.
+`Catalog.jsx` importa `IMAGE_UPLOAD_ACCEPT` e permite enviar atÃ© 2 imagens por anÃºncio. `storageService.uploadPneuImages` otimiza cada arquivo com `optimizeImageToWebp` e envia para o bucket `pneus-fotos`.
 
 Formatos aceitos nas fotos de pneus:
 
@@ -31,25 +31,25 @@ Formatos aceitos nas fotos de pneus:
 - HEIC.
 - HEIF.
 
-## Conversão
+## ConversÃ£o
 
 `optimizeImageToWebp` converte imagem para WebP com:
 
-- largura máxima padrão: 1200
-- altura máxima padrão: 1200
-- qualidade padrão: 0.8
-- saída: `image/webp`
+- largura mÃ¡xima padrÃ£o: 1200
+- altura mÃ¡xima padrÃ£o: 1200
+- qualidade padrÃ£o: 0.8
+- saÃ­da: `image/webp`
 
 ## HEIC/HEIF
 
-Arquivos HEIC/HEIF são convertidos para JPEG via `heic2any` antes da otimização final.
+Arquivos HEIC/HEIF sÃ£o convertidos para JPEG via `heic2any` antes da otimizaÃ§Ã£o final.
 
-## Observações
+## ObservaÃ§Ãµes
 
-- O nome final é normalizado sem acentos e com extensão `.webp`.
-- O import de `heic2any` é dinâmico, evitando carregamento inicial obrigatório.
-- A lista de URLs do pneu usa `foto_principal_url` e `fotos`; a principal vira a primeira imagem quando ainda não há principal.
+- O nome final Ã© normalizado sem acentos e com extensÃ£o `.webp`.
+- O import de `heic2any` Ã© dinÃ¢mico, evitando carregamento inicial obrigatÃ³rio.
+- A lista de URLs do pneu usa `foto_principal_url` e `fotos`; a principal vira a primeira imagem quando ainda nÃ£o hÃ¡ principal.
 
 ## Imagens da loja
 
-`StoreSettings.jsx` usa `storageService.uploadStoreImage` para logo/capa/configurações visuais. Esse fluxo valida imagem e limite de tamanho na tela, mas não passa por `optimizeImageToWebp` antes do upload.
+`StoreSettings.jsx` usa `storageService.uploadStoreImage` para logo/capa/configuraÃ§Ãµes visuais. Esse fluxo valida imagem e limite de tamanho na tela, mas nÃ£o passa por `optimizeImageToWebp` antes do upload.

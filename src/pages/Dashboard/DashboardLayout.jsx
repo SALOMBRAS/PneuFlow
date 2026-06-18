@@ -12,8 +12,11 @@ import {
   Zap,
   Menu,
   X,
-  Users
+  Users,
+  CreditCard,
+  CalendarDays
 } from 'lucide-react';
+import { formatSubscriptionDate, getSubscriptionAccess, getTrialMessage } from '../../utils/subscriptionAccess';
 
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
@@ -90,6 +93,12 @@ export default function DashboardLayout({ children }) {
     );
   }
 
+  const subscriptionAccess = getSubscriptionAccess(store);
+
+  if (!subscriptionAccess.hasStoreAccess) {
+    return <Navigate to="/assinatura" replace state={{ from: location.pathname }} />;
+  }
+
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: <BarChart2 size={18} />, roles: ['owner', 'seller'] },
     { name: 'Catálogo de Pneus', path: '/dashboard/catalog', icon: <Layers size={18} />, roles: ['owner', 'seller'] },
@@ -129,6 +138,7 @@ export default function DashboardLayout({ children }) {
 
   const baseUrl = `${window.location.origin}/store/${store.slug}`;
   const publicStoreUrl = role === 'seller' && member?.ref_code ? `${baseUrl}?ref=${member.ref_code}` : baseUrl;
+  const trialMessage = getTrialMessage(subscriptionAccess);
 
   if (role === 'seller' && !member?.ref_code && !loading) {
     console.warn('Vendedor não possui código de indicação (ref_code).');
@@ -415,6 +425,69 @@ export default function DashboardLayout({ children }) {
           width: 'calc(100% - 240px)'
         }}
       >
+        {trialMessage && (
+          <section
+            role="status"
+            aria-live="polite"
+            style={{
+              margin: '0 auto 18px',
+              width: 'min(1120px, calc(100% - 32px))',
+              border: `1px solid ${subscriptionAccess.isUrgent ? 'rgba(245, 158, 11, 0.48)' : 'rgba(245, 158, 11, 0.24)'}`,
+              borderRadius: '18px',
+              padding: '16px',
+              background: subscriptionAccess.isUrgent
+                ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(15, 18, 27, 0.96))'
+                : 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 18, 27, 0.94))',
+              boxShadow: subscriptionAccess.isUrgent ? '0 18px 60px rgba(245, 158, 11, 0.10)' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '16px',
+              flexWrap: 'wrap'
+            }}
+          >
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: 0, flex: '1 1 320px' }}>
+              <div
+                aria-hidden="true"
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  display: 'grid',
+                  placeItems: 'center',
+                  borderRadius: '12px',
+                  background: 'rgba(245, 158, 11, 0.14)',
+                  color: 'var(--primary)',
+                  flex: '0 0 auto'
+                }}
+              >
+                <CalendarDays size={20} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <h2 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>
+                  {trialMessage.title}
+                </h2>
+                <p style={{ margin: '5px 0 0', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
+                  {trialMessage.body} Termina em {formatSubscriptionDate(subscriptionAccess.trialEndsAt)}.
+                  <strong style={{ color: 'var(--primary)' }}> Plano mensal: R$ 39,00.</strong>
+                </p>
+              </div>
+            </div>
+
+            <Link
+              to="/assinatura"
+              className="btn btn-primary"
+              style={{
+                minHeight: '44px',
+                whiteSpace: 'nowrap',
+                flex: '0 0 auto',
+                gap: '8px'
+              }}
+            >
+              <CreditCard size={16} />
+              Assinar PneuFlow
+            </Link>
+          </section>
+        )}
         {children}
       </main>
 
@@ -516,6 +589,19 @@ export default function DashboardLayout({ children }) {
 
           .dashboard-sidebar .sidebar-inner {
             padding: 20px 16px calc(24px + env(safe-area-inset-bottom)) !important;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .dashboard-main > section[role="status"] {
+            width: calc(100% - 24px) !important;
+            padding: 14px !important;
+            align-items: stretch !important;
+          }
+
+          .dashboard-main > section[role="status"] .btn {
+            width: 100% !important;
+            justify-content: center !important;
           }
         }
       `}</style>

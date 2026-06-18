@@ -17,15 +17,17 @@ fonte:
   - src/pages/Dashboard/Leads.jsx
   - src/pages/Dashboard/Sellers.jsx
   - src/pages/Dashboard/StoreSettings.jsx
+  - src/pages/Subscription.jsx
+  - src/utils/subscriptionAccess.js
   - src/pages/StoreFront/StoreHome.jsx
   - src/components/InteractiveDemo/InteractiveDemo.jsx
-atualizado: 2026-06-15
+atualizado: 2026-06-18
 tags: []
 ---
 
 > [!tldr]
-> Os fluxos principais conectam Supabase Auth, loja atual, catálogo, leads, vendedores, vitrine pública e métricas.
-> A landing/demo é local e mockada; o dashboard e a vitrine pública usam dados reais.
+> Os fluxos principais conectam Supabase Auth, loja atual, catÃ¡logo, leads, vendedores, vitrine pÃºblica e mÃ©tricas.
+> A landing/demo Ã© local e mockada; o dashboard e a vitrine pÃºblica usam dados reais.
 
 # Fluxos Principais
 
@@ -33,28 +35,28 @@ tags: []
 
 - Entrada: `/register`.
 - Tela: `Register`.
-- Serviço: `storageService.createStore`.
+- ServiÃ§o: `storageService.createStore`.
 - Supabase: `auth.signUp` com `user_metadata` (`full_name`, `store_name`, `phone_number`).
 - Aceite: `TermsAcceptanceModal` marca apenas estado local `acceptedPolicies`; sem banco.
-- Saída esperada: estado "Cadastro realizado" e orientação para confirmar e-mail.
-- Checklist: validação de e-mail, senha, WhatsApp, aceite; confirmar que campos não somem ao abrir modal.
+- SaÃ­da esperada: estado "Cadastro realizado" e orientaÃ§Ã£o para confirmar e-mail.
+- Checklist: validaÃ§Ã£o de e-mail, senha, WhatsApp, aceite; confirmar que campos nÃ£o somem ao abrir modal.
 
-## Login e sessão
+## Login e sessÃ£o
 
 - Entrada: `/login`.
 - Tela: `Login`.
-- Serviço: `storageService.login`, `storageService.getSession`.
+- ServiÃ§o: `storageService.login`, `storageService.getSession`.
 - Supabase: `auth.signInWithPassword`.
-- Persistência: `pneuflow_remember_session` decide `localStorage` ou `sessionStorage`.
-- Saída esperada: navegação para `/dashboard`.
-- Checklist: login válido/inválido, lembrar-me, limpar sessão no logout.
+- PersistÃªncia: `pneuflow_remember_session` decide `localStorage` ou `sessionStorage`.
+- SaÃ­da esperada: navegaÃ§Ã£o para `/dashboard`.
+- Checklist: login vÃ¡lido/invÃ¡lido, lembrar-me, limpar sessÃ£o no logout.
 
-## Recuperação e troca de senha
+## RecuperaÃ§Ã£o e troca de senha
 
 - Entradas: `/forgot-password`, `/reset-password`.
-- Serviços: `resetPasswordEmail`, `updatePassword`.
+- ServiÃ§os: `resetPasswordEmail`, `updatePassword`.
 - Supabase: `auth.resetPasswordForEmail`, `auth.updateUser`.
-- Checklist: envio de e-mail, senha mínima, confirmação igual.
+- Checklist: envio de e-mail, senha mÃ­nima, confirmaÃ§Ã£o igual.
 
 ## Convite e senha de vendedor
 
@@ -64,80 +66,90 @@ tags: []
 - Edge Function relacionada ao convite: `invite-seller`.
 - Checklist: convite, callback, definir senha, cair no dashboard/leads.
 
-## Resolução da loja no dashboard
+## ResoluÃ§Ã£o da loja no dashboard
 
 - Entrada: qualquer `/dashboard/*`.
 - `DashboardShell` envolve `StoreProvider`.
-- `StoreContext.loadStoreData` tenta dono por `getStoreByOwner`; se não achar, tenta membro por `getStoreByMember` e `getStoreMemberRole`.
+- `StoreContext.loadStoreData` tenta dono por `getStoreByOwner`; se nÃ£o achar, tenta membro por `getStoreByMember` e `getStoreMemberRole`.
 - Estado resultante: `store`, `role`, `member`, `isOwner`, `isSeller`.
-- Checklist: dono vê todas as rotas; vendedor não vê vendedores/configurações.
+- Checklist: dono vÃª todas as rotas; vendedor nÃ£o vÃª vendedores/configuraÃ§Ãµes.
 
-## Catálogo de pneus
+## Trial e assinatura
+
+- Entrada de bloqueio: qualquer `/dashboard/*`.
+- Helper central: `src/utils/subscriptionAccess.js`.
+- Dados: campos de assinatura em `stores`.
+- Regra atual: `subscription_status = active` libera acesso; `trialing` libera enquanto `trial_ends_at` for futuro.
+- Bloqueio: `DashboardLayout` redireciona painel expirado para `/assinatura`.
+- Tela: `Subscription` informa que os dados ficam salvos e prepara CTA de R$ 39,00/mes sem ativar pagamento.
+- Checklist: loja nova trialing, loja vencida redireciona, loja active acessa mesmo com trial vencido.
+
+## CatÃ¡logo de pneus
 
 - Entrada: `/dashboard/catalog`.
 - Tela: `Catalog`.
-- Serviço leitura: `getPneus(store.id)`.
-- Serviços escrita: `createPneu`, `updatePneu`, `deletePneu`, `uploadPneuImages`.
+- ServiÃ§o leitura: `getPneus(store.id)`.
+- ServiÃ§os escrita: `createPneu`, `updatePneu`, `deletePneu`, `uploadPneuImages`.
 - Dados: `pneus`, bucket `pneus-fotos`.
-- Regras: até 2 fotos por pneu; `status` controla visibilidade; `tipo_veiculo` carro/moto.
-- Checklist: listar, buscar, filtrar marca, criar, editar, excluir como dono, vendedor visualizar catálogo completo.
+- Regras: atÃ© 2 fotos por pneu; `status` controla visibilidade; `tipo_veiculo` carro/moto.
+- Checklist: listar, buscar, filtrar marca, criar, editar, excluir como dono, vendedor visualizar catÃ¡logo completo.
 
 ## Leads
 
 - Entrada: `/dashboard/leads`.
 - Tela: `Leads`.
-- Serviço: `getLeads`, `updateLeadSaleStatus`, `deleteLead`.
+- ServiÃ§o: `getLeads`, `updateLeadSaleStatus`, `deleteLead`.
 - RPCs: `get_leads_com_vendedor`, `atualizar_status_venda_lead`, `excluir_lead`.
-- Dados: `leads`, vínculo com `store_members` por `seller_id` ou `ref_code`.
+- Dados: `leads`, vÃ­nculo com `store_members` por `seller_id` ou `ref_code`.
 - Checklist: pesquisar por cliente/produto/vendedor, confirmar venda, desfazer venda, excluir.
 
 ## Vendedores
 
 - Entrada: `/dashboard/sellers`.
 - Tela: `Sellers`.
-- Serviços: `getStoreMembers`, `inviteSeller`, `manageSellerAccess`, `updateSellerRefCode`, `updateSellerWhatsapp`, `updateMemberStatus`.
+- ServiÃ§os: `getStoreMembers`, `inviteSeller`, `manageSellerAccess`, `updateSellerRefCode`, `updateSellerWhatsapp`, `updateMemberStatus`.
 - Dados: `store_members`.
 - Edge Functions: `invite-seller`, `manage-seller-access`.
 - Checklist: criar vendedor, gerar/refinar ref_code, salvar WhatsApp, desativar/reativar/remover.
 
-## Configurações da loja
+## ConfiguraÃ§Ãµes da loja
 
 - Entrada: `/dashboard/settings`.
 - Tela: `StoreSettings`.
-- Serviços: `updateStore`, `uploadStoreImage`, `refreshStore`.
+- ServiÃ§os: `updateStore`, `uploadStoreImage`, `refreshStore`.
 - Dados: `stores`, bucket `stores`.
-- Campos: nome, WhatsApp, telefone, endereço, cidade, UF, horário, tipo de vitrine, logo, descrição, SEO.
-- Checklist: salvar WhatsApp válido, salvar tipo vitrine, upload logo, abrir vitrine pública.
+- Campos: nome, WhatsApp, telefone, endereÃ§o, cidade, UF, horÃ¡rio, tipo de vitrine, logo, descriÃ§Ã£o, SEO.
+- Checklist: salvar WhatsApp vÃ¡lido, salvar tipo vitrine, upload logo, abrir vitrine pÃºblica.
 
-## Vitrine pública sem referral
+## Vitrine pÃºblica sem referral
 
 - Entrada: `/store/:storeSlug`.
 - Tela: `StoreHome`.
-- Serviços: `getStoreBySlug`, `getPneus`.
+- ServiÃ§os: `getStoreBySlug`, `getPneus`.
 - Dados: `stores`, `pneus`.
 - WhatsApp: usa `store.whatsapp`.
 - Checklist: carregar loja, filtros, card destaque, produto, modal de interesse, WhatsApp da loja.
 
-## Vitrine pública com referral
+## Vitrine pÃºblica com referral
 
 - Entrada: `/store/:storeSlug?ref=:ref_code` ou `?vendedor=:ref_code`.
-- Serviço: `getSellerByRefCode` via RPC `get_public_referral_seller`.
-- Se vendedor ativo e WhatsApp válido: `registerReferralVisit` chama `registrar_visita_referral`; WhatsApp vai para o vendedor.
-- Se inválido: fallback para WhatsApp da loja.
-- Checklist: ref válido, ref inválido, vendedor sem WhatsApp, vendedor inativo.
+- ServiÃ§o: `getSellerByRefCode` via RPC `get_public_referral_seller`.
+- Se vendedor ativo e WhatsApp vÃ¡lido: `registerReferralVisit` chama `registrar_visita_referral`; WhatsApp vai para o vendedor.
+- Se invÃ¡lido: fallback para WhatsApp da loja.
+- Checklist: ref vÃ¡lido, ref invÃ¡lido, vendedor sem WhatsApp, vendedor inativo.
 
-## Geração de lead pela vitrine
+## GeraÃ§Ã£o de lead pela vitrine
 
-- Entrada: botão de interesse/WhatsApp em `StoreHome`.
-- Serviço: `createLead` via RPC `registrar_lead`.
-- Payload: `loja_id`, `produto_id`, cliente, nome/medida/preço do produto, `seller_id` quando aplicável, `ref_code`, `attribution_source`.
+- Entrada: botÃ£o de interesse/WhatsApp em `StoreHome`.
+- ServiÃ§o: `createLead` via RPC `registrar_lead`.
+- Payload: `loja_id`, `produto_id`, cliente, nome/medida/preÃ§o do produto, `seller_id` quando aplicÃ¡vel, `ref_code`, `attribution_source`.
 - Efeito: abre `wa.me` com mensagem montada.
-- Checklist: lead aparece em `/dashboard/leads`; vendedor atribuído aparece quando referral é válido.
+- Checklist: lead aparece em `/dashboard/leads`; vendedor atribuÃ­do aparece quando referral Ã© vÃ¡lido.
 
-## Métricas comerciais
+## MÃ©tricas comerciais
 
 - Entrada: `/dashboard`.
-- Serviço: `getDashboardCommercialMetrics`.
+- ServiÃ§o: `getDashboardCommercialMetrics`.
 - Dados: `leads`, `pneus`, `store_members`, `store_referral_visits`.
 - Tratamento: `Promise.allSettled`, erro parcial vira array vazio.
 - UI: cards pequenos, painel desktop e bottom sheet mobile.
@@ -148,5 +160,5 @@ tags: []
 - Entrada: `/`.
 - Componentes: `LandingPage`, `InteractiveDemo`, `FeedbackCarousel`, `CardSwapHero`.
 - Dados: mock local, sem Supabase.
-- Interações: abas da demo, filtros de aro/condição, toast de interesse.
-- Checklist: hero mobile, demo Vitrine/Catálogo/Leads/Dashboard, FAQ, CTAs.
+- InteraÃ§Ãµes: abas da demo, filtros de aro/condiÃ§Ã£o, toast de interesse.
+- Checklist: hero mobile, demo Vitrine/CatÃ¡logo/Leads/Dashboard, FAQ, CTAs.

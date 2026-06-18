@@ -8,8 +8,8 @@ fonte:
   - server.js
   - api/index.js
   - src/pages/Dashboard/DashboardHome.jsx
-  - supabase/migrations/20260604_multi_seller_phase2.sql
-  - supabase/migrations/20260615_store_referral_visits_visitor_tracking.sql
+  - docs/legacy-migrations/20260604_multi_seller_phase2.txt
+  - supabase/migrations/20260615090000_store_referral_visits_visitor_tracking.sql
   - src/services/storage.js
   - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
 atualizado: 2026-06-15
@@ -60,7 +60,7 @@ Recomendacao futura:
 
 Arquivo confirmado:
 
-- `supabase/migrations/20260604_multi_seller_phase2.sql`
+- `docs/legacy-migrations/20260604_multi_seller_phase2.txt`
 
 O arquivo contem texto de prompt/tarefa em portugues, nao SQL executavel.
 
@@ -76,7 +76,7 @@ Recomendacao futura:
 
 Arquivos:
 
-- `supabase/migrations/20260615_store_referral_visits_visitor_tracking.sql`
+- `supabase/migrations/20260615090000_store_referral_visits_visitor_tracking.sql`
 - `src/services/storage.js`
 - `src/pages/StoreFront/StoreHome.jsx`
 

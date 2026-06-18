@@ -13,13 +13,13 @@ tags: []
 
 > [!tldr]
 > O schema remoto confirmado tem `store_referral_visits` e `registrar_visita_referral`.
-> Esses itens são usados pelo código, mas não aparecem nas migrations locais atuais.
+> Esses itens sÃ£o usados pelo cÃ³digo, mas nÃ£o aparecem nas migrations locais atuais.
 
 # Schema Remoto Confirmado
 
-## Origem da confirmação
+## Origem da confirmaÃ§Ã£o
 
-Esta nota registra o schema remoto informado manualmente pelo usuário durante auditoria anterior do Supabase. Não foi executado SQL nesta atualização do cofre.
+Esta nota registra o schema remoto informado manualmente pelo usuÃ¡rio durante auditoria anterior do Supabase. NÃ£o foi executado SQL nesta atualizaÃ§Ã£o do cofre.
 
 ## Tabelas relevantes confirmadas
 
@@ -103,15 +103,15 @@ Esta nota registra o schema remoto informado manualmente pelo usuário durante a
 - `is_active_store_member`
 - `is_valid_referral`
 
-## Divergências locais importantes
+## DivergÃªncias locais importantes
 
-- `store_referral_visits` é usada em `storageService.getDashboardMetrics` e `storageService.registerReferralVisit`.
-- `registrar_visita_referral` é chamada por `storageService.registerReferralVisit`.
+- `store_referral_visits` Ã© usada em `storageService.getDashboardMetrics` e `storageService.registerReferralVisit`.
+- `registrar_visita_referral` Ã© chamada por `storageService.registerReferralVisit`.
 - Nenhum arquivo SQL local em `supabase/migrations/` define `store_referral_visits` ou `registrar_visita_referral`.
-- Antes de alterar banco/migrations, tratar essa diferença entre repositório e remoto explicitamente.
+- Antes de alterar banco/migrations, tratar essa diferenÃ§a entre repositÃ³rio e remoto explicitamente.
 
 ## Uso atual no frontend
 
-- Dashboard: consulta `store_referral_visits` para visualizações e conversão por vendedor.
-- Vitrine pública: chama `registrar_visita_referral` quando existe referral válido.
+- Dashboard: consulta `store_referral_visits` para visualizaÃ§Ãµes e conversÃ£o por vendedor.
+- Vitrine pÃºblica: chama `registrar_visita_referral` quando existe referral vÃ¡lido.
 - Leads: `registrar_lead` recebe `seller_id`, `ref_code` e `attribution_source` no fluxo atual.

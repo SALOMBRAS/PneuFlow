@@ -15,7 +15,7 @@ tags: []
 ---
 
 > [!tldr]
-> Auth usa Supabase com storage customizado para lembrar sessão.
+> Auth usa Supabase com storage customizado para lembrar sessÃ£o.
 > `StoreContext` resolve loja atual como dono ou membro ativo.
 
 # Auth e Contexto da Loja
@@ -32,7 +32,7 @@ tags: []
 
 ## StoreContext
 
-`src/contexts/StoreContext.jsx` mantém:
+`src/contexts/StoreContext.jsx` mantÃ©m:
 
 - `session`
 - `user`
@@ -43,19 +43,19 @@ tags: []
 - `error`
 - flags `isOwner` e `isSeller`
 
-## Resolução da loja
+## ResoluÃ§Ã£o da loja
 
 1. Tenta buscar loja por dono (`getStoreByOwner`).
-2. Se não encontrar, tenta buscar loja por membro (`getStoreByMember`).
+2. Se nÃ£o encontrar, tenta buscar loja por membro (`getStoreByMember`).
 3. Para membro, valida `store_members.status === 'active'`.
 
 ## Cadastro e aceite
 
-`src/pages/Auth/Register.jsx` mantém `acceptedPolicies` em estado local e bloqueia o cadastro se o usuário não confirmar o aceite. O aceite abre `TermsAcceptanceModal`, que usa `role="dialog"`, `aria-modal`, overlay escuro, rolagem interna e botão "Li e aceito" liberado somente após rolar até o fim.
+`src/pages/Auth/Register.jsx` mantÃ©m `acceptedPolicies` em estado local e bloqueia o cadastro se o usuÃ¡rio nÃ£o confirmar o aceite. O aceite abre `TermsAcceptanceModal`, que usa `role="dialog"`, `aria-modal`, overlay escuro, rolagem interna e botÃ£o "Li e aceito" liberado somente apÃ³s rolar atÃ© o fim.
 
-Esse aceite é apenas frontend: não altera Supabase Auth, não cria coluna no banco e não registra versão de termos.
+Esse aceite Ã© apenas frontend: nÃ£o altera Supabase Auth, nÃ£o cria coluna no banco e nÃ£o registra versÃ£o de termos.
 
-## Observações
+## ObservaÃ§Ãµes
 
-- `StoreContext` não possui mais logs de debug amplos de sessão/loja; restam apenas `console.error` para erro de carregamento.
-- `storage.js` mantém logs de erro/diagnóstico em falhas de RPC, dashboard metrics e upload, sem copiar segredos.
+- `StoreContext` nÃ£o possui mais logs de debug amplos de sessÃ£o/loja; restam apenas `console.error` para erro de carregamento.
+- `storage.js` mantÃ©m logs de erro/diagnÃ³stico em falhas de RPC, dashboard metrics e upload, sem copiar segredos.

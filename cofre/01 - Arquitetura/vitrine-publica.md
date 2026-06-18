@@ -13,10 +13,10 @@ fonte:
   - src/pages/StoreFront/components/StoreFilters.jsx
   - src/services/storage.js
   - src/utils/visitorId.js
-  - supabase/migrations/20260615_store_referral_visits_visitor_tracking.sql
+  - supabase/migrations/20260615090000_store_referral_visits_visitor_tracking.sql
   - cofre/01 - Arquitetura/fluxos-principais.md
-  - supabase/migrations/20260609_public_referral_seller.sql
-  - supabase/migrations/20260609_seller_whatsapp.sql
+  - supabase/migrations/20260609091000_public_referral_seller.sql
+  - supabase/migrations/20260609092000_seller_whatsapp.sql
 atualizado: 2026-06-15
 tags: []
 ---
