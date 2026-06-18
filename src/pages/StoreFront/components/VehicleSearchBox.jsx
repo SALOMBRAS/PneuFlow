@@ -27,6 +27,7 @@ export default function VehicleSearchBox({
   setSearchQuery,
   filterBrand,
   setFilterBrand,
+  commercialContactEnabled = true,
 }) {
   const heroImage =
     heroTire?.foto_principal_url ||
@@ -72,7 +73,13 @@ export default function VehicleSearchBox({
         </p>
 
         <div className="store-hero__actions">
-          <button type="button" className="button button--primary button--xl" onClick={onWhatsAppClick}>
+          <button
+            type="button"
+            className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+            onClick={onWhatsAppClick}
+            disabled={!commercialContactEnabled}
+            aria-disabled={!commercialContactEnabled}
+          >
             <MessageSquare size={18} />
             Falar no WhatsApp
           </button>
@@ -128,9 +135,11 @@ export default function VehicleSearchBox({
 
                   <button
                     type="button"
-                    className="button button--primary button--wide button--xl hero-buy-button"
+                    className={`button button--primary button--wide button--xl hero-buy-button ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
                     onClick={() => (heroTire ? onHeroInterest(heroTire) : onScrollToCatalog())}
                     aria-label={heroTire ? `Comprar ${heroTire.marca || ''} ${heroTire.modelo || heroTire.medida || 'pneu'} pelo WhatsApp` : 'Comprar pelo WhatsApp'}
+                    disabled={!commercialContactEnabled}
+                    aria-disabled={!commercialContactEnabled}
                   >
                     <MessageSquare size={18} />
                     Comprar no WhatsApp
@@ -162,7 +171,13 @@ export default function VehicleSearchBox({
             <Search size={16} />
             Filtros
           </button>
-          <button type="button" className="quick-cta" onClick={onWhatsAppClick}>
+          <button
+            type="button"
+            className={`quick-cta ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+            onClick={onWhatsAppClick}
+            disabled={!commercialContactEnabled}
+            aria-disabled={!commercialContactEnabled}
+          >
             <MessageSquare size={16} />
             WhatsApp
           </button>

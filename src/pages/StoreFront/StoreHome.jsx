@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { storageService } from '../../services/storage';
+import { getSubscriptionAccess } from '../../utils/subscriptionAccess';
 import { getOrCreateVisitorId } from '../../utils/visitorId';
 import { VEHICLE_MODELS } from '../../data/vehicleModels';
 import { MOTORCYCLE_MODELS } from '../../data/motorcycleModels';
@@ -62,6 +63,7 @@ const debugReferral = (...args) => {
 
 const VISIT_SESSION_PREFIX = 'pneuflow_store_visit';
 const VISIT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const INACTIVE_STOREFRONT_MESSAGE = 'Esta vitrine está temporariamente inativa. Entre em contato com a loja ou aguarde a reativação.';
 
 const getStoreStatus = (hoursText) => {
   const now = new Date();
@@ -413,6 +415,8 @@ export default function StoreHome() {
   };
 
   const heroTire = featuredTires[activeHeroIndex % (featuredTires.length || 1)] || displayedTires[0] || tires[0] || null;
+  const subscriptionAccess = getSubscriptionAccess(store);
+  const commercialContactEnabled = subscriptionAccess.hasStoreAccess;
   const whatsappDestination = hasValidWhatsapp(referralSeller?.whatsapp)
     ? referralSeller.whatsapp
     : store.whatsapp;
@@ -450,6 +454,8 @@ export default function StoreHome() {
   };
 
   const handleInterest = (tire) => {
+    if (!commercialContactEnabled) return;
+
     setTargetTire(tire);
     setLeadError('');
     setLeadModalOpen(true);
@@ -457,6 +463,7 @@ export default function StoreHome() {
 
   const handleConfirmLead = async (e) => {
     e.preventDefault();
+    if (!commercialContactEnabled) return;
     if (!customerName.trim() || !targetTire) return;
 
     setSavingLead(true);
@@ -509,6 +516,8 @@ export default function StoreHome() {
   };
 
   const handleGeneralWhatsapp = () => {
+    if (!commercialContactEnabled) return;
+
     let text = 'Olá! Acessei o catálogo digital de vocês e gostaria de tirar uma dúvida sobre pneus.';
     if (referralSeller?.ref_code && hasValidWhatsapp(referralSeller?.whatsapp)) {
       text += ` Fui atendido por: ${referralSeller.nome || 'vendedor'}.`;
@@ -526,9 +535,16 @@ export default function StoreHome() {
         statusLabel={status.label}
         statusTone={status.tone}
         onWhatsappClick={handleGeneralWhatsapp}
+        commercialContactEnabled={commercialContactEnabled}
       />
 
       <main className="public-store-container">
+        {!commercialContactEnabled && (
+          <section className="store-inactive-notice" role="status" aria-live="polite">
+            {INACTIVE_STOREFRONT_MESSAGE}
+          </section>
+        )}
+
         <VehicleSearchBox
           store={store}
           locationText={locationText}
@@ -555,6 +571,7 @@ export default function StoreHome() {
           setSearchQuery={setSearchQuery}
           filterBrand={filterBrand}
           setFilterBrand={setFilterBrand}
+          commercialContactEnabled={commercialContactEnabled}
         />
 
         <section id="catalogo" className="storefront-layout">
@@ -607,6 +624,7 @@ export default function StoreHome() {
                     tire={tire}
                     primaryColor={primaryColor}
                     onInterest={handleInterest}
+                    commercialContactEnabled={commercialContactEnabled}
                     onDetail={(t) => {
                       setSelectedTire(t);
                       setActiveImageIndex(0);
@@ -656,7 +674,13 @@ export default function StoreHome() {
                   <h4 className="contact-band__title">Contato rápido</h4>
                   <p className="contact-band__text">Clique para abrir o WhatsApp e falar com a loja em poucos segundos.</p>
                 </div>
-                <button type="button" className="button button--primary button--xl" onClick={handleGeneralWhatsapp}>
+                <button
+                  type="button"
+                  className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+                  onClick={handleGeneralWhatsapp}
+                  disabled={!commercialContactEnabled}
+                  aria-disabled={!commercialContactEnabled}
+                >
                   <MessageSquare size={18} />
                   WhatsApp
                 </button>
@@ -737,7 +761,14 @@ export default function StoreHome() {
             <div className="footer-links">
               <a className="footer-link" href="#catalogo">Catálogo</a>
               <a className="footer-link" href="#catalogo" onClick={(e) => { e.preventDefault(); scrollToCatalog(); }}>Filtros</a>
-              <button type="button" className="footer-link" onClick={handleGeneralWhatsapp} style={{ background: 'transparent', border: 0, padding: 0 }}>
+              <button
+                type="button"
+                className={`footer-link ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+                onClick={handleGeneralWhatsapp}
+                style={{ background: 'transparent', border: 0, padding: 0 }}
+                disabled={!commercialContactEnabled}
+                aria-disabled={!commercialContactEnabled}
+              >
                 WhatsApp
               </button>
             </div>
@@ -756,8 +787,10 @@ export default function StoreHome() {
       <button
         type="button"
         onClick={handleGeneralWhatsapp}
-        className="store-whatsapp-fab"
+        className={`store-whatsapp-fab ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
         aria-label="Abrir WhatsApp"
+        disabled={!commercialContactEnabled}
+        aria-disabled={!commercialContactEnabled}
       >
         <MessageSquare size={24} />
       </button>
@@ -1052,8 +1085,10 @@ export default function StoreHome() {
                 </button>
                 <button
                   type="button"
-                  className="button button--primary button--xl"
+                  className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
                   style={{ flex: 2 }}
+                  disabled={!commercialContactEnabled}
+                  aria-disabled={!commercialContactEnabled}
                   onClick={() => {
                     handleInterest(selectedTire);
                     setSelectedTire(null);
@@ -1135,11 +1170,11 @@ export default function StoreHome() {
 
               <button
                 type="submit"
-                disabled={savingLead || !customerName.trim()}
-                className="button button--primary button--xl"
+                disabled={savingLead || !customerName.trim() || !commercialContactEnabled}
+                className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
                 style={{
-                  opacity: savingLead || !customerName.trim() ? 0.72 : 1,
-                  cursor: savingLead || !customerName.trim() ? 'not-allowed' : 'pointer',
+                  opacity: savingLead || !customerName.trim() || !commercialContactEnabled ? 0.72 : 1,
+                  cursor: savingLead || !customerName.trim() || !commercialContactEnabled ? 'not-allowed' : 'pointer',
                 }}
               >
                 {savingLead ? 'Processando...' : (

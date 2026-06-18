@@ -7,7 +7,7 @@ const formatPrice = (value) =>
     maximumFractionDigits: 2,
   });
 
-export default function ProductCard({ tire, primaryColor, onInterest, onDetail }) {
+export default function ProductCard({ tire, primaryColor, onInterest, onDetail, commercialContactEnabled = true }) {
   const isStock = Number(tire.estoque || 0) > 0;
   const image = tire.foto_principal_url || tire.image || 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=800';
   const vehicleLabel = tire.tipo_veiculo === 'moto' ? 'Moto' : 'Carro';
@@ -94,8 +94,10 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail }
         <button
           onClick={() => onInterest(tire)}
           type="button"
-          className="btn-whatsapp-card"
+          className={`btn-whatsapp-card ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
           aria-label={`Falar no WhatsApp sobre o pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
+          disabled={!commercialContactEnabled}
+          aria-disabled={!commercialContactEnabled}
         >
           <MessageSquare size={16} />
           Falar no WhatsApp

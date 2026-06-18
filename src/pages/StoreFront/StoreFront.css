@@ -203,6 +203,29 @@
   box-shadow: 0 18px 40px rgba(245, 158, 11, 0.22);
 }
 
+.commercial-disabled,
+.commercial-disabled:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  filter: grayscale(0.45);
+  box-shadow: none;
+}
+
+.commercial-disabled:hover {
+  transform: none;
+}
+
+.store-inactive-notice {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.68);
+  color: rgba(248, 250, 252, 0.78);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
 .button--ghost {
   background: rgba(255, 255, 255, 0.05);
   color: #f8fafc;

@@ -7,6 +7,7 @@ export default function PublicStoreHeader({
   statusLabel,
   statusTone = 'success',
   onWhatsappClick,
+  commercialContactEnabled = true,
 }) {
   const statusClass = statusTone === 'success' ? 'status-pill--success' : 'status-pill--muted';
 
@@ -50,7 +51,13 @@ export default function PublicStoreHeader({
           </div>
 
           <div className="header-actions">
-            <button onClick={onWhatsappClick} className="btn-whatsapp-header" aria-label={`Falar com ${store.nome || 'a loja'} no WhatsApp`}>
+            <button
+              onClick={onWhatsappClick}
+              className={`btn-whatsapp-header ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+              aria-label={`Falar com ${store.nome || 'a loja'} no WhatsApp`}
+              disabled={!commercialContactEnabled}
+              aria-disabled={!commercialContactEnabled}
+            >
               <MessageSquare size={18} />
               <span>WhatsApp</span>
             </button>

@@ -8,19 +8,33 @@ export const SUBSCRIPTION_STATUSES = {
   BLOCKED: 'blocked'
 };
 
+function isValidDate(date) {
+  return date instanceof Date && !Number.isNaN(date.getTime());
+}
+
+export function endOfLocalDay(dateValue) {
+  if (!dateValue) return null;
+
+  const date = new Date(dateValue);
+  if (!isValidDate(date)) return null;
+
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+
 export function getSubscriptionAccess(store, now = new Date()) {
   const status = store?.subscription_status || SUBSCRIPTION_STATUSES.TRIALING;
-  const trialEndsAt = store?.trial_ends_at ? new Date(store.trial_ends_at) : null;
-  const currentPeriodEnd = store?.current_period_end ? new Date(store.current_period_end) : null;
+  const trialEndsAt = endOfLocalDay(store?.trial_ends_at);
+  const currentPeriodEnd = endOfLocalDay(store?.current_period_end);
   const nowDate = now instanceof Date ? now : new Date(now);
 
-  const hasValidTrialEnd = trialEndsAt instanceof Date && !Number.isNaN(trialEndsAt.getTime());
+  const hasValidTrialEnd = isValidDate(trialEndsAt);
   const msRemaining = hasValidTrialEnd ? trialEndsAt.getTime() - nowDate.getTime() : 0;
   const daysRemaining = hasValidTrialEnd ? Math.max(0, Math.ceil(msRemaining / DAY_IN_MS)) : 0;
 
   const isSubscriptionActive = status === SUBSCRIPTION_STATUSES.ACTIVE;
-  const isTrialActive = status === SUBSCRIPTION_STATUSES.TRIALING && hasValidTrialEnd && msRemaining > 0;
-  const isTrialExpired = status !== SUBSCRIPTION_STATUSES.ACTIVE && hasValidTrialEnd && msRemaining <= 0;
+  const isTrialActive = status === SUBSCRIPTION_STATUSES.TRIALING && hasValidTrialEnd && nowDate <= trialEndsAt;
+  const isTrialExpired = status !== SUBSCRIPTION_STATUSES.ACTIVE && hasValidTrialEnd && nowDate > trialEndsAt;
   const hasPaidAccess = isSubscriptionActive;
   const hasStoreAccess = hasPaidAccess || isTrialActive;
 
