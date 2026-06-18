@@ -4,6 +4,7 @@
 
 - Data da pausa: 18/06/2026.
 - Estado geral: baseline de migrations criada a partir do schema remoto atual e migration do teste gratuito de 7 dias aplicada no Supabase.
+- Estado final do GitHub: commit principal enviado para `origin/main`; documento de pausa sera enviado em commit separado.
 - Integracao com AbacatePay: ainda nao implementada.
 
 ## Repositorio GitHub
@@ -11,7 +12,9 @@
 - URL: https://github.com/SALOMBRAS/PneuFlow.git
 - Branch: `main`
 - Ultimo commit antes desta pausa: `d5a0846 docs: reforca protocolo do cofre no agente`
-- Commit final desta pausa: a atualizar apos commit/push.
+- Commit principal desta pausa: `cf35fde feat: add 7-day trial and Supabase migration baseline`
+- Push do commit principal: concluido em `origin/main`.
+- Commit final de documentacao da pausa: a atualizar apos este arquivo ser salvo.
 - Remote configurado: `origin` apontando para `https://github.com/SALOMBRAS/PneuFlow.git`
 
 ## Supabase
