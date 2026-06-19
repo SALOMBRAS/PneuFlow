@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { AlertTriangle, CreditCard, LogOut, ShieldCheck, Store, Zap } from 'lucide-react';
 import { StoreProvider, useStore } from '../contexts/StoreContext';
@@ -7,10 +8,53 @@ import { formatSubscriptionDate, getSubscriptionAccess } from '../utils/subscrip
 function SubscriptionContent() {
   const navigate = useNavigate();
   const { store, loading, error, session } = useStore();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
 
   const handleLogout = async () => {
     await storageService.logout();
     navigate('/login');
+  };
+
+  const handleCheckout = async () => {
+    if (!store?.id && !store?.slug) {
+      setCheckoutError('Nao foi possivel identificar sua loja para iniciar o checkout.');
+      return;
+    }
+
+    setCheckoutLoading(true);
+    setCheckoutError('');
+
+    try {
+      const response = await fetch('/api/mercadopago/create-preference', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          storeId: store?.id || '',
+          storeSlug: store?.slug || '',
+          storeName: store?.nome || store?.name || 'Loja PneuFlow'
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Nao foi possivel iniciar o checkout.');
+      }
+
+      const checkoutUrl = payload.sandboxInitPoint || payload.initPoint;
+
+      if (!checkoutUrl) {
+        throw new Error('O Mercado Pago nao retornou um link de checkout.');
+      }
+
+      window.location.assign(checkoutUrl);
+    } catch (checkoutRequestError) {
+      setCheckoutError(checkoutRequestError.message || 'Nao foi possivel iniciar o checkout.');
+      setCheckoutLoading(false);
+    }
   };
 
   if (loading) {
@@ -83,6 +127,13 @@ function SubscriptionContent() {
           </div>
         )}
 
+        {checkoutError && (
+          <div style={{ display: 'flex', gap: '10px', color: 'var(--error)', marginBottom: '18px' }}>
+            <AlertTriangle size={18} />
+            <span>{checkoutError}</span>
+          </div>
+        )}
+
         <p style={{ color: 'var(--text-secondary)', fontSize: '17px', lineHeight: 1.7, marginBottom: '22px' }}>
           Os dados da sua loja, seus produtos e suas configuracoes continuam salvos. Para voltar a utilizar o dashboard do
           PneuFlow, assine o plano mensal por <strong style={{ color: 'var(--primary)' }}>R$ 39,00/mes</strong>.
@@ -112,14 +163,20 @@ function SubscriptionContent() {
 
         <button
           type="button"
-          onClick={() => {
-            alert('Checkout em preparacao. A integracao com gateway sera adicionada na proxima etapa.');
-          }}
+          onClick={handleCheckout}
+          disabled={checkoutLoading}
           className="btn btn-primary"
-          style={{ width: '100%', minHeight: '52px', marginBottom: '12px', gap: '10px' }}
+          style={{
+            width: '100%',
+            minHeight: '52px',
+            marginBottom: '12px',
+            gap: '10px',
+            opacity: checkoutLoading ? 0.72 : 1,
+            cursor: checkoutLoading ? 'not-allowed' : 'pointer'
+          }}
         >
           <CreditCard size={18} />
-          Assinar PneuFlow - R$ 39,00/mes
+          {checkoutLoading ? 'Criando checkout...' : 'Assinar PneuFlow - R$ 39,00/mes'}
         </button>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>

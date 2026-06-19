@@ -19,6 +19,7 @@
     "gsap": "^3.15.0",
     "heic2any": "^0.0.4",
     "lucide-react": "^1.17.0",
+    "mercadopago": "^3.1.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.16.0"

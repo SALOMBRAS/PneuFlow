@@ -60,6 +60,10 @@ tags: []
 - [[../02 - Banco de Dados/migrations-rpcs|Migrations e RPCs]]
 - [[../02 - Banco de Dados/schema-remoto-confirmado|Schema remoto confirmado]]
 
+## Decisoes
+
+- [[../03 - Decisões/mercado-pago-checkout-pro-etapa-1|Mercado Pago Checkout Pro - etapa 1]]
+
 ## Dividas tecnicas em rascunho
 
 - [[../05 - DÃ­vidas TÃ©cnicas/migrations-com-conteudo-nao-sql|Hipotese de migration com conteudo nao SQL]]

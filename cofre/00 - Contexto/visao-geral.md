@@ -50,7 +50,7 @@ PneuFlow Ã© uma plataforma para lojas de pneus criarem uma vitrine digital, or
 - Banco/Auth/Storage: Supabase via `@supabase/supabase-js`.
 - UI/efeitos: CSS prÃ³prio, lucide-react, gsap em componentes visuais.
 - Imagens: otimizaÃ§Ã£o client-side para WebP e conversÃ£o HEIC/HEIF com import dinÃ¢mico de `heic2any`.
-- Deploy: Vercel com rewrites em `vercel.json`.
+- Deploy: Vercel com rewrites em `vercel.json`; o fallback da SPA deve excluir `api`, arquivos internos do Vite (`src`, `@...`) e arquivos com extensao.
 
 ## Comandos confirmados
 
@@ -82,7 +82,7 @@ PneuFlow Ã© uma plataforma para lojas de pneus criarem uma vitrine digital, or
 - HTML: `index.html`, com root em `<div id="root"></div>` e script `/src/main.jsx`.
 - React: `src/main.jsx`.
 - Rotas: `src/App.jsx`.
-- API Vercel: `api/index.js`, roteada por `vercel.json`.
+- API Vercel: `api/index.js` para backend mock/legado e `api/mercadopago/create-preference.js` para Checkout Pro, roteadas por `vercel.json`.
 - Backend local: `server.js`.
 
 ## Rotas principais confirmadas
@@ -121,6 +121,8 @@ NÃ£o copiar valores de `.env`, `.env.local` ou qualquer segredo para o cofre.
 - Landing tem demo interativa mockada local, FAQ acessÃ­vel por botÃ£o, metadados sociais/SEO em `index.html` e CardSwap desativado no mobile.
 - Trial comercial inicial usa campos em `stores`, helper `subscriptionAccess` e bloqueio central no `DashboardLayout`; gateway/webhook ainda nÃ£o estÃ£o integrados.
 - `server.js` e `api/index.js` permanecem como backend mock/legado; o fluxo principal atual usa Supabase pelo frontend.
+- `vercel.json` precisa manter `/api/mercadopago/create-preference` antes do rewrite legado `/api/(.*)`; caso contrario o Checkout Pro cai no backend mock.
+- O fallback de SPA no Vercel deve apontar para `/index.html`, nao `/`, e nao pode capturar `/src/main.jsx`, `/@vite/client` ou `/@react-refresh` durante `vercel dev`.
 
 ## Riscos ou dÃ­vidas confirmadas
 
