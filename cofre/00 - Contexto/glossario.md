@@ -7,10 +7,8 @@ fonte:
   - src/App.jsx
   - src/contexts/StoreContext.jsx
   - src/services/storage.js
-  - supabase/migrations/20260604092000_multi_seller_phase1.sql
-  - supabase/migrations/20260609091000_public_referral_seller.sql
-  - supabase/migrations/20260609092000_seller_whatsapp.sql
-atualizado: 2026-06-15
+  - supabase/migrations/20260618171439_remote_schema.sql
+atualizado: 2026-06-21
 tags: []
 ---
 

@@ -9,13 +9,13 @@ fonte:
   - api/index.js
   - src/pages/Dashboard/DashboardHome.jsx
   - docs/legacy-migrations/20260604_multi_seller_phase2.txt
-  - supabase/migrations/20260615090000_store_referral_visits_visitor_tracking.sql
+  - supabase/migrations/20260618171439_remote_schema.sql
   - src/services/storage.js
   - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
-atualizado: 2026-06-15
+atualizado: 2026-06-21
 prioridade: media
 esforco: medio
-situacao: divergencias documentadas; migration nova criada para visitor tracking, mas a confirmacao remota ainda precisa ser aplicada manualmente no Supabase
+situacao: divergencias documentadas; visitor tracking foi consolidado na baseline ativa, mas backend mock legado e arquivos antigos ainda exigem cuidado
 tags: []
 ---
 
@@ -72,23 +72,23 @@ Recomendacao futura:
 
 - Separar instrucao humana de migration SQL real antes de usar Supabase CLI/migrations em ambiente novo.
 
-## 4. Visitor tracking local novo ainda depende de aplicacao manual no remoto
+## 4. Visitor tracking consolidado na baseline ativa
 
 Arquivos:
 
-- `supabase/migrations/20260615090000_store_referral_visits_visitor_tracking.sql`
+- `supabase/migrations/20260618171439_remote_schema.sql`
 - `src/services/storage.js`
 - `src/pages/StoreFront/StoreHome.jsx`
 
-A base local agora tem migration nova para `visitor_id`, `user_agent` e a RPC `registrar_visita_referral` com dedupe de 24 horas.
+A baseline ativa contem `visitor_id`, `user_agent` e a RPC `registrar_visita_referral` com dedupe de 24 horas.
 
 Risco:
 
-- Se o banco remoto nao receber essa migration, a vitrine pode tentar gravar com assinatura nova antes do schema estar pronto.
+- Se migrations antigas voltarem para `supabase/migrations/`, podem duplicar ou conflitar com a baseline.
 
 Recomendacao futura:
 
-- Aplicar a migration nova no Supabase SQL Editor e validar a assinatura da RPC no banco remoto.
+- Manter somente `20260618171439_remote_schema.sql` e `20260618172000_store_subscription_trial.sql` na pasta ativa de migrations.
 
 ## 5. Estilos antigos de accordion permanecem em `DashboardHome.jsx`
 

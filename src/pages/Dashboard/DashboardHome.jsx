@@ -560,7 +560,7 @@ export default function DashboardHome() {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        window.open('https://wa.me/5585992369359', '_blank');
+                        window.open('https://wa.me/5585992369359', '_blank', 'noopener,noreferrer');
                       }}
                       style={{
                         marginTop: '12px',
@@ -784,7 +784,7 @@ export default function DashboardHome() {
         </div>
 
         <div className="dashboard-side-stack">
-          <div {...metricCardProps} className="card dashboard-home-popular-card dashboard-glow-card" style={{ padding: '22px', '--dashboard-glow-color': '245, 158, 11' }}>
+          <div {...metricCardProps} className="card dashboard-home-popular-card dashboard-glow-card" style={{ padding: '26px', '--dashboard-glow-color': '245, 158, 11' }}>
             <h3 className="dashboard-subcard-title">
               <TrendingUp size={18} style={{ color: 'var(--primary)' }} /> Pneus Mais Procurados
             </h3>
@@ -794,15 +794,16 @@ export default function DashboardHome() {
               <div className="dashboard-home-popular-list">
                 {popularTires.map((tire, idx) => (
                   <div key={idx} className="dashboard-home-popular-item">
-                    <span>{idx + 1}. {tire.name}</span>
-                    <span className="badge badge-warning">{tire.count} cliques</span>
+                    <span className="dashboard-compact-rank">{idx + 1}</span>
+                    <span className="dashboard-compact-item-name">{tire.name}</span>
+                    <span className="badge badge-warning dashboard-soft-badge">{tire.count} cliques</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <div {...metricCardProps} className="card dashboard-home-ranking-card dashboard-glow-card" style={{ padding: '22px', '--dashboard-glow-color': '34, 197, 94' }}>
+          <div {...metricCardProps} className="card dashboard-home-ranking-card dashboard-glow-card" style={{ padding: '26px', '--dashboard-glow-color': '34, 197, 94' }}>
             <h3 className="dashboard-subcard-title">
               <TrendingUp size={18} style={{ color: '#22c55e' }} /> Ranking Comercial
             </h3>
@@ -814,11 +815,14 @@ export default function DashboardHome() {
                 {commercialMetrics.sellerRanking.slice(0, 5).map((seller, idx) => (
                   <div key={seller.key} className="dashboard-home-ranking-item">
                     <div className="flex-between dashboard-ranking-top">
-                      <div>
-                        <span>{idx + 1}. {seller.name}</span>
-                        {seller.refCode && <div>Ref: {seller.refCode}</div>}
+                      <div className="dashboard-ranking-identity">
+                        <span className="dashboard-compact-rank">{idx + 1}</span>
+                        <div className="dashboard-ranking-copy">
+                          <span>{seller.name}</span>
+                          {seller.refCode && <div>Ref: {seller.refCode}</div>}
+                        </div>
                       </div>
-                      <span className="badge badge-success">{formatPercent(seller.conversionRate)}%</span>
+                      <span className="badge badge-success dashboard-soft-badge">{formatPercent(seller.conversionRate)}%</span>
                     </div>
 
                     <div className="dashboard-ranking-stats">
@@ -944,8 +948,9 @@ export default function DashboardHome() {
               <div className="dashboard-home-popular-list">
                 {popularTires.map((tire, idx) => (
                   <div key={idx} className="dashboard-home-popular-item">
-                    <span>{idx + 1}. {tire.name}</span>
-                    <span className="badge badge-warning">{tire.count} cliques</span>
+                    <span className="dashboard-compact-rank">{idx + 1}</span>
+                    <span className="dashboard-compact-item-name">{tire.name}</span>
+                    <span className="badge badge-warning dashboard-soft-badge">{tire.count} cliques</span>
                   </div>
                 ))}
               </div>
@@ -1002,11 +1007,14 @@ export default function DashboardHome() {
                 {commercialMetrics.sellerRanking.slice(0, 5).map((seller, idx) => (
                   <div key={seller.key} className="dashboard-home-ranking-item">
                     <div className="flex-between dashboard-ranking-top">
-                      <div>
-                        <span>{idx + 1}. {seller.name}</span>
-                        {seller.refCode && <div>Ref: {seller.refCode}</div>}
+                      <div className="dashboard-ranking-identity">
+                        <span className="dashboard-compact-rank">{idx + 1}</span>
+                        <div className="dashboard-ranking-copy">
+                          <span>{seller.name}</span>
+                          {seller.refCode && <div>Ref: {seller.refCode}</div>}
+                        </div>
                       </div>
-                      <span className="badge badge-success">{formatPercent(seller.conversionRate)}%</span>
+                      <span className="badge badge-success dashboard-soft-badge">{formatPercent(seller.conversionRate)}%</span>
                     </div>
 
                     <div className="dashboard-ranking-stats">
@@ -1239,7 +1247,7 @@ export default function DashboardHome() {
         <div className="dashboard-home-side-column" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           
           {/* Popular Tires */}
-          <div {...metricCardProps} className="card dashboard-home-popular-card dashboard-glow-card" style={{ padding: '24px', '--dashboard-glow-color': '245, 158, 11' }}>
+          <div {...metricCardProps} className="card dashboard-home-popular-card dashboard-glow-card" style={{ padding: '26px', '--dashboard-glow-color': '245, 158, 11' }}>
             <h3 className="dashboard-home-popular-title" style={{ fontSize: '18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <TrendingUp size={18} style={{ color: 'var(--primary)' }} /> Pneus Mais Procurados
             </h3>
@@ -1247,13 +1255,12 @@ export default function DashboardHome() {
             {popularTires.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Aguardando interações na vitrine para gerar estatísticas.</p>
             ) : (
-              <div className="dashboard-home-popular-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="dashboard-home-popular-list">
                 {popularTires.map((tire, idx) => (
-                  <div key={idx} className="flex-between dashboard-home-popular-item" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
-                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left', minWidth: 0 }}>
-                      {idx + 1}. {tire.name}
-                    </span>
-                    <span className="badge badge-warning" style={{ fontSize: '11px' }}>{tire.count} cliques</span>
+                  <div key={idx} className="dashboard-home-popular-item">
+                    <span className="dashboard-compact-rank">{idx + 1}</span>
+                    <span className="dashboard-compact-item-name">{tire.name}</span>
+                    <span className="badge badge-warning dashboard-soft-badge">{tire.count} cliques</span>
                   </div>
                 ))}
               </div>
@@ -1261,7 +1268,7 @@ export default function DashboardHome() {
           </div>
 
           {/* Seller Ranking */}
-          <div {...metricCardProps} className="card dashboard-home-ranking-card dashboard-glow-card" style={{ padding: '24px', '--dashboard-glow-color': '34, 197, 94' }}>
+          <div {...metricCardProps} className="card dashboard-home-ranking-card dashboard-glow-card" style={{ padding: '26px', '--dashboard-glow-color': '34, 197, 94' }}>
             <h3 className="dashboard-home-popular-title" style={{ fontSize: '18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <TrendingUp size={18} style={{ color: '#22c55e' }} /> Ranking Comercial
             </h3>
@@ -1269,48 +1276,32 @@ export default function DashboardHome() {
             {commercialMetrics.sellerRanking.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Ainda não há leads, vendas ou visitas para montar o ranking.</p>
             ) : (
-              <div className="dashboard-home-ranking-list" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="dashboard-home-ranking-list">
                 {commercialMetrics.sellerRanking.slice(0, 5).map((seller, idx) => (
                   <div
                     key={seller.key}
                     className="dashboard-home-ranking-item"
-                    style={{
-                      border: '1px solid var(--border)',
-                      borderRadius: '14px',
-                      padding: '14px',
-                      backgroundColor: 'rgba(255,255,255,0.02)',
-                      textAlign: 'left'
-                    }}
                   >
-                    <div className="flex-between" style={{ gap: '12px', marginBottom: '10px', alignItems: 'flex-start' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '14px', wordBreak: 'break-word' }}>
-                          {idx + 1}. {seller.name}
-                        </span>
-                        {seller.refCode && (
-                          <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '2px', wordBreak: 'break-word' }}>
-                            Ref: {seller.refCode}
-                          </div>
-                        )}
+                    <div className="flex-between dashboard-ranking-top">
+                      <div className="dashboard-ranking-identity">
+                        <span className="dashboard-compact-rank">{idx + 1}</span>
+                        <div className="dashboard-ranking-copy">
+                          <span>{seller.name}</span>
+                          {seller.refCode && (
+                            <div>Ref: {seller.refCode}</div>
+                          )}
+                        </div>
                       </div>
-                      <span className="badge badge-success" style={{ fontSize: '11px', flexShrink: 0 }}>
+                      <span className="badge badge-success dashboard-soft-badge">
                         {formatPercent(seller.conversionRate)}%
                       </span>
                     </div>
 
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                        gap: '8px',
-                        color: 'var(--text-secondary)',
-                        fontSize: '12px'
-                      }}
-                    >
-                      <span>Visitas: <strong style={{ color: 'var(--text-primary)' }}>{seller.visits}</strong></span>
-                      <span>Leads: <strong style={{ color: 'var(--text-primary)' }}>{seller.leads}</strong></span>
-                      <span>Vendas: <strong style={{ color: '#22c55e' }}>{seller.sales}</strong></span>
-                      <span>Faturamento: <strong style={{ color: 'var(--primary)' }}>{formatCurrency(seller.revenue)}</strong></span>
+                    <div className="dashboard-ranking-stats">
+                      <span>Visitas: <strong>{seller.visits}</strong></span>
+                      <span>Leads: <strong>{seller.leads}</strong></span>
+                      <span>Vendas: <strong>{seller.sales}</strong></span>
+                      <span>Faturamento: <strong>{formatCurrency(seller.revenue)}</strong></span>
                     </div>
                   </div>
                 ))}
@@ -2007,16 +1998,25 @@ export default function DashboardHome() {
           background: rgba(0, 0, 0, 0.14);
           border: 1px solid var(--border);
           border-radius: 16px;
-          padding: 16px;
+          padding: 18px;
           min-width: 0;
         }
 
         .dashboard-subcard-title {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           font-size: 16px;
-          margin: 0 0 14px;
+          font-weight: 850;
+          letter-spacing: -0.025em;
+          line-height: 1.2;
+          margin: 0 0 18px;
+        }
+
+        .dashboard-subcard-title svg,
+        .dashboard-home-popular-title svg {
+          flex: 0 0 auto;
+          filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.2));
         }
 
         .dashboard-empty-text {
@@ -2036,71 +2036,149 @@ export default function DashboardHome() {
         .dashboard-home-popular-list,
         .dashboard-home-ranking-list,
         .dashboard-home-leads-list {
-          display: flex;
-          flex-direction: column;
+          display: grid;
           gap: 12px;
+          min-width: 0;
         }
 
         .dashboard-home-popular-item {
-          display: flex;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
           align-items: center;
           gap: 12px;
-          border-bottom: 1px solid var(--border);
-          padding-bottom: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.065);
+          border-radius: 16px;
+          background:
+            linear-gradient(135deg, rgba(245, 158, 11, 0.07), rgba(255, 255, 255, 0.028) 42%, rgba(255, 255, 255, 0.018)),
+            rgba(255, 255, 255, 0.018);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+          min-width: 0;
+          min-height: 54px;
+          padding: 12px 13px;
         }
 
-        .dashboard-home-popular-item > span:first-child {
+        .dashboard-compact-rank {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 26px;
+          height: 26px;
+          border-radius: 10px;
+          background: rgba(245, 158, 11, 0.12);
+          border: 1px solid rgba(245, 158, 11, 0.18);
+          color: #fbbf24;
+          font-size: 12px;
+          font-weight: 850;
+          line-height: 1;
+          flex: 0 0 auto;
+        }
+
+        .dashboard-compact-item-name {
           min-width: 0;
-          color: var(--text-secondary);
-          font-size: 13px;
+          color: rgba(248, 250, 252, 0.84);
+          font-size: 13.5px;
+          font-weight: 700;
+          line-height: 1.35;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
 
+        .dashboard-home-popular-item > .dashboard-soft-badge {
+          justify-self: end;
+          max-width: 118px;
+        }
+
+        .dashboard-soft-badge {
+          min-height: 24px;
+          padding: 6px 9px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.045em;
+          text-transform: uppercase;
+          box-shadow: none;
+        }
+
+        .dashboard-soft-badge.badge-warning {
+          color: #fbbf24;
+          background: rgba(245, 158, 11, 0.095);
+          border-color: rgba(245, 158, 11, 0.22);
+        }
+
+        .dashboard-soft-badge.badge-success {
+          color: #34d399;
+          background: rgba(34, 197, 94, 0.095);
+          border-color: rgba(34, 197, 94, 0.2);
+        }
+
         .dashboard-home-ranking-item {
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 14px;
-          background: rgba(255, 255, 255, 0.025);
+          border: 1px solid rgba(255, 255, 255, 0.065);
+          border-radius: 18px;
+          padding: 16px;
+          background:
+            linear-gradient(145deg, rgba(34, 197, 94, 0.055), rgba(255, 255, 255, 0.024) 48%, rgba(255, 255, 255, 0.015)),
+            rgba(255, 255, 255, 0.018);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
           text-align: left;
           min-width: 0;
         }
 
         .dashboard-ranking-top {
+          display: grid !important;
+          grid-template-columns: minmax(0, 1fr) auto;
           gap: 12px;
-          margin-bottom: 10px;
+          margin-bottom: 14px;
           align-items: flex-start;
         }
 
-        .dashboard-ranking-top div {
+        .dashboard-ranking-identity {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          align-items: start;
+          gap: 10px;
           min-width: 0;
         }
 
-        .dashboard-ranking-top span:first-child {
+        .dashboard-ranking-copy {
+          min-width: 0;
+        }
+
+        .dashboard-ranking-copy > span:first-child {
           color: var(--text-primary);
           font-weight: 700;
           font-size: 14px;
           word-break: break-word;
         }
 
-        .dashboard-ranking-top div div {
+        .dashboard-ranking-copy div {
           color: var(--text-muted);
           font-size: 11px;
-          margin-top: 2px;
+          margin-top: 4px;
           word-break: break-word;
+        }
+
+        .dashboard-ranking-top > .dashboard-soft-badge {
+          justify-self: end;
+          max-width: 88px;
         }
 
         .dashboard-ranking-stats {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
           color: var(--text-secondary);
-          font-size: 12px;
+          font-size: 11px;
         }
 
         .dashboard-ranking-stats span {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          border: 1px solid rgba(255, 255, 255, 0.055);
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.022);
+          padding: 9px 10px;
           min-width: 0;
           overflow-wrap: anywhere;
         }
@@ -2208,7 +2286,7 @@ export default function DashboardHome() {
         .dashboard-actions-compact .dashboard-home-actions {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
+          gap: 10px;
         }
 
         .dashboard-actions-compact .btn {
@@ -2295,20 +2373,21 @@ export default function DashboardHome() {
           .dashboard-accordion-section,
           .dashboard-subcard,
           .dashboard-metric-tile,
+          .dashboard-home-popular-item,
           .dashboard-home-ranking-item,
           .dashboard-home-lead-item {
             border-radius: 16px;
           }
 
           .dashboard-ranking-stats {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
           .dashboard-home-popular-item {
             align-items: flex-start;
           }
 
-          .dashboard-home-popular-item > span:first-child {
+          .dashboard-compact-item-name {
             white-space: normal;
           }
         }
@@ -2387,14 +2466,14 @@ export default function DashboardHome() {
           }
 
           .dashboard-home-popular-item {
-            flex-direction: row;
+            grid-template-columns: auto minmax(0, 1fr) auto;
             align-items: center;
             gap: 12px;
-            padding-bottom: 12px !important;
+            padding: 12px;
           }
 
-          .dashboard-home-popular-item > span:first-child {
-            max-width: calc(100% - 104px);
+          .dashboard-compact-item-name {
+            max-width: 100%;
           }
 
           .dashboard-home-actions {
@@ -2419,8 +2498,28 @@ export default function DashboardHome() {
             font-size: 11px !important;
           }
 
-          .dashboard-home-popular-item > span:first-child {
-            max-width: calc(100% - 92px);
+          .dashboard-home-popular-item {
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: center;
+          }
+
+          .dashboard-compact-item-name {
+            max-width: 100%;
+            white-space: normal;
+          }
+
+          .dashboard-home-popular-item > .dashboard-soft-badge {
+            grid-column: 1 / -1;
+            justify-self: start;
+            max-width: 100%;
+          }
+
+          .dashboard-ranking-top {
+            grid-template-columns: 1fr;
+          }
+
+          .dashboard-ranking-top > .dashboard-soft-badge {
+            justify-self: start;
           }
         }
       `}</style>

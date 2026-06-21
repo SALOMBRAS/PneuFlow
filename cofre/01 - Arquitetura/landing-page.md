@@ -13,6 +13,7 @@ fonte:
   - src/components/InteractiveDemo/InteractiveDemo.css
   - src/components/FeedbackCarousel.jsx
   - src/components/FeedbackCarousel.css
+  - src/index.css
 atualizado: 2026-06-22
 tags: []
 ---
@@ -61,3 +62,4 @@ O CardSwap Ã© carregado com `React.lazy` e nÃ£o renderiza no mobile; no mobi
 - Background da landing foi centralizado no wrapper principal para evitar cortes secos entre seÃ§Ãµes.
 - A landing nÃ£o cria dados reais e nÃ£o chama Supabase para a demo interativa.
 - CTAs principais usam "Criar minha vitrine grÃ¡tis"; link de login fica no header e link de polÃ­tica no footer.
+- A identidade visual da landing e a referencia global do produto: dark premium, amber/orange, cards escuros, bordas sutis, Inter/Outfit. Detalhes em [[../03 - Decisões/padronizacao-visual-frontend|Padronizacao visual do frontend]].

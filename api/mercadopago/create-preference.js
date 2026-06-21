@@ -9,6 +9,11 @@ const EXPECTED_SELLER_TEST_USER = 'TESTUSER1128828319103991222';
 const EXPECTED_SELLER_USER_ID = '3484025164';
 const EXPECTED_BUYER_TEST_USER = 'TESTUSER7217731358368666817';
 const EXPECTED_BUYER_USER_ID = '3484025166';
+const FIELD_LIMITS = {
+  storeId: 120,
+  storeSlug: 120,
+  storeName: 140
+};
 let localEnvLoaded = false;
 let tokenOwnerCheckPromise = null;
 
@@ -70,7 +75,16 @@ function isLocalAppUrl(appUrl) {
 }
 
 function shouldExposeLocalDebug(appUrl) {
-  return process.env.NODE_ENV !== 'production' || process.env.VERCEL_ENV === 'development' || isLocalAppUrl(appUrl);
+  if (process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production') return false;
+  return process.env.VERCEL_ENV === 'development' || isLocalAppUrl(appUrl) || process.env.NODE_ENV !== 'production';
+}
+
+function normalizeTextField(value, maxLength) {
+  return String(value || '').trim().slice(0, maxLength);
+}
+
+function isSafeExternalReference(value) {
+  return /^[a-zA-Z0-9._:-]{1,120}$/.test(value);
 }
 
 function maskEmail(email) {
@@ -113,8 +127,7 @@ function getLocalDebugError(error, accessToken) {
     name: error?.name,
     status: error?.status,
     cause: safeErrorCause(error?.cause),
-    hasAccessToken: Boolean(accessToken),
-    accessTokenLength: accessToken?.length || 0
+    hasAccessToken: Boolean(accessToken)
   };
 }
 
@@ -174,31 +187,32 @@ function parseBody(body) {
     try {
       return JSON.parse(body);
     } catch {
-      return {};
+      return null;
     }
   }
-  return body;
+  return typeof body === 'object' ? body : {};
 }
 
 export default async function handler(req, res) {
   loadLocalEnvFallback();
+  const appUrl = normalizeAppUrl(process.env.APP_URL);
 
-  console.log('[MP create-preference]', {
-    method: req.method,
-    hasAccessToken: Boolean(process.env.MERCADO_PAGO_ACCESS_TOKEN),
-    accessTokenLength: process.env.MERCADO_PAGO_ACCESS_TOKEN?.length || 0,
-    hasAppUrl: Boolean(process.env.APP_URL),
-    appUrl: process.env.APP_URL
-  });
-  console.log('[MP sandbox config]', {
-    hasAccessToken: Boolean(process.env.MERCADO_PAGO_ACCESS_TOKEN),
-    accessTokenLength: process.env.MERCADO_PAGO_ACCESS_TOKEN?.length || 0,
-    appUrl: process.env.APP_URL,
-    expectedSellerTestUser: EXPECTED_SELLER_TEST_USER,
-    expectedSellerUserId: EXPECTED_SELLER_USER_ID,
-    expectedBuyerTestUser: EXPECTED_BUYER_TEST_USER,
-    expectedBuyerUserId: EXPECTED_BUYER_USER_ID
-  });
+  if (shouldExposeLocalDebug(appUrl)) {
+    console.log('[MP create-preference]', {
+      method: req.method,
+      hasAccessToken: Boolean(process.env.MERCADO_PAGO_ACCESS_TOKEN),
+      hasAppUrl: Boolean(appUrl),
+      appUrl
+    });
+    console.log('[MP sandbox config]', {
+      hasAccessToken: Boolean(process.env.MERCADO_PAGO_ACCESS_TOKEN),
+      appUrl,
+      expectedSellerTestUser: EXPECTED_SELLER_TEST_USER,
+      expectedSellerUserId: EXPECTED_SELLER_USER_ID,
+      expectedBuyerTestUser: EXPECTED_BUYER_TEST_USER,
+      expectedBuyerUserId: EXPECTED_BUYER_USER_ID
+    });
+  }
 
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -206,7 +220,6 @@ export default async function handler(req, res) {
   }
 
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-  const appUrl = normalizeAppUrl(process.env.APP_URL);
 
   if (!accessToken) {
     const payload = { error: 'Checkout indisponivel no momento.' };
@@ -214,22 +227,30 @@ export default async function handler(req, res) {
     if (shouldExposeLocalDebug(appUrl)) {
       payload.debug = {
         message: 'MERCADO_PAGO_ACCESS_TOKEN ausente no ambiente da funcao.',
-        hasAccessToken: false,
-        accessTokenLength: 0
+        hasAccessToken: false
       };
     }
 
     return res.status(500).json(payload);
   }
 
-  const { storeId, storeSlug, storeName } = parseBody(req.body);
-  const normalizedStoreId = String(storeId || '').trim();
-  const normalizedStoreSlug = String(storeSlug || '').trim();
-  const normalizedStoreName = String(storeName || 'Loja PneuFlow').trim();
+  const body = parseBody(req.body);
+
+  if (!body) {
+    return res.status(400).json({ error: 'Corpo da requisicao invalido.' });
+  }
+
+  const normalizedStoreId = normalizeTextField(body.storeId, FIELD_LIMITS.storeId);
+  const normalizedStoreSlug = normalizeTextField(body.storeSlug, FIELD_LIMITS.storeSlug);
+  const normalizedStoreName = normalizeTextField(body.storeName || 'Loja PneuFlow', FIELD_LIMITS.storeName);
   const externalReference = normalizedStoreId || normalizedStoreSlug;
 
   if (!externalReference) {
     return res.status(400).json({ error: 'Loja invalida para criar checkout.' });
+  }
+
+  if (!isSafeExternalReference(externalReference)) {
+    return res.status(400).json({ error: 'Identificador da loja invalido para criar checkout.' });
   }
 
   try {

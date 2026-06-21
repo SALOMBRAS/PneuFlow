@@ -16,7 +16,7 @@ fonte:
   - src/pages/Subscription.jsx
   - src/utils/subscriptionAccess.js
   - src/services/storage.js
-  - supabase/migrations/20260615090000_store_referral_visits_visitor_tracking.sql
+  - supabase/migrations/20260618171439_remote_schema.sql
   - cofre/01 - Arquitetura/mapa-de-impacto-geral.md
   - cofre/01 - Arquitetura/checklists-regressao.md
 atualizado: 2026-06-22
@@ -55,6 +55,14 @@ As rotas filhas vivem sob `/dashboard` em `src/App.jsx`.
 
 `DashboardShell.jsx` renderiza `DashboardLayout` e mantem o `<Outlet />` das rotas filhas. `DashboardLayout.jsx` contem sidebar desktop/mobile, botao hamburguer, backdrop, lock de rolagem no menu mobile, link "Ver Minha Vitrine" e acao "Sair do Painel".
 `DashboardLayout.jsx` tambem centraliza aviso de trial e bloqueio do painel quando `subscriptionAccess.hasStoreAccess` e falso.
+
+## Trial e assinatura
+
+- `DashboardLayout.jsx` chama `getSubscriptionAccess(store)`.
+- Quando `hasStoreAccess` e falso, o dashboard redireciona para `/assinatura`.
+- A regra de vencimento e inclusiva ate `23:59:59.999` do dia final, centralizada em `src/utils/subscriptionAccess.js`.
+- A tela `/assinatura` mostra o CTA para Checkout Pro, mas nao ativa assinatura no banco.
+- Detalhes: [[../03 - Decisões/trial-e-assinatura|Trial e assinatura]].
 
 ## Dashboard Home
 

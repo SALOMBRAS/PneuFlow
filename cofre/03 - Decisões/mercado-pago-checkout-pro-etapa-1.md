@@ -10,7 +10,8 @@ fonte:
   - src/pages/Subscription.jsx
   - src/pages/SubscriptionReturn.jsx
   - api/mercadopago/create-preference.js
-atualizado: 2026-06-18
+  - vercel.json
+atualizado: 2026-06-21
 tags: []
 ---
 
@@ -30,6 +31,17 @@ tags: []
 - Tela de retorno: `src/pages/SubscriptionReturn.jsx`.
 - Valor: R$ 39,00.
 - Item: `Assinatura PneuFlow - Plano PRO`.
+- SDK: `mercadopago@3.1.0`, usando `MercadoPagoConfig` e `Preference`.
+
+## Status atual auditado
+
+- O botao em `/assinatura` chama `/api/mercadopago/create-preference` via `POST`.
+- A preferencia e criada no backend.
+- O Checkout Pro sandbox abre corretamente quando a preferencia retorna `sandboxInitPoint`.
+- O pagamento sandbox ainda nao foi finalizado com sucesso no fluxo completo.
+- Webhook ainda nao existe.
+- A assinatura ainda nao e ativada automaticamente no Supabase.
+- A pagina `/assinatura/retorno` e apenas visual.
 
 ## Seguranca
 
@@ -37,7 +49,7 @@ tags: []
 - O frontend chama apenas `/api/mercadopago/create-preference`.
 - Em `vercel.json`, a rota especifica do Mercado Pago deve vir antes do catch-all `/api/(.*)` e usar destino sem `.js`: `/api/mercadopago/create-preference`.
 - Em `vercel dev`, se `process.env` nao carregar `MERCADO_PAGO_ACCESS_TOKEN`/`APP_URL`, a funcao pode usar fallback local restrito a essas duas chaves em `.env.local`; esse fallback nao roda em `VERCEL_ENV=production`.
-- Logs de debug da funcao podem registrar metodo, presenca/tamanho do token e erro do SDK, mas nunca o valor do token.
+- Logs de debug da funcao podem registrar metodo, presenca do token e erro do SDK, mas nunca o valor do token.
 - Para teste sandbox, `MERCADO_PAGO_ACCESS_TOKEN` deve pertencer ao Seller Test User `TESTUSER1128828319103991222` (`3484025164`) e o checkout deve ser pago com o Buyer Test User `TESTUSER7217731358368666817` (`3484025166`).
 - Em ambiente local/desenvolvimento, a funcao consulta `/users/me` com o token carregado, loga apenas `id`, `nickname`, email mascarado e `site_id`, e bloqueia a criacao da preferencia se o token nao for do Seller Test User esperado.
 - Nenhum token deve ser salvo no repositorio ou impresso em log.
@@ -65,6 +77,8 @@ tags: []
 
 ## Proximos passos
 
-- Testar com conta/cartao de teste do Mercado Pago.
+- Finalizar teste sandbox com Seller Test User e Buyer Test User corretos.
 - Implementar webhook em etapa separada para validar pagamento e atualizar `stores.subscription_status`.
 - Registrar id de pagamento/preferencia quando houver modelo de persistencia definido.
+- Configurar variaveis de ambiente na Vercel antes de testar producao.
+- Nao commitar `.env.local`.

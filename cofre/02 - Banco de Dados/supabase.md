@@ -6,14 +6,10 @@ tokens: medio
 fonte:
   - src/lib/supabase.js
   - src/services/storage.js
-  - supabase/migrations/20260604092000_multi_seller_phase1.sql
-  - supabase/migrations/20260609091000_public_referral_seller.sql
-  - supabase/migrations/20260609092000_seller_whatsapp.sql
-  - supabase/migrations/20260612090000_delete_lead_rpc.sql
-  - supabase/migrations/20260615090000_store_referral_visits_visitor_tracking.sql
+  - supabase/migrations/20260618171439_remote_schema.sql
   - supabase/migrations/20260618172000_store_subscription_trial.sql
   - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
-atualizado: 2026-06-18
+atualizado: 2026-06-21
 tags: []
 ---
 
@@ -113,3 +109,9 @@ tags: []
 - Nao usar service role no frontend.
 - Nao copiar valores de `.env` para notas.
 - Confirmar impacto antes de alterar RLS/policies.
+
+## Estado atual das migrations
+
+- `supabase/migrations/` deve conter somente `20260618171439_remote_schema.sql` e `20260618172000_store_subscription_trial.sql`.
+- Migrations antigas ficam em `docs/legacy-migrations/pre-baseline/` e nao devem ser executadas como ativas.
+- O schema remoto confirmado esta documentado em [[schema-remoto-confirmado]].

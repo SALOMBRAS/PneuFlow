@@ -116,13 +116,34 @@ function writeDB(data) {
   }
 }
 
+function sanitizeUser(user) {
+  if (!user) return undefined;
+
+  const { password, ownerPassword, ...safeUser } = user;
+  return safeUser;
+}
+
+function sanitizeStore(store) {
+  if (!store) return undefined;
+
+  const { password, ownerPassword, ...safeStore } = store;
+  return safeStore;
+}
+
+function serializeStoreWithUser(store, user) {
+  return {
+    ...sanitizeStore(store),
+    user: sanitizeUser(user)
+  };
+}
+
 // --- AUTH ROUTES ---
 
 app.post('/api/auth/login', async (req, res) => {
   const email = String(req.body.email || req.body.ownerEmail || "").trim().toLowerCase();
   const password = String(req.body.password || req.body.ownerPassword || "").trim();
 
-  console.log(`[AUTH] Tentativa de login: ${email}`);
+  console.log('[AUTH] Tentativa de login recebida');
 
   if (!email || !password) {
     return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
@@ -136,7 +157,7 @@ app.post('/api/auth/login', async (req, res) => {
   );
   
   if (user) {
-    console.log(`[AUTH] Usuário encontrado: ${user.id}`);
+    console.log('[AUTH] Usuario encontrado para login');
     const isMatch = user.password.startsWith('$2a$') 
       ? await bcrypt.compare(password, user.password)
       : password === user.password;
@@ -144,8 +165,8 @@ app.post('/api/auth/login', async (req, res) => {
     if (isMatch) {
       const store = db.stores.find(s => s.ownerId === user.id);
       if (store) {
-        console.log(`[AUTH] Login ok para loja: ${store.name}`);
-        return res.json({ ...store, user });
+        console.log('[AUTH] Login concluido com sucesso');
+        return res.json(serializeStoreWithUser(store, user));
       }
     }
   }
@@ -161,7 +182,7 @@ app.post('/api/auth/login', async (req, res) => {
       : password === storeFallback.ownerPassword;
 
     if (isMatch) {
-      return res.json(storeFallback);
+      return res.json(sanitizeStore(storeFallback));
     }
   }
 
@@ -175,7 +196,7 @@ app.post('/api/auth/register', async (req, res) => {
   const storeName = String(req.body.storeName || req.body.name || "").trim();
   const phone = String(req.body.phone || "").trim();
 
-  console.log(`[AUTH] Registro: ${email}`);
+  console.log('[AUTH] Registro recebido');
 
   if (!email || !password || !name || !storeName) {
     return res.status(400).json({ error: 'Campos obrigatórios faltando.' });
@@ -233,7 +254,7 @@ app.post('/api/auth/register', async (req, res) => {
   db.stores.push(newStore);
   writeDB(db);
   
-  return res.status(201).json({ ...newStore, user: newUser });
+  return res.status(201).json(serializeStoreWithUser(newStore, newUser));
 });
 
 // --- STORE ROUTES ---
@@ -243,7 +264,7 @@ app.get('/api/stores/:id', (req, res) => {
   const store = db.stores.find(s => s.id === req.params.id);
   if (store) {
     const user = db.users?.find(u => u.id === store.ownerId);
-    return res.json({ ...store, user });
+    return res.json(serializeStoreWithUser(store, user));
   }
   return res.status(404).json({ error: 'Loja não encontrada' });
 });
@@ -253,14 +274,14 @@ app.get('/api/stores/slug/:slug', (req, res) => {
   const store = db.stores.find(s => s.slug === req.params.slug);
   if (store) {
     const user = db.users?.find(u => u.id === store.ownerId);
-    return res.json({ ...store, user });
+    return res.json(serializeStoreWithUser(store, user));
   }
   return res.status(404).json({ error: 'Loja não encontrada' });
 });
 
 app.get('/api/stores', (req, res) => {
   const db = readDB();
-  return res.json(db.stores);
+  return res.json(db.stores.map(sanitizeStore));
 });
 
 app.put('/api/stores/:id', (req, res) => {
@@ -270,7 +291,7 @@ app.put('/api/stores/:id', (req, res) => {
 
   db.stores[index] = { ...db.stores[index], ...req.body };
   writeDB(db);
-  return res.json(db.stores[index]);
+  return res.json(sanitizeStore(db.stores[index]));
 });
 
 // --- TIRE ROUTES ---

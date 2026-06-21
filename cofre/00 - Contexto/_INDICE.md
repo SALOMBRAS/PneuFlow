@@ -23,7 +23,13 @@ fonte:
   - cofre/01 - Arquitetura/inventario-funcoes-componentes.md
   - cofre/01 - Arquitetura/checklists-regressao.md
   - cofre/02 - Banco de Dados/migrations-rpcs.md
-atualizado: 2026-06-15
+  - cofre/00 - Contexto/estado-atual-do-projeto.md
+  - cofre/03 - Decisões/trial-e-assinatura.md
+  - cofre/03 - Decisões/vitrine-bloqueio-comercial.md
+  - cofre/03 - Decisões/padronizacao-visual-frontend.md
+  - cofre/03 - Decisões/mercado-pago-checkout-pro-etapa-1.md
+  - cofre/03 - Decisões/seguranca-e-hardening.md
+atualizado: 2026-06-21
 tags: []
 ---
 
@@ -36,6 +42,7 @@ tags: []
 ## Contexto essencial
 
 - [[visao-geral]]: finalidade, stack, comandos, modulos e integracoes confirmadas.
+- [[estado-atual-do-projeto]]: snapshot atual de Git, migrations ativas, funcionalidades confirmadas e pendencias.
 - [[glossario]]: termos de dominio e nomes tecnicos recorrentes.
 
 ## Arquitetura
@@ -62,7 +69,11 @@ tags: []
 
 ## Decisoes
 
+- [[../03 - Decisões/trial-e-assinatura|Trial e assinatura]]
+- [[../03 - Decisões/vitrine-bloqueio-comercial|Vitrine com bloqueio comercial]]
+- [[../03 - Decisões/padronizacao-visual-frontend|Padronizacao visual do frontend]]
 - [[../03 - Decisões/mercado-pago-checkout-pro-etapa-1|Mercado Pago Checkout Pro - etapa 1]]
+- [[../03 - Decisões/seguranca-e-hardening|Seguranca e hardening]]
 
 ## Dividas tecnicas em rascunho
 

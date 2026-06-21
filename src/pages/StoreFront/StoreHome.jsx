@@ -502,7 +502,7 @@ export default function StoreHome() {
 
       text += 'Poderia me passar mais informacoes?';
 
-      window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank');
+      window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 
       setLeadModalOpen(false);
       setCustomerName('');
@@ -522,7 +522,7 @@ export default function StoreHome() {
     if (referralSeller?.ref_code && hasValidWhatsapp(referralSeller?.whatsapp)) {
       text += ` Fui atendido por: ${referralSeller.nome || 'vendedor'}.`;
     }
-    window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
   const paymentMethods = ['Pix', 'Cartão', 'Dinheiro'];

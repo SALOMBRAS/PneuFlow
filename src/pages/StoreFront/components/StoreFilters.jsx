@@ -65,9 +65,9 @@ export default function StoreFilters({
               viewBox="0 0 24 24" 
               fill="none" 
               stroke="currentColor" 
-              stroke-width="2" 
-              stroke-linecap="round" 
-              stroke-linejoin="round"
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
               style={{ marginRight: '4px' }}
             >
               <path d="M12 9H2V7.5c0-.5.3-1 .8-1.2l1.2-2.3c.2-.4.7-.6 1.2-.6h4.6c.5 0 1 .2 1.2.6l1.2 2.3c.5.2.8.7.8 1.2V9z" />

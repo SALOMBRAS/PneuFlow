@@ -15,6 +15,7 @@ fonte:
   - src/pages/Auth/AuthCallback.jsx
   - src/pages/Auth/SetPassword.jsx
   - src/pages/Subscription.jsx
+  - src/pages/SubscriptionReturn.jsx
   - src/pages/Dashboard/DashboardShell.jsx
   - src/pages/Dashboard/DashboardLayout.jsx
   - src/pages/Dashboard/DashboardHome.jsx
@@ -23,7 +24,7 @@ fonte:
   - src/pages/Dashboard/Sellers.jsx
   - src/pages/Dashboard/StoreSettings.jsx
   - src/pages/StoreFront/StoreHome.jsx
-atualizado: 2026-06-18
+atualizado: 2026-06-21
 tags: []
 ---
 
@@ -46,6 +47,7 @@ Todas as pÃ¡ginas abaixo sÃ£o carregadas por lazy import. O fallback global 
 | `/` | `LandingPage` | PÃ¡gina comercial do PneuFlow, hero, demo mockada, prova social, FAQ e CTA | NÃ£o usa Supabase |
 | `/privacidade` | `PrivacyPolicy` | PolÃ­tica de Privacidade e resumo de Termos de Uso | NÃ£o usa Supabase |
 | `/assinatura` | `Subscription` | Trial encerrado e CTA de assinatura por R$ 39,00/mes | Supabase: loja atual via `StoreProvider` |
+| `/assinatura/retorno` | `SubscriptionReturn` | Retorno visual do Checkout Pro (`success`, `pending`, `failure`) | Nao ativa assinatura no banco |
 | `/store/:storeSlug` | `StoreHome` | Vitrine pÃºblica real da loja | Supabase: `stores`, `pneus`, `leads`, referral |
 
 ## Rotas de autenticaÃ§Ã£o

@@ -7,7 +7,9 @@ tokens: baixo
 fonte:
   - src/main.jsx
   - src/App.jsx
-atualizado: 2026-06-15
+  - src/pages/Subscription.jsx
+  - src/pages/SubscriptionReturn.jsx
+atualizado: 2026-06-21
 tags: []
 ---
 
@@ -35,6 +37,8 @@ tags: []
 - `/reset-password`: `Auth/ResetPassword`
 - `/auth/callback`: `Auth/AuthCallback`
 - `/auth/set-password`: `Auth/SetPassword`
+- `/assinatura`: `Subscription`
+- `/assinatura/retorno`: `SubscriptionReturn`
 - `/store/:storeSlug`: `StoreFront/StoreHome`
 - `/dashboard`: `Dashboard/DashboardShell`
 - `/dashboard/catalog`: `Dashboard/Catalog`

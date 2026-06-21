@@ -14,7 +14,11 @@ fonte:
   - src/pages/Dashboard/Sellers.jsx
   - src/pages/Dashboard/StoreSettings.jsx
   - src/pages/StoreFront/StoreHome.jsx
-atualizado: 2026-06-15
+  - src/pages/Subscription.jsx
+  - src/pages/SubscriptionReturn.jsx
+  - src/utils/subscriptionAccess.js
+  - api/mercadopago/create-preference.js
+atualizado: 2026-06-21
 tags: []
 ---
 
@@ -65,6 +69,8 @@ tags: []
 - Conteudo principal nao some.
 - Menu mobile abre/fecha, trava fundo e nao corta logout.
 - Vendedor nao acessa rotas de owner.
+- Trial ativo com vencimento hoje continua liberado ate 23:59.
+- Trial vencido ontem redireciona dashboard para `/assinatura`.
 
 ## Dashboard Home
 
@@ -138,6 +144,25 @@ tags: []
 - Busca por veiculo aplica/limpa.
 - Card destaque nao corta botao/preco em mobile.
 - Lead gerado aparece no dashboard.
+- Trial ativo: CTAs comerciais funcionam.
+- Trial vencido: vitrine abre, aviso discreto aparece, CTAs comerciais ficam desabilitados, WhatsApp nao abre e lead nao e criado.
+
+## Assinatura e Checkout Pro
+
+- `/assinatura` redireciona para `/dashboard` quando `hasStoreAccess` e verdadeiro.
+- `/assinatura` mostra tela de assinatura quando trial/assinatura esta vencido.
+- Botao "Assinar PneuFlow - R$ 39,00/mes" chama `/api/mercadopago/create-preference`.
+- Em localhost, a API nao envia `back_urls` nem `auto_return`.
+- Em URL publica `https`, a API envia `back_urls` para `/assinatura/retorno`.
+- `/assinatura/retorno?status=success|pending|failure` mostra mensagens visuais e nao altera banco.
+- Webhook/ativacao automatica nao devem ser assumidos como existentes.
+
+## Visual global
+
+- Conferir se landing, login, cadastro, dashboard, assinatura e vitrine usam dark premium com destaque amber/orange.
+- Conferir se `Inter`/`Outfit` seguem como fontes principais.
+- Conferir botoes, cards, inputs, modais, tabelas e estados vazios em desktop e mobile.
+- Conferir que a padronizacao visual nao alterou fluxo de dados ou CTAs.
 
 ## Supabase/RPC
 

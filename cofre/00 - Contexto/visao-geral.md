@@ -9,6 +9,7 @@ fonte:
   - vite.config.js
   - vercel.json
   - index.html
+  - src/index.css
   - src/main.jsx
   - src/App.jsx
   - src/pages/PrivacyPolicy.jsx
@@ -17,116 +18,144 @@ fonte:
   - src/contexts/StoreContext.jsx
   - src/services/storage.js
   - src/utils/imageOptimizer.js
+  - src/utils/subscriptionAccess.js
   - src/pages/Dashboard/DashboardLayout.jsx
   - src/pages/Dashboard/DashboardHome.jsx
   - src/pages/Subscription.jsx
-  - src/utils/subscriptionAccess.js
+  - src/pages/SubscriptionReturn.jsx
+  - src/pages/StoreFront/StoreHome.jsx
+  - src/pages/StoreFront/StoreFront.css
   - src/pages/StoreFront/components/VehicleSearchBox.jsx
-  - src/components/InteractiveDemo/InteractiveDemo.jsx
-  - supabase/functions/invite-seller/index.ts
-  - supabase/functions/manage-seller-access/index.ts
-  - supabase/migrations/20260604092000_multi_seller_phase1.sql
-  - docs/legacy-migrations/20260604_multi_seller_phase2.txt
-  - supabase/migrations/20260612090000_delete_lead_rpc.sql
+  - api/mercadopago/create-preference.js
+  - supabase/migrations/20260618171439_remote_schema.sql
   - supabase/migrations/20260618172000_store_subscription_trial.sql
-atualizado: 2026-06-18
+atualizado: 2026-06-21
 tags: []
 ---
 
 > [!tldr]
-> PneuFlow Ã© um app React/Vite para landing, autenticaÃ§Ã£o, dashboard, catÃ¡logo de pneus, leads e vitrine pÃºblica.
-> Supabase Ã© usado para Auth, dados, storage, RPCs e edge functions; Vercel serve SPA e API.
+> PneuFlow e uma SPA React/Vite para landing, auth, dashboard, catalogo, leads, vendedores, assinatura e vitrine publica.
+> Supabase e a base de dados/Auth/Storage; Vercel serve SPA e API, incluindo Checkout Pro etapa 1.
 
-# VisÃ£o Geral
+# Visao Geral
 
-## Finalidade confirmada
+## Finalidade
 
-PneuFlow Ã© uma plataforma para lojas de pneus criarem uma vitrine digital, organizarem catÃ¡logo, captarem leads pelo WhatsApp e operarem com dono/vendedores. A landing pÃºblica apresenta o produto, enquanto o dashboard concentra catÃ¡logo, leads, vendedores e configuraÃ§Ãµes da loja.
+PneuFlow permite que lojas de pneus criem uma vitrine digital, organizem catalogo, captem leads pelo WhatsApp, acompanhem metricas e operem com dono/vendedores.
 
-## Stack principal
+## Stack
 
 - Frontend: React 19, Vite 8, React Router DOM 7.
-- Backend/API local: Express em `server.js` e endpoint Vercel em `api/index.js`.
+- UI: CSS proprio, lucide-react, componentes visuais da landing.
+- Backend/API local legado: `server.js` e `api/index.js`.
+- Backend de pagamento: `api/mercadopago/create-preference.js` em Vercel Functions.
 - Banco/Auth/Storage: Supabase via `@supabase/supabase-js`.
-- UI/efeitos: CSS prÃ³prio, lucide-react, gsap em componentes visuais.
-- Imagens: otimizaÃ§Ã£o client-side para WebP e conversÃ£o HEIC/HEIF com import dinÃ¢mico de `heic2any`.
-- Deploy: Vercel com rewrites em `vercel.json`; o fallback da SPA deve excluir `api`, arquivos internos do Vite (`src`, `@...`) e arquivos com extensao.
+- Deploy: Vercel com rewrites em `vercel.json`.
 
-## Comandos confirmados
+## Comandos
 
 - Desenvolvimento frontend: `npm run dev:frontend`
-- Desenvolvimento backend: `npm run dev:backend`
+- Desenvolvimento backend legado: `npm run dev:backend`
 - Desenvolvimento combinado: `npm run dev`
 - Build: `npm run build`
 - Lint: `npm run lint`
 - Preview: `npm run preview`
-- Build direto usado em validaÃ§Ãµes locais: `node .\node_modules\vite\bin\vite.js build`
-
-## Estrutura geral confirmada
-
-- `src/main.jsx`: monta React em `#root`.
-- `src/App.jsx`: define rotas pÃºblicas, auth, dashboard e vitrine pÃºblica com `React.lazy`.
-- `src/pages/LandingPage.jsx`: landing pÃºblica do SaaS.
-- `src/pages/PrivacyPolicy.jsx`: pÃ¡gina pÃºblica de polÃ­tica de privacidade.
-- `src/pages/Auth/`: login, cadastro e fluxos de senha/auth callback.
-- `src/pages/Dashboard/`: dashboard, catÃ¡logo, leads, vendedores e configuraÃ§Ãµes.
-- `src/pages/StoreFront/`: vitrine pÃºblica em `/store/:storeSlug`.
-- `src/components/`: componentes visuais e interativos da landing.
-- `src/lib/supabase.js`: cliente Supabase e persistÃªncia customizada de sessÃ£o.
-- `src/services/storage.js`: camada de acesso a Supabase, auth, stores, membros, leads, pneus e edge functions.
-- `src/utils/imageOptimizer.js`: validaÃ§Ã£o e conversÃ£o de imagens para WebP.
-- `supabase/migrations/`: migrations SQL e RPCs.
 
 ## Pontos de entrada
 
-- HTML: `index.html`, com root em `<div id="root"></div>` e script `/src/main.jsx`.
+- HTML: `index.html`.
 - React: `src/main.jsx`.
 - Rotas: `src/App.jsx`.
-- API Vercel: `api/index.js` para backend mock/legado e `api/mercadopago/create-preference.js` para Checkout Pro, roteadas por `vercel.json`.
-- Backend local: `server.js`.
+- API Vercel Mercado Pago: `api/mercadopago/create-preference.js`.
+- API Vercel legado/mock: `api/index.js`.
+- Backend local legado/mock: `server.js`.
 
-## Rotas principais confirmadas
+## Rotas confirmadas
 
-- `/`: Landing page.
-- `/privacidade`: PolÃ­tica de privacidade pÃºblica.
-- `/login`, `/register`, `/forgot-password`, `/reset-password`, `/auth/callback`, `/auth/set-password`: autenticaÃ§Ã£o.
-- `/store/:storeSlug`: vitrine pÃºblica.
+- `/`: landing publica.
+- `/privacidade`: politica de privacidade.
+- `/login`, `/register`, `/forgot-password`, `/reset-password`, `/auth/callback`, `/auth/set-password`: auth.
+- `/store/:storeSlug`: vitrine publica.
 - `/dashboard`: dashboard autenticado.
-- `/dashboard/catalog`: catÃ¡logo.
+- `/dashboard/catalog`: catalogo.
 - `/dashboard/leads`: leads.
 - `/dashboard/sellers`: vendedores.
-- `/dashboard/settings`: configuraÃ§Ãµes.
+- `/dashboard/settings`: configuracoes.
 - `/assinatura`: tela de assinatura/trial encerrado.
+- `/assinatura/retorno`: retorno visual do Checkout Pro.
 
-## Banco de dados e integraÃ§Ãµes
+## Banco e migrations
 
-Supabase Ã© configurado com `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`. O cÃ³digo usa Auth, tabelas como `stores`, `store_members`, `pneus` e `leads`, RPCs e edge functions como `invite-seller` e `manage-seller-access`.
+`supabase/migrations/` deve conter somente:
 
-## VariÃ¡veis de ambiente esperadas
+- `20260618171439_remote_schema.sql`
+- `20260618172000_store_subscription_trial.sql`
+
+Migrations antigas ficam em `docs/legacy-migrations/pre-baseline/` e nao devem voltar para a pasta ativa sem tarefa explicita.
+
+`20260618171439_remote_schema.sql` contem `store_referral_visits`, `registrar_visita_referral`, `visitor_id` e `user_agent`.
+
+`20260618172000_store_subscription_trial.sql` adiciona campos de trial/assinatura em `stores`.
+
+## Variaveis de ambiente
+
+Listar apenas nomes, nunca valores:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_MERCADO_PAGO_PUBLIC_KEY`
+- `MERCADO_PAGO_ACCESS_TOKEN`
+- `APP_URL`
 
-NÃ£o copiar valores de `.env`, `.env.local` ou qualquer segredo para o cofre.
+`.env` e `.env.local` nao devem ser commitados.
 
-## DecisÃµes arquiteturais evidentes
+## Trial e assinatura
 
-- Rotas sÃ£o carregadas com `React.lazy` e `Suspense`.
-- Supabase Auth usa storage customizado para alternar persistÃªncia entre `localStorage` e `sessionStorage`.
-- Dono e vendedor sÃ£o resolvidos no `StoreContext` com fallback por `store_members`.
-- Cadastro de lojista exige aceite frontend de Termos/Privacidade por modal local com rolagem interna; nÃ£o registra aceite no banco.
-- Dashboard Home usa mÃ©tricas comerciais somente leitura via `storageService.getDashboardMetrics`, com `Promise.allSettled` e fallback para arrays vazios.
-- Upload de imagem converte formatos suportados para WebP antes de enviar.
-- Vitrine pÃºblica suporta referral de vendedor via `ref_code` e RPC pÃºblica de vendedor.
-- Landing tem demo interativa mockada local, FAQ acessÃ­vel por botÃ£o, metadados sociais/SEO em `index.html` e CardSwap desativado no mobile.
-- Trial comercial inicial usa campos em `stores`, helper `subscriptionAccess` e bloqueio central no `DashboardLayout`; gateway/webhook ainda nÃ£o estÃ£o integrados.
-- `server.js` e `api/index.js` permanecem como backend mock/legado; o fluxo principal atual usa Supabase pelo frontend.
-- `vercel.json` precisa manter `/api/mercadopago/create-preference` antes do rewrite legado `/api/(.*)`; caso contrario o Checkout Pro cai no backend mock.
-- O fallback de SPA no Vercel deve apontar para `/index.html`, nao `/`, e nao pode capturar `/src/main.jsx`, `/@vite/client` ou `/@react-refresh` durante `vercel dev`.
+- A regra central fica em `src/utils/subscriptionAccess.js`.
+- `getSubscriptionAccess(store)` calcula `hasStoreAccess`.
+- Vencimento e inclusivo ate `23:59:59.999` do dia final.
+- Dashboard redireciona para `/assinatura` quando `hasStoreAccess` e falso.
+- `/assinatura` tem CTA para Checkout Pro, mas nao ativa assinatura no banco.
+- Detalhes: [[../03 - Decisões/trial-e-assinatura|Trial e assinatura]].
 
-## Riscos ou dÃ­vidas confirmadas
+## Vitrine publica
 
-- Alguns textos exibidos no terminal aparecem com mojibake; confirmar encoding antes de editar cÃ³pias visÃ­veis.
-- `docs/legacy-migrations/20260604_multi_seller_phase2.txt` contÃ©m texto de prompt/tarefa, nÃ£o SQL executÃ¡vel.
-- O schema remoto confirmado contÃ©m `store_referral_visits` e `registrar_visita_referral`, mas esses itens nÃ£o aparecem nas migrations locais atuais.
-- `AGENTS.md` parece originado de template AIOX e menciona diretÃ³rios que nÃ£o sÃ£o o nÃºcleo do app PneuFlow; preservar regras, mas validar comandos conforme `package.json`.
+- A vitrine publica carrega loja e pneus por slug.
+- Referral pode usar `ref` ou `vendedor`.
+- Visitas usam `pneuflow_visitor_id` em `localStorage` e dedupe de 24h via RPC.
+- Sem acesso comercial, a vitrine continua aberta, mas bloqueia WhatsApp/leads/CTAs comerciais.
+- Detalhes: [[../03 - Decisões/vitrine-bloqueio-comercial|Vitrine com bloqueio comercial]].
+
+## Mercado Pago
+
+- Checkout Pro etapa 1 cria preferencia no backend e redireciona o lojista.
+- `MERCADO_PAGO_ACCESS_TOKEN` e usado apenas no backend.
+- Em localhost, nao envia `back_urls` nem `auto_return`.
+- A pagina `/assinatura/retorno` e apenas visual.
+- Webhook e ativacao automatica de assinatura ainda nao existem.
+- Detalhes: [[../03 - Decisões/mercado-pago-checkout-pro-etapa-1|Mercado Pago Checkout Pro - etapa 1]].
+
+## Vercel
+
+- `vercel.json` precisa manter `/api/mercadopago/create-preference` antes do catch-all `/api/(.*)`.
+- O fallback SPA aponta para `/index.html`.
+- O fallback nao deve capturar `/src/main.jsx`, `/@vite/client` ou `/@react-refresh` no `vercel dev`.
+
+## Identidade visual
+
+- A landing e a referencia visual global: dark premium, amber/orange, cards escuros, bordas sutis, Inter/Outfit.
+- `src/index.css` centraliza tokens globais e aliases legados.
+- `src/pages/StoreFront/StoreFront.css` herda tokens globais por aliases locais.
+- Detalhes: [[../03 - Decisões/padronizacao-visual-frontend|Padronizacao visual do frontend]].
+
+## Riscos e cuidados
+
+- `AGENTS.md` ainda contem blocos do template AIOX; a secao do Cofre e valida, mas comandos AIOX podem nao representar o app PneuFlow.
+- `server.js` e `api/index.js` sao legado/mock e convivem com o fluxo principal Supabase.
+- `docs/legacy-migrations/20260604_multi_seller_phase2.txt` nao e SQL executavel.
+- Nao executar migrations, `supabase db push`, `db reset`, RLS/Auth ou webhook sem nova autorizacao.
+- Nao copiar segredos para o Cofre.
+
+## Estado atual
+
+Snapshot operacional em [[estado-atual-do-projeto]].

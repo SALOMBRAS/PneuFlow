@@ -13,17 +13,17 @@ fonte:
   - src/pages/StoreFront/components/StoreFilters.jsx
   - src/services/storage.js
   - src/utils/visitorId.js
-  - supabase/migrations/20260615090000_store_referral_visits_visitor_tracking.sql
+  - src/utils/subscriptionAccess.js
+  - supabase/migrations/20260618171439_remote_schema.sql
   - cofre/01 - Arquitetura/fluxos-principais.md
-  - supabase/migrations/20260609091000_public_referral_seller.sql
-  - supabase/migrations/20260609092000_seller_whatsapp.sql
-atualizado: 2026-06-15
+atualizado: 2026-06-21
 tags: []
 ---
 
 > [!tldr]
 > A vitrine publica fica em `/store/:storeSlug` e usa dados Supabase.
 > Cada visitante recebe `pneuflow_visitor_id` em `localStorage` e a visita e deduplicada por loja/visitante em 24 horas.
+> Se a loja nao tiver acesso comercial, a vitrine abre, mas CTAs comerciais ficam bloqueados.
 
 # Vitrine Publica
 
@@ -70,3 +70,17 @@ As migrations confirmam RPCs publicas para resolver vendedor ativo por `ref_code
 `StoreHome.jsx` mantem filtros por texto, marca, estoque, tipo de veiculo e busca por veiculo. `StoreFilters.jsx` controla os filtros laterais/drawer. `VehicleSearchBox.jsx` expoe busca rapida por medida/marca/veiculo no hero.
 
 O modal de interesse recebe `targetTire` e `customerName`, chama `storageService.createLead` e depois abre WhatsApp com mensagem do produto. Quando ha referral valido, o payload usa `ref_code` e `attribution_source: 'referral'`; sem referral, usa `attribution_source: 'product'`.
+
+## Bloqueio comercial por trial/assinatura
+
+`StoreHome.jsx` chama `getSubscriptionAccess(store)` e usa `subscriptionAccess.hasStoreAccess` como `commercialContactEnabled`.
+
+Quando `commercialContactEnabled` e falso:
+
+- a vitrine publica continua acessivel;
+- catalogo, filtros e cards continuam visiveis;
+- `handleInterest`, `handleConfirmLead` e `handleGeneralWhatsapp` retornam sem criar lead e sem abrir WhatsApp;
+- aparece aviso publico discreto com a mensagem "Esta vitrine esta temporariamente inativa. Entre em contato com a loja ou aguarde a reativacao.";
+- botoes comerciais recebem `disabled`, `aria-disabled` e classe `.commercial-disabled`.
+
+Detalhes: [[../03 - Decisões/vitrine-bloqueio-comercial|Vitrine com bloqueio comercial]].

@@ -5,10 +5,10 @@ status: ativo
 tokens: baixo
 fonte:
   - docs/legacy-migrations/20260604_multi_seller_phase2.txt
-atualizado: 2026-06-15
+atualizado: 2026-06-21
 prioridade: media
 esforco: baixo
-situacao: confirmado em 20260604_multi_seller_phase2.txt; nenhuma correcao aplicada
+situacao: arquivo nao SQL segue arquivado; divergencia de store_referral_visits foi resolvida pela baseline ativa
 tags: []
 ---
 
@@ -31,6 +31,6 @@ tags: []
 
 Separar instrucoes humanas de SQL real antes de aplicar migrations em qualquer ambiente novo.
 
-## Observacao da auditoria 2026-06-15
+## Observacao da auditoria 2026-06-21
 
-Durante a sincronizacao do cofre, foi confirmada uma divergencia diferente: o schema remoto informado contem `store_referral_visits` e `registrar_visita_referral`, mas esses itens nao aparecem nas migrations locais atuais. Essa divergencia foi registrada em [[../02 - Banco de Dados/schema-remoto-confirmado|Schema remoto confirmado]].
+O alerta sobre `store_referral_visits` e `registrar_visita_referral` nao aparecerem nas migrations locais deixou de ser atual depois da baseline `supabase/migrations/20260618171439_remote_schema.sql`. A pendencia restante desta nota e apenas manter `docs/legacy-migrations/20260604_multi_seller_phase2.txt` fora do fluxo de SQL executavel.

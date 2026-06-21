@@ -12,6 +12,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const showDemoAccess = import.meta.env.DEV;
 
   // Load remembered preference and check for auto-redirect
   useEffect(() => {
@@ -220,6 +221,7 @@ export default function Login() {
           <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>Cadastrar Loja</Link>
         </div>
 
+        {showDemoAccess && (
         <div style={{
           backgroundColor: '#1b1c23',
           border: '1px dashed var(--border)',
@@ -234,6 +236,7 @@ export default function Login() {
           <p>📧 E-mail: <strong>demo@pneus.com</strong></p>
           <p>🔑 Senha: <strong>password123</strong></p>
         </div>
+        )}
       </div>
       </div>
     </div>
