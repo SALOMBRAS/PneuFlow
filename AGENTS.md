@@ -150,3 +150,7 @@ Ao atualizar o cofre:
 O agente nunca deve assumir que o cofre está completo. Se o cofre estiver incompleto, desatualizado ou contraditório, deve consultar o código necessário, confirmar a informação e atualizar o cofre ao final.
 
 Não faça commit nem push sem autorização explícita.
+
+## Kit MCP
+
+O kit-mcp foi integrado de forma local-first e nao destrutiva. Consulte `docs/KIT-MCP-INSTALLATION.md` antes de atualizar packs, MCP, agents, commands ou skills. A versao de `AGENTS.md` sugerida pelo kit foi preservada separadamente em `docs/kit-mcp-candidates/AGENTS.kit-mcp.md`; nao substitua este arquivo sem revisao manual.

@@ -155,3 +155,12 @@ git log -1 --oneline
 
 - Melhorar observabilidade dos estados de assinatura no painel.
 - Criar checklist operacional para renovacao, atraso e cancelamento.
+
+## Kit MCP
+
+- kit-mcp instalado parcialmente/localmente na branch `chore/install-kit-mcp`.
+- Relatorio: `docs/KIT-MCP-INSTALLATION.md`.
+- Packs selecionados: `core`, `supabase`, `ui`, `legacy`, `observability`.
+- Pack `cost-workflow` ainda nao instalado.
+- `.codex/` continua ignorado; skills adicionadas ficam locais nesta maquina ate decisao contraria.
+- Pode ser necessario reiniciar o Codex para reconhecer MCP/skills.

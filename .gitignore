@@ -62,3 +62,4 @@ cofrezip.zip
 
 # Supabase local backups
 backups/supabase/
+backups/kit-mcp-before-install/
