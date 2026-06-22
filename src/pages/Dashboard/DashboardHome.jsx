@@ -16,7 +16,9 @@ import {
   Info,
   Clock,
   DollarSign,
-  CheckCircle2
+  CheckCircle2,
+  Edit3,
+  X
 } from 'lucide-react';
 
 const emptyCommercialMetrics = {
@@ -211,12 +213,17 @@ function MetricDetailContent({ metric }) {
 
 export default function DashboardHome() {
   const navigate = useNavigate();
-  const { store, role, isSeller, user } = useStore();
+  const { store, role, isSeller, user, refreshStore } = useStore();
   const [leads, setLeads] = useState([]);
   const [commercialMetrics, setCommercialMetrics] = useState(emptyCommercialMetrics);
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [metricsError, setMetricsError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [editingSlug, setEditingSlug] = useState(false);
+  const [tempSlug, setTempSlug] = useState('');
+  const [savingSlug, setSavingSlug] = useState(false);
+  const [slugMessage, setSlugMessage] = useState('');
+  const [slugMessageType, setSlugMessageType] = useState('success');
   const [showPlanTooltip, setShowPlanTooltip] = useState(false);
   const [tooltipTimeout, setTooltipTimeout] = useState(null);
   const [selectedMetric, setSelectedMetric] = useState(null);
@@ -263,11 +270,65 @@ export default function DashboardHome() {
   if (!store) return null;
 
   const publicLink = `${window.location.origin}/store/${store.slug}`;
+  const normalizeSlugPreview = (value) =>
+    String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/-{2,}/g, '-');
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(publicLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleStartSlugEdit = () => {
+    setTempSlug(store.slug || '');
+    setSlugMessage('');
+    setEditingSlug(true);
+  };
+
+  const handleCancelSlugEdit = () => {
+    setEditingSlug(false);
+    setTempSlug('');
+    setSlugMessage('');
+  };
+
+  const handleSaveSlug = async () => {
+    const nextSlug = normalizeSlugPreview(tempSlug);
+
+    if (nextSlug.length < 3) {
+      setSlugMessageType('error');
+      setSlugMessage('Use pelo menos 3 caracteres no link.');
+      return;
+    }
+
+    if (nextSlug === store.slug) {
+      setEditingSlug(false);
+      setSlugMessage('');
+      return;
+    }
+
+    setSavingSlug(true);
+    setSlugMessage('');
+
+    try {
+      await storageService.updateStoreSlug(store.id, nextSlug);
+      await refreshStore();
+      setEditingSlug(false);
+      setSlugMessageType('success');
+      setSlugMessage('Link atualizado com sucesso.');
+      setTimeout(() => setSlugMessage(''), 3500);
+    } catch (err) {
+      setSlugMessageType('error');
+      setSlugMessage(err.message || 'Nao foi possivel atualizar o link da loja.');
+    } finally {
+      setSavingSlug(false);
+    }
   };
 
   const handleMetricGlowMove = (e) => {
@@ -529,27 +590,78 @@ export default function DashboardHome() {
         </div>
         
         {/* Public Store Link Card */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '12px', 
-          backgroundColor: 'var(--bg-card)', 
-          border: '1px solid var(--border)', 
-          padding: '10px 16px', 
-          borderRadius: 'var(--radius-md)' 
-        }}>
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Link da loja:</span>
-          <code style={{ fontSize: '13px', color: 'var(--primary)', backgroundColor: 'transparent', padding: 0 }}>
-            {store.slug}
-          </code>
-          <button 
-            onClick={handleCopyLink} 
-            className="btn btn-secondary" 
-            style={{ padding: '6px 12px', fontSize: '12px' }}
-          >
-            {copied ? <Check size={14} style={{ color: 'var(--success)' }} /> : <Copy size={14} />}
-            <span style={{ marginLeft: '4px' }}>{copied ? 'Copiado!' : 'Copiar'}</span>
-          </button>
+        <div className="dashboard-store-link-card">
+          <div className="dashboard-store-link-content">
+            <span className="dashboard-store-link-label">Link da loja</span>
+            {editingSlug ? (
+              <div className="dashboard-store-link-editor">
+                <span className="dashboard-store-link-prefix">/store/</span>
+                <input
+                  type="text"
+                  className="form-input dashboard-store-link-input"
+                  value={tempSlug}
+                  onChange={(e) => setTempSlug(normalizeSlugPreview(e.target.value))}
+                  placeholder="minha-loja"
+                  aria-label="Editar link da loja"
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <code className="dashboard-store-link-code">{store.slug}</code>
+            )}
+            {slugMessage && (
+              <small className={`dashboard-store-link-message ${slugMessageType === 'error' ? 'is-error' : 'is-success'}`}>
+                {slugMessage}
+              </small>
+            )}
+          </div>
+
+          <div className="dashboard-store-link-actions">
+            {editingSlug ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSaveSlug}
+                  className="btn btn-primary dashboard-store-link-action"
+                  disabled={savingSlug}
+                >
+                  {savingSlug ? <Clock size={14} /> : <Check size={14} />}
+                  {savingSlug ? 'Salvando' : 'Salvar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelSlugEdit}
+                  className="btn btn-secondary dashboard-store-link-action"
+                  disabled={savingSlug}
+                  aria-label="Cancelar edicao do link da loja"
+                >
+                  <X size={14} />
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="btn btn-secondary dashboard-store-link-action"
+                >
+                  {copied ? <Check size={14} style={{ color: 'var(--success)' }} /> : <Copy size={14} />}
+                  {copied ? 'Copiado!' : 'Copiar'}
+                </button>
+                {!isSeller && (
+                  <button
+                    type="button"
+                    onClick={handleStartSlugEdit}
+                    className="btn btn-outline dashboard-store-link-action"
+                  >
+                    <Edit3 size={14} />
+                    Editar
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1453,6 +1565,103 @@ export default function DashboardHome() {
           font-size: 12px !important;
         }
 
+        .dashboard-store-link-card {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background-color: var(--bg-card);
+          border: 1px solid var(--border);
+          padding: 10px 12px;
+          border-radius: var(--radius-md);
+          min-width: 0;
+          max-width: 100%;
+        }
+
+        .dashboard-store-link-content {
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .dashboard-store-link-label {
+          font-size: 13px;
+          color: var(--text-secondary);
+          white-space: nowrap;
+        }
+
+        .dashboard-store-link-code {
+          min-width: 0;
+          max-width: 210px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 13px;
+          color: var(--primary);
+          background-color: transparent;
+          padding: 0;
+        }
+
+        .dashboard-store-link-editor {
+          display: flex;
+          align-items: center;
+          min-width: 0;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.03);
+          overflow: hidden;
+        }
+
+        .dashboard-store-link-prefix {
+          flex-shrink: 0;
+          padding: 0 0 0 10px;
+          color: var(--text-muted);
+          font-size: 12px;
+        }
+
+        .dashboard-store-link-input {
+          width: 170px;
+          min-height: 38px;
+          border: 0;
+          background: transparent;
+          padding: 8px 10px 8px 4px;
+          font-size: 13px;
+          color: var(--primary);
+        }
+
+        .dashboard-store-link-input:focus {
+          box-shadow: none;
+        }
+
+        .dashboard-store-link-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .dashboard-store-link-action {
+          min-height: 38px;
+          padding: 7px 12px !important;
+          font-size: 12px !important;
+          white-space: nowrap;
+        }
+
+        .dashboard-store-link-message {
+          flex-basis: 100%;
+          font-size: 11px;
+          line-height: 1.25;
+        }
+
+        .dashboard-store-link-message.is-success {
+          color: var(--success);
+        }
+
+        .dashboard-store-link-message.is-error {
+          color: var(--error);
+        }
+
         .dashboard-mobile-detail-backdrop {
           display: none;
         }
@@ -1567,6 +1776,36 @@ export default function DashboardHome() {
           .dashboard-small-action {
             width: 100%;
             justify-content: center;
+          }
+
+          .dashboard-store-link-card {
+            width: 100%;
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .dashboard-store-link-content {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .dashboard-store-link-code,
+          .dashboard-store-link-editor {
+            width: 100%;
+            max-width: none;
+          }
+
+          .dashboard-store-link-input {
+            width: 100%;
+          }
+
+          .dashboard-store-link-actions {
+            width: 100%;
+            flex-wrap: wrap;
+          }
+
+          .dashboard-store-link-action {
+            flex: 1 1 130px;
           }
         }
 

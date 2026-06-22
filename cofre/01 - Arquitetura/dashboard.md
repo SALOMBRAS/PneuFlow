@@ -19,7 +19,7 @@ fonte:
   - supabase/migrations/20260615090000_store_referral_visits_visitor_tracking.sql
   - cofre/01 - Arquitetura/mapa-de-impacto-geral.md
   - cofre/01 - Arquitetura/checklists-regressao.md
-atualizado: 2026-06-18
+atualizado: 2026-06-22
 tags: []
 ---
 
@@ -94,6 +94,14 @@ O calculo local em `DashboardHome.jsx` considera:
 ## Nao mapeado ainda
 
 As regras gerais e fluxos principais de `Catalog`, `Sellers`, `Leads` e `StoreSettings` foram consolidados em [[fluxos-principais]] e [[inventario-funcoes-componentes]].
+
+## Vendedores
+
+`Sellers.jsx` lista membros da loja, convite/criacao de vendedor, edicao de WhatsApp/referral, alteracao de senha e gestao de acesso. As acoes de copiar e-mail, senha inicial e link referral usam clipboard no navegador; botoes de copia precisam manter area de toque confortavel no mobile e nao devem alterar dados no Supabase.
+
+## Link publico da loja
+
+`DashboardHome.jsx` exibe `/store/:slug` no topo do dashboard. Donos podem editar o slug ali mesmo; `storageService.updateStoreSlug` normaliza, verifica duplicidade via `getStoreBySlug`, atualiza `stores.slug` pelo `store.id` e depois recarrega `StoreContext` com `refreshStore`. Vendedores apenas visualizam/copiam o link.
 
 ## Dica visual confirmada
 

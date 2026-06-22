@@ -5,6 +5,16 @@ const STORE_COLUMNS = 'id, owner_id, nome, whatsapp, telefone, endereco, cidade,
 const STORE_MEMBER_COLUMNS = 'id, store_id, user_id, email, nome, role, status, invited_by, invited_at, accepted_at, created_at, updated_at, ref_code, disabled_at, removed_at, auth_deleted_at, removed_by, senha_inicial, whatsapp';
 const PNEU_COLUMNS = 'id, loja_id, marca, modelo, medida, preco, estoque, descricao, status, compatibilidade, foto_principal_url, fotos, created_at, updated_at, tipo_veiculo, created_by, updated_by';
 
+const normalizeStoreSlug = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+
 // Database Access Functions using Supabase
 export const storageService = {
   // --- Auth & Session ---
@@ -369,6 +379,39 @@ export const storageService = {
     return data;
   },
 
+  updateStoreSlug: async (storeId, slug) => {
+    const cleanSlug = normalizeStoreSlug(slug);
+
+    if (cleanSlug.length < 3) {
+      throw new Error('O link precisa ter pelo menos 3 caracteres.');
+    }
+
+    if (cleanSlug.length > 48) {
+      throw new Error('O link pode ter no maximo 48 caracteres.');
+    }
+
+    const existingStore = await storageService.getStoreBySlug(cleanSlug);
+    if (existingStore && existingStore.id !== storeId) {
+      throw new Error('Este link ja esta em uso por outra loja.');
+    }
+
+    const { data, error } = await supabase
+      .from('stores')
+      .update({ slug: cleanSlug })
+      .eq('id', storeId)
+      .select(STORE_COLUMNS)
+      .maybeSingle();
+
+    if (error) {
+      if (error.code === '23505') {
+        throw new Error('Este link ja esta em uso por outra loja.');
+      }
+      throw error;
+    }
+
+    return data;
+  },
+
   updateStore: async (id, updateData) => {
     // Map frontend camelCase to DB snake_case for Supabase using REAL column names
     const mappedData = {
@@ -385,6 +428,7 @@ export const storageService = {
       cor_secundaria: updateData.cor_secundaria ?? updateData.secondaryColor,
       seo_titulo: updateData.seoTitle ?? updateData.seo_titulo,
       seo_descricao: updateData.seoDescription ?? updateData.seo_descricao,
+      slug: updateData.slug ? normalizeStoreSlug(updateData.slug) : undefined,
       tipo_vitrine: updateData.tipo_vitrine ?? updateData.tipoVitrine ?? 'carro'
     };
 

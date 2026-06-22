@@ -13,7 +13,7 @@ fonte:
   - src/components/InteractiveDemo/InteractiveDemo.css
   - src/components/FeedbackCarousel.jsx
   - src/components/FeedbackCarousel.css
-atualizado: 2026-06-15
+atualizado: 2026-06-22
 tags: []
 ---
 
@@ -46,6 +46,8 @@ tags: []
 `src/components/InteractiveDemo/InteractiveDemo.jsx` nÃ£o usa Supabase nem dados reais. A aba Vitrine usa pneus mockados locais, filtros por aro e condiÃ§Ã£o, cards visuais e botÃ£o que apenas dispara toast local de interesse enviado.
 
 As abas CatÃ¡logo, Leads e Dashboard tambÃ©m sÃ£o simulaÃ§Ãµes locais para explicar valor do produto sem criar rotas, banco ou persistÃªncia.
+
+O header aponta primeiro para `#demo-interativa` e depois para `#problemas`, seguindo a ordem visual atual da landing. Dentro da propria demo, manter apenas CTA de cadastro; nao usar botao "Ver demonstracao" apontando para a secao em que o usuario ja esta.
 
 ## SEO, performance e acessibilidade
 

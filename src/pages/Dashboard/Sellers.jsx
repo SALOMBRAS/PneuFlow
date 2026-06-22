@@ -165,18 +165,26 @@ export default function Sellers() {
     }));
   };
 
-  const handleCopyPassword = (member) => {
+  const handleCopyPassword = async (member) => {
     if (!member.senha_inicial) return;
-    navigator.clipboard.writeText(member.senha_inicial);
-    setCopiedPassId(member.id);
-    setTimeout(() => setCopiedPassId(null), 2000);
+    try {
+      await copyTextToClipboard(member.senha_inicial);
+      setCopiedPassId(member.id);
+      setTimeout(() => setCopiedPassId(null), 2000);
+    } catch (err) {
+      alert('Nao foi possivel copiar a senha. Tente novamente.');
+    }
   };
 
   const handleCopyEmail = async (member) => {
     if (!member?.email) return;
-    await navigator.clipboard.writeText(member.email);
-    setCopiedEmailId(member.id);
-    setTimeout(() => setCopiedEmailId(null), 2000);
+    try {
+      await copyTextToClipboard(member.email);
+      setCopiedEmailId(member.id);
+      setTimeout(() => setCopiedEmailId(null), 2000);
+    } catch (err) {
+      alert('Nao foi possivel copiar o e-mail. Tente novamente.');
+    }
   };
 
   const handleManageAccess = async (memberId, action) => {
@@ -200,11 +208,15 @@ export default function Sellers() {
     }
   };
 
-  const handleCopyLink = (member) => {
+  const handleCopyLink = async (member) => {
     const publicUrl = `${window.location.origin}/store/${store.slug}?ref=${member.ref_code}`;
-    navigator.clipboard.writeText(publicUrl);
-    setCopiedId(member.id);
-    setTimeout(() => setCopiedId(null), 2000);
+    try {
+      await copyTextToClipboard(publicUrl);
+      setCopiedId(member.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      alert('Nao foi possivel copiar o link. Tente novamente.');
+    }
   };
 
   const startEditingRef = (member) => {
@@ -263,6 +275,46 @@ export default function Sellers() {
   }
 
   const thStyle = { padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' };
+  const copyButtonStyle = {
+    padding: '10px 14px',
+    fontSize: '12px',
+    minHeight: '42px',
+    minWidth: '112px',
+    width: 'fit-content',
+    borderRadius: '10px',
+    gap: '7px',
+    lineHeight: 1.1,
+    whiteSpace: 'nowrap'
+  };
+  const emailCopyButtonStyle = {
+    ...copyButtonStyle,
+    minWidth: '124px',
+    padding: '9px 12px'
+  };
+
+  const copyTextToClipboard = async (text) => {
+    if (!text) return false;
+
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.setAttribute('readonly', '');
+    textArea.style.position = 'fixed';
+    textArea.style.top = '-9999px';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.select();
+
+    try {
+      return document.execCommand('copy');
+    } finally {
+      document.body.removeChild(textArea);
+    }
+  };
 
   return (
     <div className="animate-fade">
@@ -353,16 +405,23 @@ export default function Sellers() {
                     </td>
 
                     <td style={{ padding: '16px 24px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {member.email || '-'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', maxWidth: '280px' }}>
+                        <span style={{ wordBreak: 'break-all' }}>{member.email || '-'}</span>
                         {member.email && (
                           <button 
+                            type="button"
                             onClick={() => handleCopyEmail(member)}
-                            style={{ background: 'none', border: 'none', color: copiedEmailId === member.id ? 'var(--success)' : 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                            className="btn btn-outline"
+                            style={{
+                              ...emailCopyButtonStyle,
+                              color: copiedEmailId === member.id ? 'var(--success)' : 'var(--text-primary)',
+                              borderColor: copiedEmailId === member.id ? 'rgba(16,185,129,0.45)' : 'var(--border)'
+                            }}
                             title="Copiar e-mail"
+                            aria-label={`Copiar e-mail de ${member.nome || member.email || 'vendedor'}`}
                           >
-                            {copiedEmailId === member.id ? <Check size={14} /> : <Copy size={14} />}
-                            {copiedEmailId === member.id && <span style={{ fontSize: '10px', marginLeft: '4px' }}>Copiado!</span>}
+                            {copiedEmailId === member.id ? <Check size={15} /> : <Copy size={15} />}
+                            <span>{copiedEmailId === member.id ? 'Copiado!' : 'Copiar e-mail'}</span>
                           </button>
                         )}
                       </div>
@@ -475,12 +534,18 @@ export default function Sellers() {
                         </div>
                         {member.ref_code && (
                           <button
+                            type="button"
                             onClick={() => handleCopyLink(member)}
                             className="btn btn-outline"
-                            style={{ padding: '4px 8px', fontSize: '11px', width: 'fit-content' }}
+                            style={{
+                              ...copyButtonStyle,
+                              color: copiedId === member.id ? 'var(--success)' : 'var(--text-primary)',
+                              borderColor: copiedId === member.id ? 'rgba(16,185,129,0.45)' : 'var(--border)'
+                            }}
+                            aria-label={`Copiar link referral de ${member.nome || member.email || 'vendedor'}`}
                           >
-                            {copiedId === member.id ? <Check size={12} color="var(--success)" /> : <Copy size={12} />}
-                            <span style={{ marginLeft: '4px' }}>{copiedId === member.id ? 'Copiado!' : 'Copiar Link'}</span>
+                            {copiedId === member.id ? <Check size={15} /> : <Copy size={15} />}
+                            <span>{copiedId === member.id ? 'Copiado!' : 'Copiar Link'}</span>
                           </button>
                         )}
                       </div>

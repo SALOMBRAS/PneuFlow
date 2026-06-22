@@ -281,8 +281,8 @@ export default function LandingPage() {
           </div>
           
           <nav className="landing-nav" style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-            <a href="#problemas" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Problemas</a>
             <a href="#demo-interativa" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Demonstração</a>
+            <a href="#problemas" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Problemas</a>
             <a href="#faq" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>FAQ</a>
           </nav>
 

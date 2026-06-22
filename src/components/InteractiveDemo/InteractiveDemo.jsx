@@ -375,9 +375,6 @@ export default function InteractiveDemo() {
                 Criar minha vitrine grátis
                 <ArrowRight size={17} />
               </Link>
-              <a href="#demo-interativa" className="btn btn-secondary interactive-demo-secondary-cta">
-                Ver demonstração
-              </a>
             </div>
           </aside>
 
