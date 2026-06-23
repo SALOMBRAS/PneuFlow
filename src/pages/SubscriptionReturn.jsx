@@ -41,7 +41,7 @@ export default function SubscriptionReturn() {
       }}
     >
       <section
-        className="card"
+        className="card pf-card-premium"
         style={{
           width: '100%',
           maxWidth: '620px',
@@ -67,13 +67,16 @@ export default function SubscriptionReturn() {
         </div>
 
         <p style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '12px', textTransform: 'uppercase', margin: 0 }}>
-          Assinatura PneuFlow
+          Retorno do pagamento
         </p>
         <h1 style={{ margin: '8px 0 12px', fontSize: 'clamp(28px, 5vw, 42px)', lineHeight: 1.05 }}>
           {content.title}
         </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '17px', lineHeight: 1.7, marginBottom: '24px' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '17px', lineHeight: 1.7, marginBottom: '10px' }}>
           {content.message}
+        </p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.6, marginBottom: '24px' }}>
+          Esta tela nao altera sua assinatura sozinha. A confirmacao definitiva sera feita por um processo seguro de pagamento.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>

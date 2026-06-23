@@ -16,8 +16,6 @@ import {
   Copy,
   Check,
   Edit3,
-  Eye,
-  EyeOff,
   Lock
 } from 'lucide-react';
 
@@ -31,13 +29,11 @@ export default function Sellers() {
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState(emptySellerForm);
   const [copiedId, setCopiedId] = useState(null);
-  const [copiedPassId, setCopiedPassId] = useState(null);
   const [copiedEmailId, setCopiedEmailId] = useState(null);
   const [editingRefId, setEditingRefId] = useState(null);
   const [tempRefCode, setTempRefCode] = useState('');
   const [editingWhatsappId, setEditingWhatsappId] = useState(null);
   const [tempWhatsapp, setTempWhatsapp] = useState('');
-  const [visiblePasswords, setVisiblePasswords] = useState({});
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [newPasswordData, setNewPasswordData] = useState({ password: '', confirmPassword: '' });
@@ -158,24 +154,6 @@ export default function Sellers() {
     }
   };
 
-  const togglePasswordVisibility = (id) => {
-    setVisiblePasswords(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
-
-  const handleCopyPassword = async (member) => {
-    if (!member.senha_inicial) return;
-    try {
-      await copyTextToClipboard(member.senha_inicial);
-      setCopiedPassId(member.id);
-      setTimeout(() => setCopiedPassId(null), 2000);
-    } catch (err) {
-      alert('Nao foi possivel copiar a senha. Tente novamente.');
-    }
-  };
-
   const handleCopyEmail = async (member) => {
     if (!member?.email) return;
     try {
@@ -265,6 +243,9 @@ export default function Sellers() {
     m.nome?.toLowerCase().includes(filterText.toLowerCase()) ||
     m.email.toLowerCase().includes(filterText.toLowerCase())
   );
+  const sellerMembers = members.filter((member) => member.role !== 'owner');
+  const activeSellers = sellerMembers.filter((member) => member.status === 'active').length;
+  const pendingSellers = sellerMembers.filter((member) => member.status === 'pending').length;
 
   if (loading && members.length === 0) {
     return (
@@ -317,15 +298,31 @@ export default function Sellers() {
   };
 
   return (
-    <div className="animate-fade">
-      <div className="flex-between" style={{ marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+    <div className="animate-fade sellers-page">
+      <div className="pf-section-header sellers-page-header">
         <div>
-          <h1 style={{ fontSize: '32px', margin: 0, textAlign: 'left' }}>Vendedores</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Gerencie a equipe de vendas da sua loja.</p>
+          <span className="pf-kicker">Equipe comercial</span>
+          <h1 style={{ fontSize: '32px', margin: '10px 0 0', textAlign: 'left' }}>Vendedores</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Acompanhe quem gera oportunidades e controle acessos sem expor senhas.</p>
         </div>
         <button onClick={() => setInviteModalOpen(true)} className="btn btn-primary">
-          <UserPlus size={16} /> Convidar Vendedor
+          <UserPlus size={16} /> Adicionar vendedor
         </button>
+      </div>
+
+      <div className="sellers-summary-grid">
+        <div className="pf-card sellers-summary-card">
+          <span>Vendedores</span>
+          <strong>{sellerMembers.length}</strong>
+        </div>
+        <div className="pf-card sellers-summary-card sellers-summary-card--success">
+          <span>Ativos</span>
+          <strong>{activeSellers}</strong>
+        </div>
+        <div className="pf-card sellers-summary-card">
+          <span>Pendentes</span>
+          <strong>{pendingSellers}</strong>
+        </div>
       </div>
 
       <div style={{ marginBottom: '24px', position: 'relative', maxWidth: '400px' }}>
@@ -340,7 +337,7 @@ export default function Sellers() {
         />
       </div>
 
-      <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+      <div className="card sellers-table-card" style={{ padding: '0', overflow: 'hidden' }}>
         {filteredMembers.length === 0 ? (
           <div style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <Users size={48} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
@@ -354,9 +351,6 @@ export default function Sellers() {
                   <th style={thStyle}>Vendedor</th>
                   <th style={thStyle}>E-mail</th>
                   <th style={thStyle}>WhatsApp</th>
-                  {isOwner && (
-                    <th style={thStyle}>Senha</th>
-                  )}
                   <th style={thStyle}>Link Referral</th>
                   <th style={thStyle}>Status</th>
                   <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
@@ -465,43 +459,6 @@ export default function Sellers() {
                         </div>
                       )}
                     </td>
-
-                    {isOwner && (
-                      <td style={{ padding: '16px 24px' }}>
-                        {member.senha_inicial ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <code style={{ 
-                              fontSize: '12px', 
-                              backgroundColor: 'rgba(255,255,255,0.05)', 
-                              padding: '4px 8px', 
-                              borderRadius: '4px',
-                              minWidth: '80px',
-                              display: 'inline-block'
-                            }}>
-                              {visiblePasswords[member.id] ? member.senha_inicial : '••••••••'}
-                            </code>
-                            <button 
-                              onClick={() => togglePasswordVisibility(member.id)}
-                              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                              title={visiblePasswords[member.id] ? "Esconder" : "Revelar"}
-                            >
-                              {visiblePasswords[member.id] ? <EyeOff size={14} /> : <Eye size={14} />}
-                            </button>
-                            {visiblePasswords[member.id] && (
-                              <button 
-                                onClick={() => handleCopyPassword(member)}
-                                style={{ background: 'none', border: 'none', color: copiedPassId === member.id ? 'var(--success)' : 'var(--text-muted)', cursor: 'pointer' }}
-                                title="Copiar senha"
-                              >
-                                {copiedPassId === member.id ? <Check size={14} /> : <Copy size={14} />}
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>Não salva</span>
-                        )}
-                      </td>
-                    )}
 
                     <td style={{ padding: '16px 24px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -831,6 +788,71 @@ export default function Sellers() {
           </div>
         </div>
       )}
+      <style>{`
+        .sellers-page-header {
+          align-items: flex-start;
+        }
+
+        .sellers-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+          margin: -10px 0 24px;
+        }
+
+        .sellers-summary-card {
+          padding: 18px;
+          display: grid;
+          gap: 8px;
+        }
+
+        .sellers-summary-card span {
+          color: var(--text-secondary);
+          font-size: 12px;
+          font-weight: 850;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+
+        .sellers-summary-card strong {
+          color: var(--text-primary);
+          font-family: var(--font-title);
+          font-size: 28px;
+          line-height: 1;
+        }
+
+        .sellers-summary-card--success strong {
+          color: var(--success);
+        }
+
+        .sellers-table-card {
+          border-color: rgba(255, 255, 255, 0.09);
+        }
+
+        .sellers-table-card table tbody tr {
+          transition: background var(--transition-fast);
+        }
+
+        .sellers-table-card table tbody tr:hover {
+          background: rgba(245, 158, 11, 0.035);
+        }
+
+        @media (max-width: 768px) {
+          .sellers-page-header {
+            display: grid;
+            gap: 16px;
+          }
+
+          .sellers-page-header .btn {
+            width: 100%;
+          }
+
+          .sellers-summary-grid {
+            grid-template-columns: 1fr;
+            margin-top: -6px;
+          }
+        }
+      `}</style>
     </div>
   );
 }

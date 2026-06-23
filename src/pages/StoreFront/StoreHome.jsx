@@ -311,6 +311,7 @@ export default function StoreHome() {
     if (vehicleSearchApplied) {
       result = result.filter((t) => {
         if (vehicleType && t.tipo_veiculo && t.tipo_veiculo !== vehicleType) return false;
+        if (filterBrand && t.marca !== filterBrand) return false;
 
         const normalizedBrand = normalizeText(vehicleBrand);
         const normalizedModel = normalizeText(vehicleModel);
@@ -430,11 +431,16 @@ export default function StoreHome() {
     document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const closeFinderAndShowCatalog = () => {
+    setFinderOpen(false);
+    window.requestAnimationFrame(scrollToCatalog);
+  };
+
   const handleApplyVehicleSearch = (e) => {
     e.preventDefault();
     if (!vehicleModel) return;
     setVehicleSearchApplied(true);
-    setFinderOpen(false);
+    closeFinderAndShowCatalog();
   };
 
   const handleClearVehicleSearch = () => {
@@ -551,7 +557,6 @@ export default function StoreHome() {
           statusLabel={status.label}
           statusTone={status.tone}
           onOpen={() => setFinderOpen(true)}
-          onOpenFilters={() => setMobileFiltersOpen(true)}
           onWhatsAppClick={handleGeneralWhatsapp}
           onScrollToCatalog={scrollToCatalog}
           onHeroInterest={handleInterest}
@@ -831,8 +836,41 @@ export default function StoreHome() {
               <X size={18} />
             </button>
             <p className="section-kicker">Busca inteligente</p>
-            <h3 className="modal-title">Encontre o pneu ideal por veículo</h3>
-            <p className="info-card__copy">Use a marca e o modelo para acelerar a escolha do cliente.</p>
+            <h3 className="modal-title">Encontre o pneu ideal</h3>
+            <p className="info-card__copy">Filtre por marca ou busque pelo veículo para chegar mais rápido no catálogo.</p>
+
+            <div className="finder-modal__section">
+              <div className="finder-modal__section-header">
+                <div>
+                  <p className="search-card__label">Busca por marca</p>
+                  <p className="search-card__copy">Escolha uma marca da loja e veja os pneus compatíveis.</p>
+                </div>
+                {filterBrand && (
+                  <button type="button" className="text-button text-button--light" onClick={() => setFilterBrand('')}>
+                    Limpar
+                  </button>
+                )}
+              </div>
+
+              <select
+                id="finder-tire-brand"
+                className="search-card__select"
+                value={filterBrand}
+                onChange={(e) => setFilterBrand(e.target.value)}
+              >
+                <option value="">Todas as marcas</option>
+                {uniqueBrands.map((brand) => (
+                  <option key={brand} value={brand}>
+                    {brand}
+                  </option>
+                ))}
+              </select>
+
+              <button type="button" className="button button--ghost button--wide button--inline" onClick={closeFinderAndShowCatalog}>
+                Ver pneus filtrados
+                <ArrowRight size={16} />
+              </button>
+            </div>
 
             {store.tipo_vitrine === 'ambos' && !vehicleType ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px', marginTop: '20px' }}>

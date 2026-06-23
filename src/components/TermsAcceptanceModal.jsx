@@ -144,17 +144,24 @@ export default function TermsAcceptanceModal({ open, onClose, onAccept }) {
             onClick={onClose}
             aria-label="Fechar modal de termos"
             style={{
-              width: '40px',
-              height: '40px',
+              width: '36px',
+              height: '36px',
               flex: '0 0 auto',
-              border: '1px solid var(--border)',
-              borderRadius: '12px',
-              background: 'rgba(255,255,255,0.04)',
+              marginTop: '2px',
+              marginRight: '2px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '10px',
+              background: 'rgba(255,255,255,0.055)',
               color: 'var(--text-secondary)',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              boxShadow: 'none',
+              lineHeight: 0
             }}
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </header>
 

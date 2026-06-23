@@ -246,6 +246,8 @@ export default function Catalog() {
   });
 
   const uniqueBrands = [...new Set(tires.map(t => t.marca))];
+  const activeTiresCount = tires.filter((tire) => tire.status === 'ativo').length;
+  const totalStockCount = tires.reduce((sum, tire) => sum + Number(tire.estoque || 0), 0);
 
   if (loading) {
     return (
@@ -256,11 +258,12 @@ export default function Catalog() {
   }
 
   return (
-    <div className="animate-fade">
+    <div className="animate-fade catalog-page">
       {/* Page Header */}
-      <div className="flex-between" style={{ marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="pf-section-header catalog-page-header">
         <div>
-          <h1 style={{ fontSize: '32px', margin: 0, textAlign: 'left' }}>Meus Pneus</h1>
+          <span className="pf-kicker">Catalogo comercial</span>
+          <h1 style={{ fontSize: '32px', margin: '10px 0 0', textAlign: 'left' }}>Catalogo de Pneus</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Gerencie seu estoque e catálogo de produtos.</p>
         </div>
         <button onClick={openAddTireModal} className="btn btn-primary">
@@ -268,8 +271,23 @@ export default function Catalog() {
         </button>
       </div>
 
+      <div className="catalog-summary-grid">
+        <div className="pf-card catalog-summary-card">
+          <span>Pneus cadastrados</span>
+          <strong>{tires.length}</strong>
+        </div>
+        <div className="pf-card catalog-summary-card">
+          <span>Anuncios ativos</span>
+          <strong>{activeTiresCount}</strong>
+        </div>
+        <div className="pf-card catalog-summary-card">
+          <span>Estoque total</span>
+          <strong>{totalStockCount}</strong>
+        </div>
+      </div>
+
       {/* Search and Filters */}
-      <div className="card" style={{ padding: '16px', marginBottom: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+      <div className="card catalog-filter-bar" style={{ padding: '16px', marginBottom: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
           <Search size={18} style={{ position: 'absolute', left: '14px', top: '13px', color: 'var(--text-muted)' }} />
           <input 
@@ -295,17 +313,20 @@ export default function Catalog() {
 
       {/* Tires Grid */}
       {filteredTires.length === 0 ? (
-        <div className="card" style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <div className="pf-empty-state catalog-empty-state" style={{ color: 'var(--text-secondary)' }}>
           <Layers size={48} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
-          <p style={{ fontSize: '16px' }}>Nenhum pneu encontrado.</p>
+          <h3>Cadastre seu primeiro pneu e publique sua vitrine.</h3>
+          <p style={{ fontSize: '16px', maxWidth: '42ch', margin: '10px auto 0' }}>
+            Seus pneus cadastrados aparecem na vitrine publica com foto, medida, preco e botao de WhatsApp.
+          </p>
           <button onClick={openAddTireModal} className="btn btn-primary" style={{ marginTop: '16px' }}>
-            Cadastrar Primeiro Pneu
+            Cadastrar primeiro pneu
           </button>
         </div>
       ) : (
         <div className="grid-cols-3">
           {filteredTires.map((tire) => (
-            <div key={tire.id} className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px', opacity: tire.status === 'ativo' ? 1 : 0.6 }}>
+            <div key={tire.id} className="card catalog-product-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px', opacity: tire.status === 'ativo' ? 1 : 0.6 }}>
               {/* Product Image */}
               <div style={{ 
                 height: '180px', 
@@ -608,7 +629,96 @@ export default function Catalog() {
         </div>
       )}
       <style>{`
+        .catalog-page-header {
+          align-items: flex-start;
+        }
+
+        .catalog-page-header .btn {
+          flex: 0 0 auto;
+        }
+
+        .catalog-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+          margin: -10px 0 24px;
+        }
+
+        .catalog-summary-card {
+          padding: 18px;
+          display: grid;
+          gap: 8px;
+        }
+
+        .catalog-summary-card span {
+          color: var(--text-secondary);
+          font-size: 12px;
+          font-weight: 850;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+
+        .catalog-summary-card strong {
+          color: var(--text-primary);
+          font-family: var(--font-title);
+          font-size: 28px;
+          line-height: 1;
+        }
+
+        .catalog-filter-bar,
+        .catalog-product-card {
+          border-color: rgba(255, 255, 255, 0.09);
+        }
+
+        .catalog-product-card {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .catalog-product-card::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: radial-gradient(circle at 10% 0%, rgba(245, 158, 11, 0.12), transparent 11rem);
+          opacity: 0;
+          transition: opacity var(--transition-normal);
+        }
+
+        .catalog-product-card:hover::before {
+          opacity: 1;
+        }
+
+        .catalog-product-card > * {
+          position: relative;
+          z-index: 1;
+        }
+
+        .catalog-empty-state svg {
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .catalog-empty-state h3 {
+          margin: 0;
+          font-size: clamp(22px, 3vw, 30px);
+        }
+
         @media (max-width: 768px) {
+          .catalog-page-header {
+            display: grid;
+            gap: 16px;
+          }
+
+          .catalog-page-header .btn {
+            width: 100%;
+          }
+
+          .catalog-summary-grid {
+            grid-template-columns: 1fr;
+            margin-top: -6px;
+          }
+
           .catalog-card-actions {
             gap: 6px !important;
           }

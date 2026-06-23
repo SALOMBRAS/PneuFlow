@@ -105,7 +105,7 @@ As regras gerais e fluxos principais de `Catalog`, `Sellers`, `Leads` e `StoreSe
 
 ## Vendedores
 
-`Sellers.jsx` lista membros da loja, convite/criacao de vendedor, edicao de WhatsApp/referral, alteracao de senha e gestao de acesso. As acoes de copiar e-mail, senha inicial e link referral usam clipboard no navegador; botoes de copia precisam manter area de toque confortavel no mobile e nao devem alterar dados no Supabase.
+`Sellers.jsx` lista membros da loja, convite/criacao de vendedor, edicao de WhatsApp/referral, alteracao de senha e gestao de acesso. O dono pode cadastrar e alterar a senha do vendedor, mas a senha nao deve ser exibida nem copiada no painel. As acoes de copiar e-mail e link referral usam clipboard no navegador; botoes de copia precisam manter area de toque confortavel no mobile e nao devem alterar dados no Supabase.
 
 ## Link publico da loja
 

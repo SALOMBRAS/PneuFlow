@@ -87,7 +87,7 @@ function SubscriptionContent() {
       }}
     >
       <section
-        className="card"
+        className="card pf-card-premium"
         style={{
           width: '100%',
           maxWidth: '720px',
@@ -115,7 +115,7 @@ function SubscriptionContent() {
               Assinatura PneuFlow
             </p>
             <h1 style={{ margin: '4px 0 0', fontSize: 'clamp(28px, 5vw, 44px)', lineHeight: 1.05 }}>
-              Seu periodo gratuito terminou
+              Assine o PRO e reative sua loja
             </h1>
           </div>
         </div>
@@ -135,8 +135,8 @@ function SubscriptionContent() {
         )}
 
         <p style={{ color: 'var(--text-secondary)', fontSize: '17px', lineHeight: 1.7, marginBottom: '22px' }}>
-          Os dados da sua loja, seus produtos e suas configuracoes continuam salvos. Para voltar a utilizar o dashboard do
-          PneuFlow, assine o plano mensal por <strong style={{ color: 'var(--primary)' }}>R$ 39,00/mes</strong>.
+          Seu teste gratuito terminou, mas sua loja continua salva. O plano PRO reativa o dashboard, a vitrine comercial,
+          os leads no WhatsApp e o controle de vendedores por <strong style={{ color: 'var(--primary)' }}>R$ 39,00/mês</strong>.
         </p>
 
         <div
@@ -154,9 +154,9 @@ function SubscriptionContent() {
           </div>
           <div style={{ border: '1px solid var(--border)', borderRadius: '14px', padding: '14px' }}>
             <ShieldCheck size={18} color="var(--success)" />
-            <p style={{ margin: '10px 0 4px', fontWeight: 800 }}>Dados salvos</p>
+            <p style={{ margin: '10px 0 4px', fontWeight: 800 }}>Reativação segura</p>
             <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-              Trial encerrado em {formatSubscriptionDate(access.trialEndsAt)}
+              Pagamento via Mercado Pago. Trial encerrado em {formatSubscriptionDate(access.trialEndsAt)}
             </span>
           </div>
         </div>
@@ -176,7 +176,7 @@ function SubscriptionContent() {
           }}
         >
           <CreditCard size={18} />
-          {checkoutLoading ? 'Criando checkout...' : 'Assinar PneuFlow - R$ 39,00/mes'}
+          {checkoutLoading ? 'Criando checkout...' : 'Assinar e reativar minha loja'}
         </button>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>

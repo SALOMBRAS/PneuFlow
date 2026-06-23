@@ -221,8 +221,9 @@ export default function StoreSettings() {
 
   return (
     <div className="animate-fade store-settings-page">
-      <div className="flex-between store-settings-title-row" style={{ marginBottom: '32px' }}>
+      <div className="pf-section-header store-settings-title-row">
         <div className="store-settings-title-copy">
+          <span className="pf-kicker">Vitrine publica</span>
           <h1 style={{ fontSize: '32px', margin: 0, textAlign: 'left' }}>Configurações da Vitrine</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Personalize a identidade da sua loja e os dados de contato.</p>
         </div>
@@ -235,6 +236,23 @@ export default function StoreSettings() {
         >
           Visualizar Vitrine <ExternalLink size={14} style={{ marginLeft: '4px' }} />
         </a>
+      </div>
+
+      <div className="store-settings-preview pf-card-premium">
+        <div className="store-settings-preview__brand">
+          <div className="store-settings-preview__logo">
+            {logo ? <img src={logo} alt="" loading="lazy" decoding="async" /> : <Zap size={20} />}
+          </div>
+          <div>
+            <span className="pf-badge-soft">Preview da loja</span>
+            <h2>{name || store.nome || 'Nome da loja'}</h2>
+            <p>{description || 'Descricao curta da loja para gerar confianca no comprador.'}</p>
+          </div>
+        </div>
+        <div className="store-settings-preview__meta">
+          <span>{city || 'Cidade'}{state ? `, ${state}` : ''}</span>
+          <strong>{whatsapp ? 'WhatsApp configurado' : 'Configure o WhatsApp'}</strong>
+        </div>
       </div>
 
       {message && (
@@ -442,6 +460,71 @@ export default function StoreSettings() {
           min-width: 0;
         }
 
+        .store-settings-title-row {
+          align-items: flex-start;
+        }
+
+        .store-settings-preview {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 20px;
+          margin: -12px 0 24px;
+          padding: 20px;
+          border-radius: var(--radius-card);
+        }
+
+        .store-settings-preview__brand {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          min-width: 0;
+        }
+
+        .store-settings-preview__logo {
+          width: 60px;
+          height: 60px;
+          flex: 0 0 auto;
+          border-radius: 18px;
+          display: grid;
+          place-items: center;
+          background: linear-gradient(135deg, var(--primary), var(--color-accent));
+          color: #080b10;
+          overflow: hidden;
+        }
+
+        .store-settings-preview__logo img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .store-settings-preview h2 {
+          margin: 10px 0 4px;
+          font-size: 24px;
+        }
+
+        .store-settings-preview p {
+          margin: 0;
+          max-width: 52ch;
+          color: var(--text-secondary);
+          line-height: 1.55;
+        }
+
+        .store-settings-preview__meta {
+          display: grid;
+          gap: 6px;
+          justify-items: end;
+          color: var(--text-secondary);
+          font-size: 13px;
+          text-align: right;
+          flex: 0 0 auto;
+        }
+
+        .store-settings-preview__meta strong {
+          color: var(--success);
+        }
+
         .store-settings-page h1,
         .store-settings-page h3,
         .store-settings-page p,
@@ -485,6 +568,17 @@ export default function StoreSettings() {
             flex-direction: column;
             align-items: flex-start;
             gap: 12px;
+          }
+
+          .store-settings-preview {
+            flex-direction: column;
+            align-items: stretch;
+            margin-top: -4px;
+          }
+
+          .store-settings-preview__meta {
+            justify-items: start;
+            text-align: left;
           }
 
           .store-settings-title-row .btn {

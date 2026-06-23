@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Car, ArrowRight, MapPin, Clock3, MessageSquare, Sparkles } from 'lucide-react';
+import { Search, ArrowRight, MapPin, Clock3, MessageSquare, Sparkles } from 'lucide-react';
 
 export default function VehicleSearchBox({
   store,
@@ -7,7 +7,6 @@ export default function VehicleSearchBox({
   statusLabel,
   statusTone,
   onOpen,
-  onOpenFilters,
   onWhatsAppClick,
   onScrollToCatalog,
   onHeroInterest,
@@ -15,18 +14,12 @@ export default function VehicleSearchBox({
   vehicleSearchApplied,
   vehicleBrand,
   vehicleModel,
-  onClear,
-  primaryColor,
   heroTire,
   heroTires = [],
   activeHeroIndex = 0,
   resultCount,
   uniqueSizes = [],
   uniqueBrands = [],
-  searchQuery,
-  setSearchQuery,
-  filterBrand,
-  setFilterBrand,
   commercialContactEnabled = true,
 }) {
   const heroImage =
@@ -87,7 +80,20 @@ export default function VehicleSearchBox({
             Ver catálogo
             <ArrowRight size={18} />
           </button>
+          <button type="button" className="button button--ghost button--xl button--search" onClick={onOpen}>
+            <Search size={18} />
+            Buscar pneu
+          </button>
         </div>
+
+        {vehicleSearchApplied && (
+          <button type="button" className="hero-search-summary" onClick={onOpen}>
+            <Search size={14} />
+            <span>
+              Busca ativa: {vehicleBrand || 'Veículo'} {vehicleModel}
+            </span>
+          </button>
+        )}
 
         <div className="store-hero__stats">
           <div className="hero-stat">
@@ -167,13 +173,17 @@ export default function VehicleSearchBox({
         </div>
 
         <div className="store-hero__quickbar">
-          <button type="button" className="quick-cta quick-cta--primary" onClick={onOpenFilters}>
+          <button type="button" className="quick-cta quick-cta--primary" onClick={onOpen}>
             <Search size={16} />
-            Filtros
+            Buscar pneu
+          </button>
+          <button type="button" className="quick-cta" onClick={onScrollToCatalog}>
+            <ArrowRight size={16} />
+            Catálogo
           </button>
           <button
             type="button"
-            className={`quick-cta ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+            className={`quick-cta quick-cta--whatsapp ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
             onClick={onWhatsAppClick}
             disabled={!commercialContactEnabled}
             aria-disabled={!commercialContactEnabled}
@@ -181,70 +191,6 @@ export default function VehicleSearchBox({
             <MessageSquare size={16} />
             WhatsApp
           </button>
-          <button type="button" className="quick-cta" onClick={onScrollToCatalog}>
-            <ArrowRight size={16} />
-            Catálogo
-          </button>
-        </div>
-
-        <div className="store-search-grid">
-          <div className="search-card">
-            <p className="search-card__label">Busca por medida</p>
-            <input
-              type="text"
-              className="search-card__input"
-              placeholder="Ex: 205/55 R16"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <div className="search-card__hint">
-              {uniqueSizes.slice(0, 3).map((size) => (
-                <button key={size} type="button" className="mini-chip" onClick={() => setSearchQuery(size)}>
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="search-card search-card--accent">
-            <p className="search-card__label">Busca por veículo</p>
-            <p className="search-card__copy">Encontre pneus compatíveis por marca, modelo e versão.</p>
-            {vehicleSearchApplied ? (
-              <div className="search-card__active">
-                <strong>
-                  {vehicleBrand || 'Veículo'} {vehicleModel}
-                </strong>
-                <button type="button" className="text-button text-button--light" onClick={onClear}>
-                  Limpar
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="button button--white button--wide button--xl hero-search-action"
-                onClick={onOpen}
-                aria-label="Buscar pneu por veículo"
-              >
-                <Car size={22} />
-                Buscar veículo
-              </button>
-            )}
-          </div>
-
-          <div className="search-card">
-            <p className="search-card__label">Busca por marca</p>
-            <select className="search-card__select" value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)}>
-              <option value="">Todas as marcas</option>
-              {uniqueBrands.map((brand) => (
-                <option key={brand} value={brand}>
-                  {brand}
-                </option>
-              ))}
-            </select>
-            <div className="search-card__hint">
-              <span className="search-card__hint-text">Principais marcas da loja.</span>
-            </div>
-          </div>
         </div>
       </div>
     </section>

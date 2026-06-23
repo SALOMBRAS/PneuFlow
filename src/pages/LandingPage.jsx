@@ -6,7 +6,13 @@ import {
   ChevronDown, 
   Zap, 
   Clock, 
-  Settings 
+  Settings,
+  Store,
+  MessageCircle,
+  BarChart3,
+  Users,
+  ShieldCheck,
+  CreditCard
 } from 'lucide-react';
 import './LandingPage.css';
 import FeedbackCarousel from '../components/FeedbackCarousel';
@@ -16,8 +22,8 @@ const CardSwapHero = lazy(() => import('../components/CardSwap/CardSwapHero'));
 
 const heroPhrases = [
   {
-    text: 'Pare de perder clientes no WhatsApp. Crie sua vitrine online.',
-    highlights: ['WhatsApp', 'vitrine online'],
+    text: 'Venda mais pneus com uma vitrine online integrada ao WhatsApp.',
+    highlights: ['Venda mais pneus', 'WhatsApp'],
   },
   {
     text: 'Organize seus pneus em minutos. Venda mais pelo WhatsApp.',
@@ -30,6 +36,57 @@ const heroPhrases = [
 ];
 
 const HERO_MOBILE_PHRASE_KEY = 'pneuflowHeroPhraseIndex';
+
+const benefitCards = [
+  {
+    icon: <Store size={22} />,
+    title: 'Vitrine online em minutos',
+    text: 'Publique um link profissional para seus pneus sem depender de PDF, lista solta ou resposta manual.'
+  },
+  {
+    icon: <Settings size={22} />,
+    title: 'Catálogo organizado',
+    text: 'Medida, marca, modelo, estoque e preço ficam claros para o cliente comparar antes de chamar.'
+  },
+  {
+    icon: <MessageCircle size={22} />,
+    title: 'Leads direto no WhatsApp',
+    text: 'O comprador chega com produto e intenção de compra, reduzindo conversa repetida no atendimento.'
+  },
+  {
+    icon: <BarChart3 size={22} />,
+    title: 'Dashboard comercial',
+    text: 'Acompanhe leads, visualizações, conversão e pneus mais procurados no painel da loja.'
+  },
+  {
+    icon: <Users size={22} />,
+    title: 'Vendedores e referral',
+    text: 'Crie links por vendedor, acompanhe oportunidades e direcione o WhatsApp correto.'
+  },
+  {
+    icon: <ShieldCheck size={22} />,
+    title: 'Trial com controle',
+    text: 'Após o teste, o painel é bloqueado com clareza e a vitrine mantém uma experiência segura.'
+  }
+];
+
+const howItWorks = [
+  {
+    step: '01',
+    title: 'Cadastre sua loja',
+    text: 'Crie a conta, configure WhatsApp, cidade, identidade e link público da vitrine.'
+  },
+  {
+    step: '02',
+    title: 'Publique seus pneus',
+    text: 'Adicione medidas, marcas, preços, estoque e fotos para montar um catálogo profissional.'
+  },
+  {
+    step: '03',
+    title: 'Receba compradores',
+    text: 'O cliente pesquisa, escolhe o pneu e chama no WhatsApp com a mensagem pronta.'
+  }
+];
 
 const getPrefersReducedMotion = () => {
   if (typeof window === 'undefined') return false;
@@ -281,8 +338,9 @@ export default function LandingPage() {
           </div>
           
           <nav className="landing-nav" style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-            <a href="#demo-interativa" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Demonstração</a>
-            <a href="#problemas" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Problemas</a>
+            <a href="#beneficios" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Benefícios</a>
+            <a href="#como-funciona" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Como funciona</a>
+            <a href="#preco" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Preço</a>
             <a href="#faq" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>FAQ</a>
           </nav>
 
@@ -316,14 +374,14 @@ export default function LandingPage() {
               <HeroTypewriter isMobile={isMobileHero} />
             </h1>
             <p className="hero-description">
-              Guie seu cliente de forma autônoma: ele pesquisa pneus pela medida ou pelo modelo do veículo, tira todas as dúvidas e chega no seu WhatsApp pronto para fechar a compra.
+              Transforme seu estoque em um catálogo bonito, pesquisável e pronto para gerar leads qualificados no WhatsApp da sua loja.
             </p>
             <div className="hero-buttons">
               <button onClick={() => navigate('/register')} className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '16px' }}>
-                Criar minha vitrine grátis
+                Começar teste grátis
               </button>
               <a href="#demo-interativa" className="btn btn-secondary" style={{ padding: '14px 28px', fontSize: '16px' }}>
-                Ver Como Funciona
+                Ver exemplo de vitrine
               </a>
             </div>
             
@@ -354,6 +412,80 @@ export default function LandingPage() {
       </section>
 
       <InteractiveDemo />
+
+      <section id="beneficios" className="section-padding landing-benefits-section">
+        <div className="container">
+          <div className="pf-section-header landing-centered-header">
+            <div>
+              <span className="pf-kicker">Produto para vender mais</span>
+              <h2 className="title-lg">Uma vitrine que trabalha antes do cliente chamar.</h2>
+              <p>
+                O PneuFlow organiza o que hoje fica espalhado entre fotos, listas e mensagens soltas, deixando a compra mais clara para o motorista.
+              </p>
+            </div>
+          </div>
+
+          <div className="landing-benefits-grid">
+            {benefitCards.map((benefit) => (
+              <article key={benefit.title} className="pf-card pf-card-hover landing-benefit-card">
+                <div className="landing-benefit-icon">{benefit.icon}</div>
+                <h3>{benefit.title}</h3>
+                <p>{benefit.text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="como-funciona" className="section-padding landing-how-section">
+        <div className="container">
+          <div className="landing-how-card pf-card-premium">
+            <div className="landing-how-copy">
+              <span className="pf-kicker">Como funciona</span>
+              <h2 className="title-lg">Do cadastro ao WhatsApp em três passos.</h2>
+              <p>
+                A experiência foi pensada para o lojista configurar rápido e para o comprador chegar com menos dúvida no atendimento.
+              </p>
+            </div>
+
+            <div className="landing-how-steps">
+              {howItWorks.map((item) => (
+                <article key={item.step} className="landing-how-step">
+                  <span>{item.step}</span>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="preco" className="section-padding landing-pricing-section">
+        <div className="container">
+          <div className="landing-pricing-card pf-card-premium">
+            <div>
+              <span className="pf-kicker">Plano PRO</span>
+              <h2>R$ 39,00/mês</h2>
+              <p>
+                Uma assinatura simples para manter vitrine, dashboard, leads e vendedores em um só lugar.
+              </p>
+            </div>
+
+            <ul className="landing-pricing-list">
+              <li><CheckCircle size={16} /> Vitrine pública com catálogo de pneus</li>
+              <li><CheckCircle size={16} /> Leads com destino para WhatsApp</li>
+              <li><CheckCircle size={16} /> Dashboard comercial e ranking</li>
+              <li><CheckCircle size={16} /> Controle de vendedores e links referral</li>
+            </ul>
+
+            <button type="button" onClick={() => navigate('/register')} className="btn btn-primary landing-pricing-cta">
+              <CreditCard size={18} />
+              Começar teste grátis
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* Problems Section */}
       <section id="problemas" className="section-padding landing-problems-section">
