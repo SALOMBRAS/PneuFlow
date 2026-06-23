@@ -164,3 +164,16 @@ git log -1 --oneline
 - Pack `cost-workflow` ainda nao instalado.
 - `.codex/` continua ignorado; skills adicionadas ficam locais nesta maquina ate decisao contraria.
 - Pode ser necessario reiniciar o Codex para reconhecer MCP/skills.
+
+## Vercel clean deploy
+
+- Data: 23/06/2026.
+- Documento: `docs/VERCEL-CLEAN-DEPLOY.md`.
+- Projeto oficial Vercel: `pneuflow`.
+- URL oficial obtida: `https://pneuflow.vercel.app`.
+- URL estavel do projeto no scope: `https://pneuflow-pedrosalomao22099-4358s-projects.vercel.app`.
+- Preview validado: `https://pneuflow-o4lpcz59p-pedrosalomao22099-4358s-projects.vercel.app`.
+- Production deployment validado: `https://pneuflow-nmojskq7v-pedrosalomao22099-4358s-projects.vercel.app`.
+- Variaveis Vercel confirmadas sem expor valores: `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` em Preview e Production.
+- Pendente: atualizar Supabase Auth para incluir `https://pneuflow.vercel.app` como Site URL e Redirect URL.
+- Nao excluir projeto/deployments antigos ate validar cadastro, login e recuperacao de senha na URL oficial.

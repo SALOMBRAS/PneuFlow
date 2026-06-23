@@ -63,3 +63,4 @@ cofrezip.zip
 # Supabase local backups
 backups/supabase/
 backups/kit-mcp-before-install/
+backups/vercel-before-clean-deploy/
