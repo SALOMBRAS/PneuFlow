@@ -10,7 +10,7 @@ fonte:
   - src/services/storage.js
   - src/pages/Auth/Register.jsx
   - src/components/TermsAcceptanceModal.jsx
-atualizado: 2026-06-15
+atualizado: 2026-06-23
 tags: []
 ---
 
@@ -59,3 +59,6 @@ Esse aceite Ã© apenas frontend: nÃ£o altera Supabase Auth, nÃ£o cria colun
 
 - `StoreContext` nÃ£o possui mais logs de debug amplos de sessÃ£o/loja; restam apenas `console.error` para erro de carregamento.
 - `storage.js` mantÃ©m logs de erro/diagnÃ³stico em falhas de RPC, dashboard metrics e upload, sem copiar segredos.
+## Provisionamento de loja no cadastro
+
+O cadastro cria primeiro o usuario no Supabase Auth e guarda `full_name`, `store_name` e `phone_number` em `user_metadata`. Apos confirmacao/login, o frontend chama `storageService.completeRegistration()`, que usa a RPC `ensure_store_provisioned` para criar de forma idempotente `profiles`, `stores` e o vinculo `store_members` de dono. A RPC retorna a loja existente quando o usuario ja possui `store_members.status = active`, sem criar loja propria para vendedores. `StoreContext` tambem tenta esse provisionamento como fallback quando um usuario autenticado sem convite ainda nao possui loja ou permissao carregada.

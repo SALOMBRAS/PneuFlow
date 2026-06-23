@@ -8,8 +8,9 @@ fonte:
   - src/services/storage.js
   - supabase/migrations/20260618171439_remote_schema.sql
   - supabase/migrations/20260618172000_store_subscription_trial.sql
+  - supabase/migrations/20260623143000_signup_store_provisioning.sql
   - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
-atualizado: 2026-06-21
+atualizado: 2026-06-23
 tags: []
 ---
 
@@ -103,6 +104,7 @@ tags: []
 - `registrar_visita_referral`
 
 `registrar_visita_referral` e chamada em `storage.js` com `store_id`, `seller_id`, `ref_code`, `visitor_id`, `path` e `user_agent`.
+- `ensure_store_provisioned`: cria/garante `profiles`, `stores` e o membro dono em `store_members` para usuarios autenticados de cadastro normal. Usa `auth.uid()` e `user_metadata`; antes de criar loja, retorna a loja de `store_members.status = active` para proteger vendedores e membros existentes.
 
 ## Regras de seguranca
 
@@ -112,6 +114,6 @@ tags: []
 
 ## Estado atual das migrations
 
-- `supabase/migrations/` deve conter somente `20260618171439_remote_schema.sql` e `20260618172000_store_subscription_trial.sql`.
+- `supabase/migrations/` contem a baseline, a trial e migrations novas aprovadas apos a baseline; em 2026-06-23 ha uma migration local pendente para `ensure_store_provisioned`.
 - Migrations antigas ficam em `docs/legacy-migrations/pre-baseline/` e nao devem ser executadas como ativas.
 - O schema remoto confirmado esta documentado em [[schema-remoto-confirmado]].
