@@ -29,7 +29,8 @@ fonte:
   - cofre/03 - Decisões/padronizacao-visual-frontend.md
   - cofre/03 - Decisões/mercado-pago-checkout-pro-etapa-1.md
   - cofre/03 - Decisões/seguranca-e-hardening.md
-atualizado: 2026-06-21
+  - cofre/03 - Decisões/estoque-e-vendas.md
+atualizado: 2026-06-24
 tags: []
 ---
 
@@ -74,6 +75,7 @@ tags: []
 - [[../03 - Decisões/padronizacao-visual-frontend|Padronizacao visual do frontend]]
 - [[../03 - Decisões/mercado-pago-checkout-pro-etapa-1|Mercado Pago Checkout Pro - etapa 1]]
 - [[../03 - Decisões/seguranca-e-hardening|Seguranca e hardening]]
+- [[../03 - Decisões/estoque-e-vendas|Estoque e vendas]]
 
 ## Dividas tecnicas em rascunho
 

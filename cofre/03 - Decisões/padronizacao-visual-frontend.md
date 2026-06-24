@@ -10,7 +10,7 @@ fonte:
   - src/pages/LandingPage.css
   - src/pages/StoreFront/StoreFront.css
   - index.html
-atualizado: 2026-06-23
+atualizado: 2026-06-24
 tags: []
 ---
 
@@ -138,6 +138,16 @@ Essas classes devem ser preferidas antes de criar novos estilos locais. A ideia 
 - Cards de metricas e detalhes seguem visual premium com hover suave, borda sutil e foco visivel.
 - Listas internas, ranking comercial e acoes rapidas foram compactadas para evitar vazamento visual.
 - Estados vazios seguem o padrao de superficie escura com chamada clara.
+
+### Painel de detalhes das metricas 2026-06-24
+
+- `src/pages/Dashboard/components/MetricDetailsPanel.jsx` centraliza o painel premium de detalhe das metricas da home.
+- Desktop abre o painel inline logo abaixo dos cards, mantendo largura util do dashboard e conexao visual com o card ativo.
+- Mobile usa bottom sheet visual com padding proprio, mini cards empilhados e area de toque confortavel.
+- O card clicado recebe estado ativo; clicar novamente fecha, clicar em outra metrica troca o conteudo e `Esc` fecha o painel.
+- O conteudo usa somente dados ja disponiveis: valor principal, resumo, mini indicadores, barra simples e acoes para rotas existentes.
+- A animacao e curta, com `opacity`, `translateY` e leve `scale`, respeitando `prefers-reduced-motion`.
+- Nao houve mudanca de banco, Supabase, Mercado Pago, Auth, trial, assinatura ou regras comerciais.
 
 ### Catalogo de pneus
 

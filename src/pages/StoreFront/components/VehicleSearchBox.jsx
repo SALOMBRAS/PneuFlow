@@ -41,6 +41,7 @@ export default function VehicleSearchBox({
     maximumFractionDigits: 2,
   });
   const inStock = Number(heroTire?.estoque || 0) > 0;
+  const heroContactDisabled = !commercialContactEnabled || (Boolean(heroTire) && !inStock);
 
   return (
     <section className="store-hero">
@@ -141,14 +142,14 @@ export default function VehicleSearchBox({
 
                   <button
                     type="button"
-                    className={`button button--primary button--wide button--xl hero-buy-button ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+                    className={`button button--primary button--wide button--xl hero-buy-button ${heroContactDisabled ? 'commercial-disabled' : ''}`}
                     onClick={() => (heroTire ? onHeroInterest(heroTire) : onScrollToCatalog())}
                     aria-label={heroTire ? `Comprar ${heroTire.marca || ''} ${heroTire.modelo || heroTire.medida || 'pneu'} pelo WhatsApp` : 'Comprar pelo WhatsApp'}
-                    disabled={!commercialContactEnabled}
-                    aria-disabled={!commercialContactEnabled}
+                    disabled={heroContactDisabled}
+                    aria-disabled={heroContactDisabled}
                   >
                     <MessageSquare size={18} />
-                    Comprar no WhatsApp
+                    {heroTire && !inStock ? 'Indisponivel' : 'Comprar no WhatsApp'}
                   </button>
                 </div>
               </div>

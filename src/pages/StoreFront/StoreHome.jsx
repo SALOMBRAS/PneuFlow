@@ -27,6 +27,7 @@ import PublicStoreHeader from './components/PublicStoreHeader';
 import ProductCard from './components/ProductCard';
 import StoreFilters from './components/StoreFilters';
 import VehicleSearchBox from './components/VehicleSearchBox';
+import QuantitySelector from './components/QuantitySelector';
 
 const normalizeText = (text) =>
   text
@@ -54,6 +55,18 @@ const formatMoney = (value) =>
 const stripPhone = (value) => String(value || '').replace(/\D/g, '');
 
 const hasValidWhatsapp = (value) => stripPhone(value).length >= 10;
+
+const getAvailableStock = (tire) => Math.max(0, Number(tire?.estoque || 0));
+
+const clampQuantity = (value, tire) => {
+  const max = getAvailableStock(tire);
+  if (max <= 0) return 0;
+
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return 1;
+
+  return Math.min(Math.max(parsed, 1), max);
+};
 
 const debugReferral = (...args) => {
   if (import.meta.env.DEV) {
@@ -120,6 +133,8 @@ export default function StoreHome() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [targetTire, setTargetTire] = useState(null);
+  const [leadQuantity, setLeadQuantity] = useState(1);
+  const [detailQuantity, setDetailQuantity] = useState(1);
   const [customerName, setCustomerName] = useState('');
   const [savingLead, setSavingLead] = useState(false);
   const [leadError, setLeadError] = useState('');
@@ -459,10 +474,22 @@ export default function StoreHome() {
     handleClearVehicleSearch();
   };
 
-  const handleInterest = (tire) => {
+  const handleOpenDetail = (tire) => {
+    setSelectedTire(tire);
+    setDetailQuantity(clampQuantity(1, tire) || 1);
+  };
+
+  const handleInterest = (tire, quantity = 1) => {
     if (!commercialContactEnabled) return;
+    const availableStock = getAvailableStock(tire);
+
+    if (availableStock <= 0) {
+      setLeadError('Este pneu esta indisponivel no momento.');
+      return;
+    }
 
     setTargetTire(tire);
+    setLeadQuantity(clampQuantity(quantity, tire));
     setLeadError('');
     setLeadModalOpen(true);
   };
@@ -476,6 +503,13 @@ export default function StoreHome() {
     setLeadError('');
 
     const produtoNome = `${targetTire.marca || ''} ${targetTire.modelo || ''}`.trim();
+    const requestedQuantity = clampQuantity(leadQuantity, targetTire);
+
+    if (requestedQuantity < 1) {
+      setLeadError('Este pneu esta indisponivel no momento.');
+      setSavingLead(false);
+      return;
+    }
     
     const currentRefCode = referralSeller?.ref_code || activeRefCode || null;
     const hasReferralSeller = Boolean(referralSeller?.ref_code && hasValidWhatsapp(referralSeller?.whatsapp));
@@ -486,6 +520,7 @@ export default function StoreHome() {
       produto_nome: produtoNome,
       produto_medida: targetTire.medida || '',
       produto_preco: Number(targetTire.preco || 0),
+      desired_quantity: requestedQuantity,
       origem: 'whatsapp',
       ref_code: hasReferralSeller ? currentRefCode : null,
       attribution_source: hasReferralSeller ? 'referral' : 'product'
@@ -496,6 +531,8 @@ export default function StoreHome() {
 
       const formattedPrice = `R$ ${formatMoney(targetTire.preco)}`;
       let text = `Olá!\n\nMeu nome é ${customerName.trim()}.\n\nTenho interesse no seguinte produto:\n\nProduto: ${produtoNome}\nMedida: ${targetTire.medida || 'N/A'}\nValor: ${formattedPrice}\n\n`;
+
+      text += `Quantidade desejada: ${requestedQuantity} unidade${requestedQuantity === 1 ? '' : 's'}\n\n`;
 
       if (vehicleSearchApplied) {
         const carInfo = vehicleBrand ? `${vehicleBrand} ${vehicleModel}` : vehicleModel;
@@ -513,6 +550,7 @@ export default function StoreHome() {
       setLeadModalOpen(false);
       setCustomerName('');
       setTargetTire(null);
+      setLeadQuantity(1);
     } catch (error) {
       console.error('Erro ao registrar lead:', error);
       setLeadError('Não foi possível registrar seu interesse. Tente novamente.');
@@ -631,8 +669,8 @@ export default function StoreHome() {
                     onInterest={handleInterest}
                     commercialContactEnabled={commercialContactEnabled}
                     onDetail={(t) => {
-                      setSelectedTire(t);
                       setActiveImageIndex(0);
+                      handleOpenDetail(t);
                     }}
                   />
                 ))}
@@ -1112,10 +1150,18 @@ export default function StoreHome() {
                     <h4 className="contact-band__title">R$ {formatMoney(selectedTire.preco)}</h4>
                   </div>
                   <span className={`status-pill ${Number(selectedTire.estoque || 0) > 0 ? 'status-pill--success' : 'status-pill--muted'}`}>
-                    {Number(selectedTire.estoque || 0) > 0 ? 'Pronta entrega' : 'Sob consulta'}
+                    {Number(selectedTire.estoque || 0) > 0 ? `${Number(selectedTire.estoque || 0)} disponivel${Number(selectedTire.estoque || 0) === 1 ? '' : 's'}` : 'Indisponivel'}
                   </span>
                 </div>
               </div>
+
+              <QuantitySelector
+                value={detailQuantity}
+                max={getAvailableStock(selectedTire)}
+                onChange={setDetailQuantity}
+                disabled={!commercialContactEnabled}
+                className="quantity-selector--detail"
+              />
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
                 <button type="button" className="button button--ghost button--xl" style={{ flex: 1 }} onClick={() => setSelectedTire(null)}>
@@ -1125,15 +1171,15 @@ export default function StoreHome() {
                   type="button"
                   className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
                   style={{ flex: 2 }}
-                  disabled={!commercialContactEnabled}
-                  aria-disabled={!commercialContactEnabled}
+                  disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
+                  aria-disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
                   onClick={() => {
-                    handleInterest(selectedTire);
+                    handleInterest(selectedTire, detailQuantity);
                     setSelectedTire(null);
                   }}
                 >
                   <MessageSquare size={16} />
-                  Me interessou
+                  {getAvailableStock(selectedTire) > 0 ? 'Me interessou' : 'Indisponivel'}
                 </button>
               </div>
             </div>
@@ -1150,6 +1196,7 @@ export default function StoreHome() {
                 setLeadModalOpen(false);
                 setCustomerName('');
                 setTargetTire(null);
+                setLeadQuantity(1);
               }}
               type="button"
               aria-label="Fechar"
@@ -1206,13 +1253,20 @@ export default function StoreHome() {
                 </div>
               </div>
 
+              <QuantitySelector
+                value={leadQuantity}
+                max={getAvailableStock(targetTire)}
+                onChange={setLeadQuantity}
+                label="Quantidade desejada"
+              />
+
               <button
                 type="submit"
-                disabled={savingLead || !customerName.trim() || !commercialContactEnabled}
+                disabled={savingLead || !customerName.trim() || !commercialContactEnabled || getAvailableStock(targetTire) <= 0}
                 className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
                 style={{
-                  opacity: savingLead || !customerName.trim() || !commercialContactEnabled ? 0.72 : 1,
-                  cursor: savingLead || !customerName.trim() || !commercialContactEnabled ? 'not-allowed' : 'pointer',
+                  opacity: savingLead || !customerName.trim() || !commercialContactEnabled || getAvailableStock(targetTire) <= 0 ? 0.72 : 1,
+                  cursor: savingLead || !customerName.trim() || !commercialContactEnabled || getAvailableStock(targetTire) <= 0 ? 'not-allowed' : 'pointer',
                 }}
               >
                 {savingLead ? 'Processando...' : (

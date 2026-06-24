@@ -8,8 +8,9 @@ fonte:
   - src/services/storage.js
   - supabase/migrations/20260618171439_remote_schema.sql
   - supabase/migrations/20260618172000_store_subscription_trial.sql
+  - supabase/migrations/20260624120000_stock_sale_quantity.sql
   - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
-atualizado: 2026-06-21
+atualizado: 2026-06-24
 tags: []
 ---
 
@@ -77,6 +78,8 @@ tags: []
 - `produto_preco`
 - `origem`
 - `venda_confirmada`
+- `desired_quantity` (migration local pendente de aplicar)
+- `sold_quantity` (migration local pendente de aplicar)
 
 `store_referral_visits`:
 
@@ -112,6 +115,12 @@ tags: []
 
 ## Estado atual das migrations
 
-- `supabase/migrations/` deve conter somente `20260618171439_remote_schema.sql` e `20260618172000_store_subscription_trial.sql`.
+- `supabase/migrations/` continha a baseline `20260618171439_remote_schema.sql` e a migration de trial `20260618172000_store_subscription_trial.sql`.
+- Em 2026-06-24 foi criada a migration local `20260624120000_stock_sale_quantity.sql` para quantidade desejada/vendida e baixa atomica de estoque por RPC.
+- Essa migration nova ainda precisa ser aplicada no Supabase remoto em etapa autorizada.
 - Migrations antigas ficam em `docs/legacy-migrations/pre-baseline/` e nao devem ser executadas como ativas.
 - O schema remoto confirmado esta documentado em [[schema-remoto-confirmado]].
+
+## Estoque e vendas
+
+Detalhes da regra de estoque, quantidade desejada, quantidade vendida e RPC atomica ficam em [[../03 - Decisões/estoque-e-vendas|Estoque e vendas]].

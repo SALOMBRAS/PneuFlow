@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MessageSquare, Car, Bike, Info, ShieldCheck, Zap, Gauge } from 'lucide-react';
+import QuantitySelector from './QuantitySelector';
 
 const formatPrice = (value) =>
   Number(value || 0).toLocaleString('pt-BR', {
@@ -8,10 +9,13 @@ const formatPrice = (value) =>
   });
 
 export default function ProductCard({ tire, primaryColor, onInterest, onDetail, commercialContactEnabled = true }) {
-  const isStock = Number(tire.estoque || 0) > 0;
+  const stockCount = Math.max(0, Number(tire.estoque || 0));
+  const isStock = stockCount > 0;
+  const [desiredQuantity, setDesiredQuantity] = useState(1);
   const image = tire.foto_principal_url || tire.image || 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=800';
   const vehicleLabel = tire.tipo_veiculo === 'moto' ? 'Moto' : 'Carro';
   const compatibility = tire.compatibilidade || tire.compatibility || tire.version || tire.descricao || 'Compatibilidade sob consulta';
+  const contactDisabled = !commercialContactEnabled || !isStock;
 
   return (
     <article className="product-card">
@@ -42,7 +46,7 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
         </div>
 
         <span className={`stock-pill ${isStock ? 'stock-pill--success' : 'stock-pill--warning'}`}>
-          {isStock ? 'Pronta entrega' : 'Sob consulta'}
+          {isStock ? `${stockCount} disponivel${stockCount === 1 ? '' : 's'}` : 'Indisponivel'}
         </span>
       </button>
 
@@ -72,6 +76,14 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
           </span>
         </div>
 
+        <QuantitySelector
+          value={desiredQuantity}
+          max={stockCount}
+          onChange={setDesiredQuantity}
+          compact
+          disabled={!commercialContactEnabled}
+        />
+
         <div className="product-price-row">
           <div>
             <span className="product-price-label">A partir de</span>
@@ -92,15 +104,15 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
         </div>
 
         <button
-          onClick={() => onInterest(tire)}
+          onClick={() => onInterest(tire, desiredQuantity)}
           type="button"
-          className={`btn-whatsapp-card ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+          className={`btn-whatsapp-card ${contactDisabled ? 'commercial-disabled' : ''}`}
           aria-label={`Falar no WhatsApp sobre o pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
-          disabled={!commercialContactEnabled}
-          aria-disabled={!commercialContactEnabled}
+          disabled={contactDisabled}
+          aria-disabled={contactDisabled}
         >
           <MessageSquare size={16} />
-          Falar no WhatsApp
+          {isStock ? 'Falar no WhatsApp' : 'Indisponivel'}
         </button>
       </div>
     </article>

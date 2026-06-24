@@ -10,13 +10,14 @@ fonte:
   - src/pages/StoreFront/StoreFront.css
   - src/pages/StoreFront/components/VehicleSearchBox.jsx
   - src/pages/StoreFront/components/ProductCard.jsx
+  - src/pages/StoreFront/components/QuantitySelector.jsx
   - src/pages/StoreFront/components/StoreFilters.jsx
   - src/services/storage.js
   - src/utils/visitorId.js
   - src/utils/subscriptionAccess.js
   - supabase/migrations/20260618171439_remote_schema.sql
   - cofre/01 - Arquitetura/fluxos-principais.md
-atualizado: 2026-06-21
+atualizado: 2026-06-24
 tags: []
 ---
 
@@ -70,6 +71,18 @@ As migrations confirmam RPCs publicas para resolver vendedor ativo por `ref_code
 `StoreHome.jsx` mantem filtros por texto, marca, estoque, tipo de veiculo e busca por veiculo. `StoreFilters.jsx` controla os filtros laterais/drawer. `VehicleSearchBox.jsx` expoe busca rapida por medida/marca/veiculo no hero.
 
 O modal de interesse recebe `targetTire` e `customerName`, chama `storageService.createLead` e depois abre WhatsApp com mensagem do produto. Quando ha referral valido, o payload usa `ref_code` e `attribution_source: 'referral'`; sem referral, usa `attribution_source: 'product'`.
+
+## Quantidade desejada e estoque
+
+`ProductCard.jsx` e o modal de interesse usam `QuantitySelector.jsx` para permitir que o visitante escolha a quantidade desejada, com minimo `1` e maximo igual a `pneus.estoque`.
+
+Regras confirmadas:
+
+- criar lead nao reduz estoque;
+- a quantidade escolhida vai no payload como `desired_quantity`;
+- a mensagem de WhatsApp inclui `Quantidade desejada`;
+- se `estoque <= 0`, o produto continua visivel, mas o CTA comercial do produto fica bloqueado como indisponivel;
+- a baixa real de estoque acontece apenas no dashboard, via RPC documentada em [[../03 - Decisões/estoque-e-vendas|Estoque e vendas]].
 
 ## Bloqueio comercial por trial/assinatura
 

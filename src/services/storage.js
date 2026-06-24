@@ -557,6 +557,7 @@ export const storageService = {
       p_produto_nome: payload.produto_nome || '',
       p_produto_medida: payload.produto_medida || '',
       p_produto_preco: Number(payload.produto_preco || 0),
+      p_desired_quantity: Math.max(1, Number.parseInt(payload.desired_quantity, 10) || 1),
       p_origem: payload.origem || 'whatsapp',
       p_seller_id: payload.seller_id || null,
       p_ref_code: payload.ref_code || null,
@@ -590,10 +591,11 @@ export const storageService = {
     return true;
   },
 
-  updateLeadSaleStatus: async (leadId, vendaConfirmada) => {
+  updateLeadSaleStatus: async (leadId, vendaConfirmada, soldQuantity = 1) => {
     const { data, error } = await supabase.rpc('atualizar_status_venda_lead', {
       p_lead_id: leadId,
-      p_venda_confirmada: vendaConfirmada
+      p_venda_confirmada: vendaConfirmada,
+      p_sold_quantity: Math.max(1, Number.parseInt(soldQuantity, 10) || 1)
     });
 
     if (error) {
