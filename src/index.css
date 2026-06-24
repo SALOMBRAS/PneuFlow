@@ -52,6 +52,17 @@
 
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-title: 'Outfit', var(--font-sans);
+  --font-display: var(--font-title);
+
+  --type-hero: clamp(3.1rem, 7vw, 6.6rem);
+  --type-section-title: clamp(2.5rem, 4.9vw, 4.8rem);
+  --type-section-title-compact: clamp(2rem, 3.6vw, 3.4rem);
+  --type-section-subtitle: clamp(1rem, 1.45vw, 1.18rem);
+  --type-card-title: clamp(1.08rem, 1.45vw, 1.32rem);
+  --type-card-description: 0.98rem;
+  --type-small: 0.86rem;
+  --text-description: rgba(229, 231, 235, 0.84);
+  --text-description-muted: rgba(209, 213, 219, 0.78);
   
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -77,6 +88,7 @@
 }
 
 html {
+  font-family: var(--font-sans);
   overflow-x: clip;
 }
 
@@ -98,7 +110,7 @@ body {
   min-height: 100vh;
 }
 
-body, button, input, textarea, select {
+button, input, textarea, select {
   font-family: inherit;
 }
 
@@ -119,9 +131,9 @@ button {
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-title);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-weight: 850;
+  letter-spacing: -0.035em;
   color: var(--text-primary);
   overflow-wrap: anywhere;
 }

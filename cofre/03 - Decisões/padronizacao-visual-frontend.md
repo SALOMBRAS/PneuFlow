@@ -10,7 +10,7 @@ fonte:
   - src/pages/LandingPage.css
   - src/pages/StoreFront/StoreFront.css
   - index.html
-atualizado: 2026-06-22
+atualizado: 2026-06-23
 tags: []
 ---
 
@@ -47,6 +47,16 @@ tags: []
 - `--shadow-card`
 - `--shadow-premium-glow`
 - `--font-sans`
+- `--font-display`
+- `--type-hero`
+- `--type-section-title`
+- `--type-section-title-compact`
+- `--type-section-subtitle`
+- `--type-card-title`
+- `--type-card-description`
+- `--type-small`
+- `--text-description`
+- `--text-description-muted`
 
 Tambem preserva aliases legados:
 
@@ -90,6 +100,22 @@ Tambem preserva aliases legados:
 - `.pf-glow`
 
 Essas classes devem ser preferidas antes de criar novos estilos locais. A ideia e manter os cards, botoes, badges, inputs, estados vazios e headers com a mesma linguagem visual.
+
+## Escala tipografica 2026-06-23
+
+- `Inter` continua como fonte de UI, formularios, botoes, descricoes e textos operacionais.
+- `Outfit` continua como fonte de display/titulos por `--font-display`.
+- Titulos principais usam peso forte, tracking mais fechado e `clamp()` para manter impacto no desktop sem quebrar no mobile.
+- Subtitulos e descricoes cinza passaram a usar `--text-description` e `--text-description-muted`, com peso minimo `500` para nao ficarem apagados.
+- Titulos de cards usam `--type-card-title`, peso alto e letter-spacing levemente fechado para ganhar presenca.
+- A escala deve ser reaproveitada antes de criar novos tamanhos locais.
+
+## Ajuste da landing 2026-06-23
+
+- A secao de problemas foi removida para reduzir ruido e encurtar a pagina.
+- A secao "Como funciona" recebeu titulo mais forte, subtitulo mais legivel, cards com hierarquia melhor e padding mais equilibrado.
+- O preco do plano PRO foi dividido em partes visuais (`R$`, valor e periodo) para evitar quebra de linha como `R$` separado de `39,00/mes`.
+- A landing permanece sem chamadas de banco, Supabase, Mercado Pago ou mudanca de regra de trial.
 
 ## Evolucao UX/UI 2026-06-22
 

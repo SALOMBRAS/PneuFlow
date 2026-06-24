@@ -2,10 +2,8 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   CheckCircle, 
-  HelpCircle, 
   ChevronDown, 
   Zap, 
-  Clock, 
   Settings,
   Store,
   MessageCircle,
@@ -466,7 +464,11 @@ export default function LandingPage() {
           <div className="landing-pricing-card pf-card-premium">
             <div>
               <span className="pf-kicker">Plano PRO</span>
-              <h2>R$ 39,00/mês</h2>
+              <h2 className="landing-pricing-price" aria-label="R$ 39,00 por mes">
+                <span className="landing-pricing-price__currency">R$</span>
+                <span className="landing-pricing-price__amount">39,00</span>
+                <span className="landing-pricing-price__period">/mês</span>
+              </h2>
               <p>
                 Uma assinatura simples para manter vitrine, dashboard, leads e vendedores em um só lugar.
               </p>
@@ -483,86 +485,6 @@ export default function LandingPage() {
               <CreditCard size={18} />
               Começar teste grátis
             </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Problems Section */}
-      <section id="problemas" className="section-padding landing-problems-section">
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <h2 className="title-lg">Por que as lojas de pneus perdem vendas todos os dias?</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '16px', maxWidth: '650px', margin: '0 auto' }}>
-              Atender clientes interessados em pneus pelo WhatsApp sem uma ferramenta adequada gera atritos que reduzem a conversão.
-            </p>
-          </div>
-          
-          <div className="problems-grid">
-            <div className="card" style={{ borderColor: 'rgba(239, 68, 68, 0.15)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
-                borderRadius: 'var(--radius-md)', 
-                backgroundColor: 'var(--error-glow)', 
-                color: 'var(--error)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                marginBottom: '20px', 
-                marginRight: 'auto', 
-                marginLeft: 'auto' 
-              }}>
-                <Clock size={24} />
-              </div>
-              <h3 style={{ fontSize: '18px', marginBottom: '12px', textAlign: 'center' }}>Demora no Atendimento</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center' }}>
-                O cliente pergunta a medida no WhatsApp. Se você demora 10 minutos para responder, ele já comprou no concorrente que respondeu antes.
-              </p>
-            </div>
-            
-            <div className="card" style={{ borderColor: 'rgba(239, 68, 68, 0.15)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
-                borderRadius: 'var(--radius-md)', 
-                backgroundColor: 'var(--error-glow)', 
-                color: 'var(--error)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                marginBottom: '20px', 
-                marginRight: 'auto', 
-                marginLeft: 'auto' 
-              }}>
-                <HelpCircle size={24} />
-              </div>
-              <h3 style={{ fontSize: '18px', marginBottom: '12px', textAlign: 'center' }}>Clientes não sabem a medida</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center' }}>
-                Muitos motoristas não sabem o aro ou largura do pneu. Seus atendentes perdem tempo explicando onde olhar ou pesquisando compatibilidade manualmente.
-              </p>
-            </div>
-            
-            <div className="card" style={{ borderColor: 'rgba(239, 68, 68, 0.15)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
-                borderRadius: 'var(--radius-md)', 
-                backgroundColor: 'var(--error-glow)', 
-                color: 'var(--error)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                marginBottom: '20px', 
-                marginRight: 'auto', 
-                marginLeft: 'auto' 
-              }}>
-                <Settings size={24} />
-              </div>
-              <h3 style={{ fontSize: '18px', marginBottom: '12px', textAlign: 'center' }}>Catálogo desorganizado</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center' }}>
-                Ficar enviando fotos soltas de pneus ou listas confusas em PDF dificulta a escolha do cliente e parece pouco profissional.
-              </p>
-            </div>
           </div>
         </div>
       </section>
