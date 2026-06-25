@@ -9,8 +9,9 @@ fonte:
   - supabase/migrations/20260618171439_remote_schema.sql
   - supabase/migrations/20260618172000_store_subscription_trial.sql
   - supabase/migrations/20260623143000_signup_store_provisioning.sql
+  - supabase/migrations/20260624120000_stock_sale_quantity.sql
   - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
-atualizado: 2026-06-23
+atualizado: 2026-06-25
 tags: []
 ---
 
@@ -78,6 +79,8 @@ tags: []
 - `produto_preco`
 - `origem`
 - `venda_confirmada`
+- `desired_quantity` (migration local pendente de aplicar)
+- `sold_quantity` (migration local pendente de aplicar)
 
 `store_referral_visits`:
 
@@ -114,6 +117,12 @@ tags: []
 
 ## Estado atual das migrations
 
-- `supabase/migrations/` contem a baseline, a trial e migrations novas aprovadas apos a baseline; em 2026-06-23 ha uma migration local pendente para `ensure_store_provisioned`.
+- supabase/migrations/ contem a baseline 20260618171439_remote_schema.sql, a trial 20260618172000_store_subscription_trial.sql, a RPC de provisionamento 20260623143000_signup_store_provisioning.sql e a migration local 20260624120000_stock_sale_quantity.sql.
+- 20260623143000_signup_store_provisioning.sql foi aplicada ao remoto em etapa autorizada para garantir profiles, stores e store_members apos cadastro confirmado.
+- 20260624120000_stock_sale_quantity.sql adiciona quantidade desejada/vendida e baixa atomica de estoque por RPC; confirmar/aplicar no Supabase remoto em etapa propria autorizada.
 - Migrations antigas ficam em `docs/legacy-migrations/pre-baseline/` e nao devem ser executadas como ativas.
 - O schema remoto confirmado esta documentado em [[schema-remoto-confirmado]].
+
+## Estoque e vendas
+
+Detalhes da regra de estoque, quantidade desejada, quantidade vendida e RPC atomica ficam em [[../03 - Decisões/estoque-e-vendas|Estoque e vendas]].

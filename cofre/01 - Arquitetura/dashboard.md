@@ -8,6 +8,7 @@ fonte:
   - src/App.jsx
   - src/pages/Dashboard/DashboardShell.jsx
   - src/pages/Dashboard/DashboardHome.jsx
+  - src/pages/Dashboard/components/MetricDetailsPanel.jsx
   - src/pages/Dashboard/Catalog.jsx
   - src/pages/Dashboard/Leads.jsx
   - src/pages/Dashboard/Sellers.jsx
@@ -19,7 +20,7 @@ fonte:
   - supabase/migrations/20260618171439_remote_schema.sql
   - cofre/01 - Arquitetura/mapa-de-impacto-geral.md
   - cofre/01 - Arquitetura/checklists-regressao.md
-atualizado: 2026-06-22
+atualizado: 2026-06-24
 tags: []
 ---
 
@@ -74,7 +75,17 @@ As rotas filhas vivem sob `/dashboard` em `src/App.jsx`.
 - Visualizacoes.
 - Taxa de conversao.
 
-Ao clicar em um card, abre painel de detalhe no desktop ou bottom sheet no mobile; clicar novamente no mesmo card fecha.
+Ao clicar em um card, abre o componente `MetricDetailsPanel` com uma leitura premium da metrica selecionada. No desktop ele aparece inline abaixo da grade; no mobile ele usa um bottom sheet visual. Clicar novamente no mesmo card fecha o painel, clicar em outra metrica troca o conteudo e a tecla `Esc` fecha quando houver metrica ativa.
+
+O painel usa apenas os dados ja carregados pelo dashboard:
+
+- valor principal da metrica;
+- resumo interpretativo;
+- mini cards com dados relacionados;
+- barra simples baseada em dado real disponivel;
+- acoes rapidas para rotas ja existentes, como catalogo, leads, vendedores ou vitrine publica.
+
+Essa UX e somente frontend. Nao altera consultas, banco, trial, assinatura, Supabase, Mercado Pago ou permissoes.
 
 Blocos abaixo dos cards:
 
@@ -98,6 +109,22 @@ O calculo local em `DashboardHome.jsx` considera:
 - visualizacoes totais e visualizacoes de hoje vindas de `store_referral_visits`;
 - conversao geral por `(leads / visualizacoes) * 100`;
 - conversao por vendedor por `(leads / visualizacoes) * 100`.
+
+## Leads, venda e estoque
+
+`Leads.jsx` mostra a quantidade desejada do comprador e permite informar a quantidade vendida antes de confirmar a venda.
+
+A baixa de estoque nao acontece no frontend. `storageService.updateLeadSaleStatus` chama a RPC `atualizar_status_venda_lead` com `p_sold_quantity`; a migration local `20260624120000_stock_sale_quantity.sql` faz o decremento/restauracao atomica em `pneus.estoque`.
+
+Regras:
+
+- lead pendente pode ser confirmado com quantidade vendida;
+- confirmar novamente a mesma venda nao deve baixar estoque duplicado;
+- dono pode ajustar quantidade de venda confirmada e a RPC aplica apenas a diferenca;
+- dono pode desmarcar venda confirmada e restaurar estoque;
+- vendedor continua impedido de alterar venda ja confirmada.
+
+Detalhes: [[../03 - Decisões/estoque-e-vendas|Estoque e vendas]].
 
 ## Nao mapeado ainda
 

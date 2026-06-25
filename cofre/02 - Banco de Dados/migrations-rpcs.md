@@ -6,6 +6,7 @@ tokens: medio
 fonte:
   - supabase/migrations/20260618171439_remote_schema.sql
   - supabase/migrations/20260618172000_store_subscription_trial.sql
+  - supabase/migrations/20260624120000_stock_sale_quantity.sql
   - docs/legacy-migrations/pre-baseline/README.md
   - docs/legacy-migrations/pre-baseline/20260604090000_get_leads_com_vendedor.sql
   - docs/legacy-migrations/pre-baseline/20260604091000_lead_conversion_tracking.sql
@@ -17,22 +18,23 @@ fonte:
   - docs/legacy-migrations/pre-baseline/20260612090000_delete_lead_rpc.sql
   - docs/legacy-migrations/pre-baseline/20260615090000_store_referral_visits_visitor_tracking.sql
   - docs/legacy-migrations/pre-baseline/20260616090000_store_referral_visits_nullable_referral.sql
-atualizado: 2026-06-21
+atualizado: 2026-06-24
 tags: []
 ---
 
 > [!tldr]
-> A pasta ativa `supabase/migrations/` deve conter somente a baseline remota e a migration de trial.
-> As migrations antigas foram arquivadas em `docs/legacy-migrations/pre-baseline/` e nao devem ser executadas como ativas.
+> A pasta ativa tem a baseline, trial e a nova migration local de estoque por venda.
+> Migrations antigas arquivadas continuam fora da pasta ativa e nao devem ser executadas.
 
 # Migrations e RPCs
 
 ## Migrations ativas
 
-Arquivos ativos confirmados em `supabase/migrations/`:
+Arquivos ativos/locais confirmados em `supabase/migrations/`:
 
 - `20260618171439_remote_schema.sql`
 - `20260618172000_store_subscription_trial.sql`
+- `20260624120000_stock_sale_quantity.sql` (criada localmente em 2026-06-24; pendente de aplicar no remoto)
 
 Resultado confirmado anteriormente via Supabase CLI:
 
@@ -83,6 +85,18 @@ Tambem adiciona constraint para `subscription_status` com:
 - `get_public_referral_seller`
 - `get_referral_seller`
 - `registrar_visita_referral`
+
+## Estoque por venda
+
+`20260624120000_stock_sale_quantity.sql` prepara:
+
+- `leads.desired_quantity`
+- `leads.sold_quantity`
+- `registrar_lead(..., p_desired_quantity)` sem decremento de estoque;
+- `atualizar_status_venda_lead(..., p_sold_quantity)` com decremento/restauracao atomica em `pneus.estoque`;
+- `get_leads_com_vendedor` retornando quantidade desejada e vendida.
+
+Nao executar `supabase db push` ou aplicar essa migration sem autorizacao explicita.
 
 ## Historico arquivado
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
 import '../../components/MagicBento/MagicBento.css';
+import MetricDetailsPanel from './components/MetricDetailsPanel';
 import { 
   Layers, 
   MessageSquare, 
@@ -170,6 +171,7 @@ function MetricButton({ metric, isSelected, onClick }) {
       className={`dashboard-metric-card ${isSelected ? 'is-selected' : ''}`}
       onClick={onClick}
       aria-expanded={isSelected}
+      aria-pressed={isSelected}
       aria-controls="dashboard-metric-details"
     >
       <div className="dashboard-metric-card__top">
@@ -181,33 +183,6 @@ function MetricButton({ metric, isSelected, onClick }) {
       <strong>{metric.value}</strong>
       <small>{metric.helper}</small>
     </button>
-  );
-}
-
-function MetricDetailContent({ metric }) {
-  if (!metric) return null;
-
-  return (
-    <>
-      <div className="dashboard-detail-head">
-        <div>
-          <span className="dashboard-detail-eyebrow">Detalhe da métrica</span>
-          <h3>{metric.label}</h3>
-        </div>
-        <strong>{metric.value}</strong>
-      </div>
-
-      <div className="dashboard-detail-grid">
-        {metric.details.map((detail) => (
-          <div key={detail.label} className="dashboard-detail-item">
-            <span>{detail.label}</span>
-            <strong>{detail.value}</strong>
-          </div>
-        ))}
-      </div>
-
-      <p className="dashboard-detail-note">{metric.note}</p>
-    </>
   );
 }
 
@@ -266,6 +241,20 @@ export default function DashboardHome() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!selectedMetric) return undefined;
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setSelectedMetric(null);
+        setMobileDetailOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [selectedMetric]);
 
   if (!store) return null;
 
@@ -382,6 +371,15 @@ export default function DashboardHome() {
   const latestLead = leads[0] || null;
   const topPopularTire = popularTires[0];
   const topSellerConversion = commercialMetrics.sellerRanking.find((seller) => seller.visits > 0);
+  const tireActiveRate = commercialMetrics.totalTires > 0
+    ? (commercialMetrics.activeTires / commercialMetrics.totalTires) * 100
+    : null;
+  const leadSaleRate = commercialMetrics.totalLeads > 0
+    ? (commercialMetrics.totalSales / commercialMetrics.totalLeads) * 100
+    : null;
+  const visitTodayRate = visits > 0
+    ? (commercialMetrics.totalVisitsToday / visits) * 100
+    : null;
 
   const metricCards = [
     {
@@ -397,7 +395,16 @@ export default function DashboardHome() {
         { label: 'Estoque total', value: commercialMetrics.totalStock },
         { label: 'Mais procurado', value: topPopularTire ? `${topPopularTire.name} (${topPopularTire.count})` : 'Sem dados' }
       ],
-      note: 'Resumo do catálogo atual, considerando pneus cadastrados, ativos e estoque total.'
+      description: 'Saude do catalogo publicado e pronto para virar oportunidade.',
+      summaryTitle: commercialMetrics.totalTires > 0 ? `${commercialMetrics.activeTires} pneus ativos agora` : 'Catalogo aguardando pneus',
+      progress: tireActiveRate,
+      progressLabel: 'Pneus ativos no catalogo',
+      actionHint: 'Mantenha o catalogo completo para reduzir perguntas repetidas no WhatsApp.',
+      actions: [
+        { label: 'Ver catalogo', to: '/dashboard/catalog' },
+        { label: 'Cadastrar pneu', to: '/dashboard/catalog' }
+      ],
+      note: 'Resumo do catalogo atual, considerando pneus cadastrados, ativos e estoque total.'
     },
     {
       id: 'leads',
@@ -412,7 +419,16 @@ export default function DashboardHome() {
         { label: 'Último lead', value: latestLead?.nome_cliente || 'Nenhum' },
         { label: 'Origem principal', value: latestLead?.origem || 'WhatsApp' }
       ],
-      note: 'Leads gerados pelo botão Tenho Interesse e contatos vindos da vitrine.'
+      description: 'Contatos comerciais gerados pelos CTAs da vitrine.',
+      summaryTitle: latestLead ? `Ultimo contato: ${latestLead.nome_cliente}` : 'Nenhum lead recente',
+      progress: leadSaleRate,
+      progressLabel: 'Leads que viraram venda',
+      actionHint: 'Acompanhe os contatos e marque vendas confirmadas para melhorar a leitura do funil.',
+      actions: [
+        { label: 'Ver leads', to: '/dashboard/leads' },
+        { label: 'Abrir vitrine', href: publicLink }
+      ],
+      note: 'Leads gerados pelo botao Tenho Interesse e contatos vindos da vitrine.'
     },
     {
       id: 'revenue',
@@ -425,7 +441,16 @@ export default function DashboardHome() {
         { label: 'Valor total confirmado', value: formatCurrency(commercialMetrics.confirmedRevenue) },
         { label: 'Leads gerados', value: commercialMetrics.totalLeads },
         { label: 'Taxa de conversão', value: `${conversionRate}%` },
-        { label: 'Fórmula', value: '(leads / visualizações) * 100' }
+        { label: 'Vendas confirmadas', value: commercialMetrics.totalSales }
+      ],
+      description: 'Receita estimada apenas com vendas confirmadas no painel.',
+      summaryTitle: commercialMetrics.totalSales > 0 ? `${commercialMetrics.totalSales} vendas confirmadas` : 'Sem venda confirmada ainda',
+      progress: leadSaleRate,
+      progressLabel: 'Conversao de leads em vendas',
+      actionHint: 'Confirme vendas na aba de leads para manter o faturamento mais fiel.',
+      actions: [
+        { label: 'Ver leads', to: '/dashboard/leads' },
+        { label: 'Ver catalogo', to: '/dashboard/catalog' }
       ],
       note: 'Soma de produto_preco em vendas confirmadas.'
     },
@@ -438,12 +463,21 @@ export default function DashboardHome() {
       tone: 'blue',
       details: [
         { label: 'Total de visitas', value: visits },
-        { label: 'Visualizações hoje', value: commercialMetrics.totalVisitsToday },
+        { label: 'Visualizacoes hoje', value: commercialMetrics.totalVisitsToday },
         { label: 'Melhor vendedor', value: bestSeller?.name || 'Sem dados' },
         { label: 'Ranking resumido', value: bestSeller ? `${bestSeller.sales} vendas • ${bestSeller.leads} leads` : 'Sem dados' },
-        { label: 'Conversão por vendedor', value: topSellerConversion ? `${topSellerConversion.name}: ${formatPercent(topSellerConversion.conversionRate)}%` : 'Sem dados' }
+        { label: 'Conversao por vendedor', value: topSellerConversion ? `${topSellerConversion.name}: ${formatPercent(topSellerConversion.conversionRate)}%` : 'Sem dados' }
       ],
-      note: 'Visualizações registradas na vitrine pública, com dedupe por visitante e janela de 24 horas.'
+      description: 'Movimento da vitrine publica e visitas vindas de referral.',
+      summaryTitle: visits > 0 ? `${commercialMetrics.totalVisitsToday} visitas hoje` : 'Vitrine aguardando visitantes',
+      progress: visitTodayRate,
+      progressLabel: 'Participacao das visitas de hoje',
+      actionHint: 'Compartilhe o link da vitrine para aumentar visitas qualificadas.',
+      actions: [
+        { label: 'Abrir vitrine', href: publicLink },
+        { label: 'Ver vendedores', to: '/dashboard/sellers' }
+      ],
+      note: 'Visualizacoes registradas na vitrine publica, com dedupe por visitante e janela de 24 horas.'
     },
     {
       id: 'conversion',
@@ -453,12 +487,21 @@ export default function DashboardHome() {
       icon: <Percent size={20} />,
       tone: 'purple',
       details: [
-        { label: 'Conversão geral', value: `${conversionRate}%` },
+        { label: 'Conversao geral', value: `${conversionRate}%` },
         { label: 'Leads', value: commercialMetrics.totalLeads },
-        { label: 'Visualizações', value: visits },
-        { label: 'Fórmula', value: '(leads / visualizações) * 100' }
+        { label: 'Visualizacoes', value: visits },
+        { label: 'Formula', value: '(leads / visualizacoes) * 100' }
       ],
-      note: 'Se não houver visualizações, a conversão será 0%.'
+      description: 'Eficiencia da vitrine em transformar visitas em oportunidades.',
+      summaryTitle: visits > 0 ? `${commercialMetrics.totalLeads} leads em ${visits} visitas` : 'Sem base de visitas ainda',
+      progress: Number(commercialMetrics.overallConversionRate),
+      progressLabel: 'Leads por visualizacao',
+      actionHint: 'Use visitas e leads juntos para entender se a vitrine esta atraindo o cliente certo.',
+      actions: [
+        { label: 'Ver leads', to: '/dashboard/leads' },
+        { label: 'Abrir vitrine', href: publicLink }
+      ],
+      note: 'Se nao houver visualizacoes, a conversao sera 0%.'
     }
   ].filter((metric) => metric.id !== 'sales');
   const activeMetric = selectedMetric ? metricCards.find((metric) => metric.id === selectedMetric) : null;
@@ -693,9 +736,13 @@ export default function DashboardHome() {
         ))}
       </div>
 
-      {activeMetric && (
+      {activeMetric && !mobileDetailOpen && (
         <section id="dashboard-metric-details" className="dashboard-detail-panel" aria-live="polite">
-          <MetricDetailContent metric={activeMetric} />
+          <MetricDetailsPanel
+            metric={activeMetric}
+            onClose={closeMetricDetail}
+            onNavigate={navigate}
+          />
         </section>
       )}
 
@@ -708,15 +755,12 @@ export default function DashboardHome() {
             aria-label={`Detalhes de ${activeMetric?.label || 'métrica'}`}
             onClick={(event) => event.stopPropagation()}
           >
-            <button
-              type="button"
-              className="dashboard-mobile-detail-close"
-              onClick={closeMetricDetail}
-              aria-label="Fechar detalhes"
-            >
-              ×
-            </button>
-            <MetricDetailContent metric={activeMetric} />
+            <MetricDetailsPanel
+              metric={activeMetric}
+              onClose={closeMetricDetail}
+              onNavigate={navigate}
+              compact
+            />
           </div>
         </div>
       )}
@@ -1454,85 +1498,10 @@ export default function DashboardHome() {
         }
 
         .dashboard-detail-panel {
-          border: 1px solid rgba(245, 158, 11, 0.32);
-          border-radius: 20px;
-          background:
-            radial-gradient(circle at top left, rgba(245, 158, 11, 0.13), transparent 34%),
-            linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
-          box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
           margin-bottom: 22px;
-          padding: 18px;
-          max-height: 640px;
-          overflow: hidden;
           transform-origin: top center;
           animation: dashboardDetailIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
-          transition: opacity 0.24s ease, transform 0.24s ease, max-height 0.28s ease, margin-bottom 0.24s ease;
-        }
-
-        .dashboard-detail-head {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 18px;
-          margin-bottom: 14px;
-        }
-
-        .dashboard-detail-eyebrow {
-          color: var(--primary);
-          display: block;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          margin-bottom: 4px;
-          text-transform: uppercase;
-        }
-
-        .dashboard-detail-head h3 {
-          font-size: 18px;
-          margin: 0;
-        }
-
-        .dashboard-detail-head > strong {
-          color: var(--primary);
-          font-size: 24px;
-          line-height: 1.1;
-          text-align: right;
-          overflow-wrap: anywhere;
-        }
-
-        .dashboard-detail-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px;
-        }
-
-        .dashboard-detail-item {
-          min-width: 0;
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          background: rgba(0, 0, 0, 0.16);
-          padding: 12px;
-        }
-
-        .dashboard-detail-item span {
-          color: var(--text-secondary);
-          display: block;
-          font-size: 11px;
-          margin-bottom: 5px;
-        }
-
-        .dashboard-detail-item strong {
-          color: var(--text-primary);
-          display: block;
-          font-size: 15px;
-          overflow-wrap: anywhere;
-        }
-
-        .dashboard-detail-note {
-          color: var(--text-muted);
-          font-size: 12px;
-          line-height: 1.5;
-          margin: 12px 0 0;
+          transition: opacity 0.24s ease, transform 0.24s ease, margin-bottom 0.24s ease;
         }
 
         .dashboard-content-grid {
@@ -1709,48 +1678,10 @@ export default function DashboardHome() {
             width: min(100%, 430px);
             max-height: min(72vh, 520px);
             overflow: auto;
-            border: 1px solid rgba(245, 158, 11, 0.36);
-            border-radius: 22px;
-            background:
-              radial-gradient(circle at top left, rgba(245, 158, 11, 0.14), transparent 35%),
-              #10131a;
-            box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.42);
-            padding: 18px;
+            border-radius: 26px;
+            padding: 0;
             transform-origin: bottom center;
             animation: dashboardSheetIn 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
-          }
-
-          .dashboard-mobile-detail-close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 34px;
-            height: 34px;
-            border: 1px solid var(--border);
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 22px;
-            line-height: 1;
-          }
-
-          .dashboard-mobile-detail-sheet .dashboard-detail-head {
-            padding-right: 38px;
-          }
-
-          .dashboard-mobile-detail-sheet .dashboard-detail-head,
-          .dashboard-mobile-detail-sheet .dashboard-detail-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .dashboard-mobile-detail-sheet .dashboard-detail-head {
-            flex-direction: column;
-            gap: 8px;
-          }
-
-          .dashboard-mobile-detail-sheet .dashboard-detail-head > strong {
-            text-align: left;
           }
 
           .dashboard-content-grid {

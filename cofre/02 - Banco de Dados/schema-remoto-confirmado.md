@@ -6,10 +6,11 @@ tokens: medio
 fonte:
   - supabase/migrations/20260618171439_remote_schema.sql
   - supabase/migrations/20260618172000_store_subscription_trial.sql
+  - supabase/migrations/20260624120000_stock_sale_quantity.sql
   - src/services/storage.js
   - cofre/02 - Banco de Dados/supabase.md
   - cofre/02 - Banco de Dados/migrations-rpcs.md
-atualizado: 2026-06-21
+atualizado: 2026-06-24
 tags: []
 ---
 
@@ -114,6 +115,11 @@ A baseline `20260618171439_remote_schema.sql` foi mantida como snapshot do schem
 - `venda_confirmada_em`
 - `venda_confirmada_por`
 
+Campos preparados em migration local pendente de aplicar:
+
+- `desired_quantity`
+- `sold_quantity`
+
 `store_referral_visits`:
 
 - `id`
@@ -149,3 +155,5 @@ A baseline `20260618171439_remote_schema.sql` foi mantida como snapshot do schem
 ## Observacao importante
 
 Notas antigas anteriores a 2026-06-18 podem dizer que `store_referral_visits` e `registrar_visita_referral` nao apareciam em migrations locais. Isso deixou de ser verdade depois da baseline `20260618171439_remote_schema.sql`.
+
+Em 2026-06-24 foi criada migration local para estoque por venda, mas ela ainda nao confirma alteracao no remoto enquanto nao for aplicada.

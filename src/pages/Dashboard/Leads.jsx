@@ -36,6 +36,7 @@ export default function Leads() {
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingLeadId, setDeletingLeadId] = useState(null);
   const [feedbackMessage, setFeedbackMessage] = useState(null);
+  const [soldQuantities, setSoldQuantities] = useState({});
 
   const loadData = useCallback(async () => {
     if (!store) return;
@@ -43,6 +44,13 @@ export default function Leads() {
     try {
       const storeLeads = await storageService.getLeads(store.id);
       setLeads(storeLeads);
+      setSoldQuantities(
+        (storeLeads || []).reduce((acc, lead) => {
+          const fallbackQuantity = lead.sold_quantity || lead.desired_quantity || 1;
+          acc[lead.id] = Math.max(1, Number.parseInt(fallbackQuantity, 10) || 1);
+          return acc;
+        }, {})
+      );
     } catch (err) {
       console.error('Erro ao carregar dados dos leads:', err);
     } finally {
@@ -81,12 +89,20 @@ export default function Leads() {
     }
   };
 
+  const handleSoldQuantityChange = (leadId, value) => {
+    setSoldQuantities((current) => ({
+      ...current,
+      [leadId]: Math.max(1, Number.parseInt(value, 10) || 1)
+    }));
+  };
+
   const handleUpdateSaleStatus = async (leadId, currentStatus) => {
     try {
       const newStatus = !currentStatus;
+      const soldQuantity = Math.max(1, Number.parseInt(soldQuantities[leadId], 10) || 1);
       
       // Call RPC - The database will handle the permissions
-      await storageService.updateLeadSaleStatus(leadId, newStatus);
+      await storageService.updateLeadSaleStatus(leadId, newStatus, soldQuantity);
       
       // Always reload after success to get the real state (timestamps, etc.)
       await loadData();
@@ -95,6 +111,22 @@ export default function Leads() {
       // Show the real error message from database/RPC
       alert(err.message || 'Não foi possível atualizar o status da venda.');
       // Revert UI to real state
+      await loadData();
+    }
+  };
+
+  const handleRefreshSoldQuantity = async (leadId) => {
+    try {
+      const soldQuantity = Math.max(1, Number.parseInt(soldQuantities[leadId], 10) || 1);
+      await storageService.updateLeadSaleStatus(leadId, true, soldQuantity);
+      setFeedbackMessage({ type: 'success', text: 'Quantidade vendida atualizada e estoque ajustado.' });
+      await loadData();
+    } catch (err) {
+      console.error('Erro ao ajustar quantidade vendida:', err);
+      setFeedbackMessage({
+        type: 'error',
+        text: err.message || 'NÃ£o foi possÃ­vel ajustar a quantidade vendida.'
+      });
       await loadData();
     }
   };
@@ -288,6 +320,9 @@ export default function Leads() {
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                           <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{lead.produto_nome}</span>
                           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lead.produto_medida || 'Medida não inf.'}</span>
+                          <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 700 }}>
+                            Qtd. desejada: {Math.max(1, Number.parseInt(lead.desired_quantity, 10) || 1)}
+                          </span>
                         </div>
                       </td>
 
@@ -381,6 +416,30 @@ export default function Leads() {
                               Confirmado em {new Date(lead.venda_confirmada_em).toLocaleDateString()}
                             </div>
                           )}
+
+                          <div className="lead-sale-quantity-control">
+                            <label htmlFor={`sold-quantity-${lead.id}`}>
+                              Qtd. vendida
+                            </label>
+                            <input
+                              id={`sold-quantity-${lead.id}`}
+                              type="number"
+                              min="1"
+                              value={soldQuantities[lead.id] || Math.max(1, Number.parseInt(lead.sold_quantity || lead.desired_quantity, 10) || 1)}
+                              onChange={(event) => handleSoldQuantityChange(lead.id, event.target.value)}
+                              disabled={isSold && !isOwner}
+                              aria-label="Quantidade vendida"
+                            />
+                            {isSold && isOwner && (
+                              <button
+                                type="button"
+                                className="btn btn-outline"
+                                onClick={() => handleRefreshSoldQuantity(lead.id)}
+                              >
+                                Atualizar qtd.
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </td>
                       
