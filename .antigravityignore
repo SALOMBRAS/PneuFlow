@@ -1,0 +1,11 @@
+# Ignore rules for Antigravity IDE to prevent context bloat
+.git/
+node_modules/
+dist/
+backups/
+coverage/
+.aiox-core/
+.codex/
+.claude/
+package-lock.json
+supabase/migrations/20260618171439_remote_schema.sql
