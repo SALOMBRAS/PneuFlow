@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
-import { Calendar, CheckCircle, ChevronDown, ChevronUp, Clock, MessageSquare, Search, Trash2, XCircle } from 'lucide-react';
+import { CalendarDays, CheckCircle, Clock3, MessageSquare, Minus, Plus, Search, Trash2, XCircle } from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [10, 50, 100, 'all'];
 
@@ -11,7 +11,7 @@ const LEAD_STATUS = {
     filterLabel: 'Em atendimento',
     className: 'lead-status--attending',
     rowClass: 'lead-row--attending',
-    Icon: Clock
+    Icon: Clock3
   },
   vendido: {
     label: 'Vendido',
@@ -30,9 +30,26 @@ const LEAD_STATUS = {
 };
 
 const STATUS_FILTERS = ['todos', 'em_atendimento', 'vendido', 'desistencia'];
+const QUANTITY_SAVE_DEBOUNCE_MS = 650;
 
 const normalizeQuantity = (value, fallback = 1) =>
   Math.max(1, Number.parseInt(value ?? fallback, 10) || 1);
+
+const getLeadAvailableStock = (lead) => {
+  const stock = Number(lead?.estoque_disponivel);
+  return Number.isFinite(stock) ? Math.max(0, stock) : null;
+};
+
+const clampQuantityForLead = (value, lead, fallback = 1) => {
+  const normalized = normalizeQuantity(value, fallback);
+  const availableStock = getLeadAvailableStock(lead);
+
+  if (availableStock == null || availableStock <= 0) {
+    return normalized;
+  }
+
+  return Math.min(normalized, availableStock);
+};
 
 const getLeadFinalQuantity = (lead) =>
   normalizeQuantity(lead.sold_quantity ?? lead.desired_quantity, 1);
@@ -83,30 +100,110 @@ export default function Leads() {
   const [updatingLeadId, setUpdatingLeadId] = useState(null);
   const [feedbackMessage, setFeedbackMessage] = useState(null);
   const [quantityDrafts, setQuantityDrafts] = useState({});
+  const [quantitySaveStates, setQuantitySaveStates] = useState({});
 
-  const loadData = useCallback(async () => {
+  const leadsRef = useRef([]);
+  const quantityDraftsRef = useRef({});
+  const saveTimersRef = useRef({});
+  const dirtyQuantityIdsRef = useRef(new Set());
+  const inFlightSavePromisesRef = useRef({});
+  const saveSequenceRef = useRef({});
+
+  const quantityDraftStorageKey = store?.id ? `pneuflow.leads.quantityDrafts.${store.id}` : null;
+
+  const readStoredQuantityDrafts = useCallback(() => {
+    if (!quantityDraftStorageKey || typeof window === 'undefined') {
+      return {};
+    }
+
+    try {
+      const raw = window.sessionStorage.getItem(quantityDraftStorageKey);
+      if (!raw) return {};
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {};
+      }
+
+      return parsed;
+    } catch {
+      return {};
+    }
+  }, [quantityDraftStorageKey]);
+
+  useEffect(() => {
+    leadsRef.current = leads;
+  }, [leads]);
+
+  useEffect(() => {
+    quantityDraftsRef.current = quantityDrafts;
+  }, [quantityDrafts]);
+
+  useEffect(() => {
+    if (!quantityDraftStorageKey || typeof window === 'undefined') return;
+
+    try {
+      window.sessionStorage.setItem(quantityDraftStorageKey, JSON.stringify(quantityDrafts));
+    } catch (error) {
+      console.warn('Não foi possível persistir os rascunhos de quantidade:', error);
+    }
+  }, [quantityDraftStorageKey, quantityDrafts]);
+
+  const updateQuantitySaveState = useCallback((leadId, nextState) => {
+    setQuantitySaveStates((current) => ({
+      ...current,
+      [leadId]: nextState
+    }));
+  }, []);
+
+  const loadData = useCallback(async ({ silent = false } = {}) => {
     if (!store) return;
-    setIsLoading(true);
+    if (!silent) {
+      setIsLoading(true);
+    }
 
     try {
       const storeLeads = await storageService.getLeads(store.id);
       setLeads(storeLeads);
+      const storedDrafts = readStoredQuantityDrafts();
+      const nextDirtyIds = new Set();
       const nextQuantityDrafts = (storeLeads || []).reduce((acc, lead) => {
-        acc[lead.id] = getLeadEditableQuantity(lead);
+        const backendQuantity = getLeadEditableQuantity(lead);
+        const storedQuantity = storedDrafts[lead.id];
+
+        if (storedQuantity == null) {
+          acc[lead.id] = backendQuantity;
+          return acc;
+        }
+
+        const clampedStoredQuantity = clampQuantityForLead(storedQuantity, lead, backendQuantity);
+        acc[lead.id] = clampedStoredQuantity;
+
+        if (clampedStoredQuantity !== backendQuantity) {
+          nextDirtyIds.add(lead.id);
+        }
+
         return acc;
       }, {});
 
+      dirtyQuantityIdsRef.current = nextDirtyIds;
       setQuantityDrafts(nextQuantityDrafts);
+      quantityDraftsRef.current = nextQuantityDrafts;
+      leadsRef.current = storeLeads || [];
     } catch (err) {
       console.error('Erro ao carregar dados dos leads:', err);
-      setFeedbackMessage({
-        type: 'error',
-        text: err.message || 'Não foi possível carregar os leads.'
-      });
+      if (!silent) {
+        setFeedbackMessage({
+          type: 'error',
+          text: err.message || 'NÃ£o foi possÃ­vel carregar os leads.'
+        });
+      }
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
-  }, [store]);
+  }, [readStoredQuantityDrafts, store]);
 
   useEffect(() => {
     loadData();
@@ -127,7 +224,7 @@ export default function Leads() {
     try {
       await storageService.deleteLead(leadId, store.id);
       setFeedbackMessage({ type: 'success', text: 'Lead removido com sucesso.' });
-      await loadData();
+      await loadData({ silent: true });
     } catch (err) {
       console.error('Erro ao excluir lead:', err);
       setFeedbackMessage({
@@ -139,18 +236,157 @@ export default function Leads() {
     }
   };
 
+  const clearQuantitySaveTimer = useCallback((leadId) => {
+    const timer = saveTimersRef.current[leadId];
+    if (timer) {
+      clearTimeout(timer);
+      delete saveTimersRef.current[leadId];
+    }
+  }, []);
+
+  const scheduleQuantitySave = useCallback((leadId) => {
+    clearQuantitySaveTimer(leadId);
+
+    saveTimersRef.current[leadId] = setTimeout(() => {
+      flushQuantitySave(leadId);
+    }, QUANTITY_SAVE_DEBOUNCE_MS);
+  }, [clearQuantitySaveTimer]);
+
+  const flushQuantitySave = useCallback(async (leadId) => {
+    const existingPromise = inFlightSavePromisesRef.current[leadId];
+    if (existingPromise) {
+      return existingPromise;
+    }
+
+    clearQuantitySaveTimer(leadId);
+
+    const lead = leadsRef.current.find((item) => item.id === leadId);
+    if (!lead || getLeadAttendanceStatus(lead) !== 'em_atendimento') {
+      return false;
+    }
+
+    const currentQuantity = quantityDraftsRef.current[leadId] ?? getLeadEditableQuantity(lead);
+    const normalizedQuantity = clampQuantityForLead(currentQuantity, lead, getLeadEditableQuantity(lead));
+    const persistedQuantity = getLeadEditableQuantity(lead);
+
+    if (normalizedQuantity === persistedQuantity && !dirtyQuantityIdsRef.current.has(leadId)) {
+      updateQuantitySaveState(leadId, { status: 'saved', message: 'Salvo' });
+      return true;
+    }
+
+    const saveSequence = (saveSequenceRef.current[leadId] || 0) + 1;
+    saveSequenceRef.current[leadId] = saveSequence;
+
+    const savePromise = (async () => {
+      updateQuantitySaveState(leadId, { status: 'saving', message: 'Salvando...' });
+
+      try {
+        await storageService.updateLeadAttendanceStatus(leadId, 'em_atendimento', null, normalizedQuantity);
+
+        if (saveSequenceRef.current[leadId] !== saveSequence) {
+          return false;
+        }
+
+        dirtyQuantityIdsRef.current.delete(leadId);
+        quantityDraftsRef.current = {
+          ...quantityDraftsRef.current,
+          [leadId]: normalizedQuantity
+        };
+        setQuantityDrafts((current) => ({
+          ...current,
+          [leadId]: normalizedQuantity
+        }));
+        updateQuantitySaveState(leadId, { status: 'saved', message: 'Salvo' });
+
+        const latestDraft = quantityDraftsRef.current[leadId];
+        const latestQuantity = clampQuantityForLead(latestDraft, lead, getLeadEditableQuantity(lead));
+
+        if (latestQuantity !== normalizedQuantity) {
+          scheduleQuantitySave(leadId);
+        }
+
+        return true;
+      } catch (error) {
+        if (saveSequenceRef.current[leadId] !== saveSequence) {
+          return false;
+        }
+
+        dirtyQuantityIdsRef.current.delete(leadId);
+        quantityDraftsRef.current = {
+          ...quantityDraftsRef.current,
+          [leadId]: persistedQuantity
+        };
+        setQuantityDrafts((current) => ({
+          ...current,
+          [leadId]: persistedQuantity
+        }));
+        updateQuantitySaveState(leadId, {
+          status: 'error',
+          message: error?.message || 'Não foi possível salvar a quantidade.'
+        });
+        setFeedbackMessage({
+          type: 'error',
+          text: 'Não foi possível salvar a quantidade.'
+        });
+        return false;
+      } finally {
+        if (inFlightSavePromisesRef.current[leadId] === savePromise) {
+          delete inFlightSavePromisesRef.current[leadId];
+        }
+      }
+    })();
+
+    inFlightSavePromisesRef.current[leadId] = savePromise;
+    return savePromise;
+  }, [clearQuantitySaveTimer, scheduleQuantitySave, updateQuantitySaveState]);
+
   const handleQuantityChange = (leadId, value) => {
+    const lead = leadsRef.current.find((item) => item.id === leadId);
+    if (!lead || getLeadAttendanceStatus(lead) !== 'em_atendimento') return;
+
+    const nextQuantity = clampQuantityForLead(value, lead, getLeadEditableQuantity(lead));
+    dirtyQuantityIdsRef.current.add(leadId);
+    quantityDraftsRef.current = {
+      ...quantityDraftsRef.current,
+      [leadId]: nextQuantity
+    };
+
     setQuantityDrafts((current) => ({
       ...current,
-      [leadId]: normalizeQuantity(value)
+      [leadId]: nextQuantity
     }));
+
+    updateQuantitySaveState(leadId, { status: 'dirty', message: null });
+    scheduleQuantitySave(leadId);
+  };
+
+  const handleQuantityBlur = (leadId) => {
+    flushQuantitySave(leadId);
   };
 
   const stepQuantity = (leadId, delta) => {
+    const lead = leadsRef.current.find((item) => item.id === leadId);
+    if (!lead || getLeadAttendanceStatus(lead) !== 'em_atendimento') return;
+
+    const currentValue = quantityDraftsRef.current[leadId] ?? getLeadEditableQuantity(lead);
+    const availableStock = getLeadAvailableStock(lead);
+    const nextValue = availableStock != null && availableStock > 0
+      ? Math.min(Math.max(1, normalizeQuantity(currentValue) + delta), availableStock)
+      : Math.max(1, normalizeQuantity(currentValue) + delta);
+
+    dirtyQuantityIdsRef.current.add(leadId);
+    quantityDraftsRef.current = {
+      ...quantityDraftsRef.current,
+      [leadId]: nextValue
+    };
+
     setQuantityDrafts((current) => ({
       ...current,
-      [leadId]: Math.max(1, normalizeQuantity(current[leadId]) + delta)
+      [leadId]: nextValue
     }));
+
+    updateQuantitySaveState(leadId, { status: 'dirty', message: null });
+    scheduleQuantitySave(leadId);
   };
 
   const isLeadManagedByCurrentSeller = useCallback((lead) => {
@@ -190,43 +426,33 @@ export default function Leads() {
     return [currentStatus];
   }, [isLeadManagedByCurrentSeller, isOwner]);
 
-  const handleSaveQuantity = async (lead) => {
-    if (getLeadAttendanceStatus(lead) !== 'em_atendimento') {
-      setFeedbackMessage({ type: 'error', text: 'Reabra a venda antes de alterar a quantidade.' });
-      return;
-    }
-
-    const quantity = normalizeQuantity(quantityDrafts[lead.id], getLeadEditableQuantity(lead));
-
-    setUpdatingLeadId(lead.id);
-    setFeedbackMessage(null);
-
-    try {
-      await storageService.updateLeadAttendanceStatus(lead.id, 'em_atendimento', null, quantity);
-      setFeedbackMessage({ type: 'success', text: 'Quantidade atualizada.' });
-      await loadData();
-    } catch (err) {
-      console.error('Erro ao salvar quantidade do lead:', err);
-      setFeedbackMessage({
-        type: 'error',
-        text: err.message || 'Não foi possível ajustar a quantidade.'
-      });
-      await loadData();
-    } finally {
-      setUpdatingLeadId(null);
-    }
-  };
-
   const handleUpdateLeadStatus = async (lead, nextStatus) => {
-    const currentStatus = getLeadAttendanceStatus(lead);
+    const hasPendingQuantitySave =
+      dirtyQuantityIdsRef.current.has(lead.id) ||
+      Boolean(saveTimersRef.current[lead.id]) ||
+      Boolean(inFlightSavePromisesRef.current[lead.id]);
+
+    if (hasPendingQuantitySave) {
+      const saved = await flushQuantitySave(lead.id);
+      if (!saved) return;
+    }
+
+    const currentLead = leadsRef.current.find((item) => item.id === lead.id) || lead;
+    const currentStatus = getLeadAttendanceStatus(currentLead);
     if (currentStatus === nextStatus) return;
 
     const quantity = normalizeQuantity(
-      quantityDrafts[lead.id],
-      currentStatus === 'vendido' ? getLeadFinalQuantity(lead) : getLeadEditableQuantity(lead)
+      quantityDraftsRef.current[lead.id],
+      currentStatus === 'vendido' ? getLeadFinalQuantity(currentLead) : getLeadEditableQuantity(currentLead)
     );
+    const availableStock = getLeadAvailableStock(currentLead);
 
     if (nextStatus === 'vendido') {
+      if (availableStock !== null && availableStock <= 0) {
+        setFeedbackMessage({ type: 'error', text: 'Estoque indisponível.' });
+        return;
+      }
+
       const confirmed = window.confirm(`Confirmar a venda de ${quantity} pneu(s)?`);
       if (!confirmed) return;
     }
@@ -256,66 +482,14 @@ export default function Leads() {
             ? 'Venda reaberta. A quantidade pode ser corrigida.'
             : 'Status do lead atualizado.'
       });
-      await loadData();
+      await loadData({ silent: true });
     } catch (err) {
       console.error('Erro ao atualizar status do lead:', err);
       setFeedbackMessage({
         type: 'error',
         text: err.message || 'Não foi possível atualizar o status do lead.'
       });
-      await loadData();
-    } finally {
-      setUpdatingLeadId(null);
-    }
-  };
-
-  const handleRefreshSoldQuantity = async (leadId) => {
-    const lead = leads.find((item) => item.id === leadId);
-    if (!lead) return;
-
-    setUpdatingLeadId(leadId);
-    setFeedbackMessage(null);
-
-    try {
-      const soldQuantity = Math.max(1, Number.parseInt(soldQuantities[leadId], 10) || 1);
-      const desiredQuantity = Math.max(1, Number.parseInt(desiredQuantities[leadId], 10) || 1);
-      const status = getLeadAttendanceStatus(lead);
-      await storageService.updateLeadAttendanceStatus(leadId, status, soldQuantity, desiredQuantity);
-      setFeedbackMessage({ type: 'success', text: 'Quantidade vendida atualizada.' });
-      await loadData();
-    } catch (err) {
-      console.error('Erro ao ajustar quantidade:', err);
-      setFeedbackMessage({
-        type: 'error',
-        text: err.message || 'Não foi possível ajustar a quantidade.'
-      });
-      await loadData();
-    } finally {
-      setUpdatingLeadId(null);
-    }
-  };
-
-  const handleRefreshDesiredQuantity = async (leadId) => {
-    const lead = leads.find((item) => item.id === leadId);
-    if (!lead) return;
-
-    setUpdatingLeadId(leadId);
-    setFeedbackMessage(null);
-
-    try {
-      const soldQuantity = Math.max(1, Number.parseInt(soldQuantities[leadId], 10) || 1);
-      const desiredQuantity = Math.max(1, Number.parseInt(desiredQuantities[leadId], 10) || 1);
-      const status = getLeadAttendanceStatus(lead);
-      await storageService.updateLeadAttendanceStatus(leadId, status, soldQuantity, desiredQuantity);
-      setFeedbackMessage({ type: 'success', text: 'Quantidade desejada atualizada.' });
-      await loadData();
-    } catch (err) {
-      console.error('Erro ao ajustar quantidade desejada:', err);
-      setFeedbackMessage({
-        type: 'error',
-        text: err.message || 'Não foi possível ajustar a quantidade desejada.'
-      });
-      await loadData();
+      await loadData({ silent: true });
     } finally {
       setUpdatingLeadId(null);
     }
@@ -473,18 +647,25 @@ export default function Leads() {
                     const status = getLeadAttendanceStatus(lead);
                     const statusMeta = getStatusMeta(status);
                     const StatusIcon = statusMeta.Icon;
+                    const ClientIcon = MessageSquare;
                     const isSold = status === 'vendido';
                     const isUpdating = updatingLeadId === lead.id;
                     const allowedStatuses = getAllowedStatuses(lead);
                     const canEditStatus = allowedStatuses.length > 1;
                     const isLost = status === 'desistencia';
                     const isManagedByCurrentSeller = isLeadManagedByCurrentSeller(lead);
-                    const canEditQuantity = status === 'em_atendimento' && (isOwner || isManagedByCurrentSeller);
+                    const availableStock = getLeadAvailableStock(lead);
+                    const canEditQuantity =
+                      status === 'em_atendimento' &&
+                      (isOwner || isManagedByCurrentSeller) &&
+                      (availableStock === null || availableStock > 0);
                     const canReopen = isOwner && (isSold || isLost);
-                    const quantityValue = normalizeQuantity(
+                    const quantityValue = clampQuantityForLead(
                       quantityDrafts[lead.id],
+                      lead,
                       isSold ? getLeadFinalQuantity(lead) : getLeadEditableQuantity(lead)
                     );
+                    const quantitySaveState = quantitySaveStates[lead.id];
                     const finalSoldQuantity = getLeadFinalQuantity(lead);
 
                     return (
@@ -495,16 +676,8 @@ export default function Leads() {
                       >
                         <td style={{ padding: '16px 24px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{
-                              backgroundColor: 'var(--whatsapp-glow)',
-                              color: 'var(--whatsapp)',
-                              padding: '8px',
-                              borderRadius: '8px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
-                              <MessageSquare size={16} />
+                            <div className="lead-icon-box lead-icon-box--client" aria-hidden="true">
+                              <ClientIcon className="lead-icon" />
                             </div>
                             <span style={{ fontWeight: 600, fontSize: '14px' }}>{lead.nome_cliente || 'Cliente Interessado'}</span>
                           </div>
@@ -555,7 +728,9 @@ export default function Leads() {
                             </label>
                             <div className="lead-status-control">
                               <span className={`lead-status-pill ${statusMeta.className}`}>
-                                <StatusIcon size={14} />
+                                <span className="lead-icon-box lead-icon-box--status" aria-hidden="true">
+                                  <StatusIcon className="lead-icon" />
+                                </span>
                                 {statusMeta.label}
                               </span>
                               {status === 'em_atendimento' ? (
@@ -610,41 +785,57 @@ export default function Leads() {
                                 <div className="lead-sale-quantity-field">
                                   <button
                                     type="button"
-                                    className="lead-quantity-stepper"
-                                    onClick={() => stepQuantity(lead.id, -1)}
-                                    disabled={isUpdating || !canEditQuantity || quantityValue <= 1}
-                                    aria-label="Diminuir quantidade"
-                                  >
-                                    <ChevronDown size={14} />
+                                  className="lead-quantity-stepper"
+                                  onClick={() => stepQuantity(lead.id, -1)}
+                                  disabled={isUpdating || !canEditQuantity || quantityValue <= 1}
+                                  aria-label="Diminuir quantidade"
+                                >
+                                    <Minus className="lead-icon" />
                                   </button>
                                   <input
                                     id={`quantity-${lead.id}`}
                                     type="number"
                                     min="1"
                                     step="1"
+                                    max={availableStock && availableStock > 0 ? availableStock : undefined}
                                     value={quantityValue}
                                     onChange={(event) => handleQuantityChange(lead.id, event.target.value)}
+                                    onBlur={() => handleQuantityBlur(lead.id)}
                                     disabled={isUpdating || !canEditQuantity}
                                     aria-label="Quantidade de pneus"
                                   />
                                   <button
                                     type="button"
-                                    className="lead-quantity-stepper"
-                                    onClick={() => stepQuantity(lead.id, 1)}
-                                    disabled={isUpdating || !canEditQuantity}
-                                    aria-label="Aumentar quantidade"
-                                  >
-                                    <ChevronUp size={14} />
+                                  className="lead-quantity-stepper"
+                                  onClick={() => stepQuantity(lead.id, 1)}
+                                  disabled={
+                                      isUpdating ||
+                                      !canEditQuantity ||
+                                      (availableStock != null && availableStock > 0 && quantityValue >= availableStock)
+                                  }
+                                  aria-label="Aumentar quantidade"
+                                >
+                                    <Plus className="lead-icon" />
                                   </button>
                                 </div>
-                                <button
-                                  type="button"
-                                  className="btn btn-outline"
-                                  onClick={() => handleSaveQuantity(lead)}
-                                  disabled={isUpdating || !canEditQuantity}
+                                <span
+                                  className={`lead-quantity-status ${
+                                    quantitySaveState?.status === 'error' ||
+                                    (availableStock !== null && availableStock <= 0)
+                                      ? 'lead-quantity-status--error'
+                                      : ''
+                                  }`}
                                 >
-                                  Salvar quantidade
-                                </button>
+                                  {quantitySaveState?.status === 'saving'
+                                    ? 'Salvando...'
+                                    : quantitySaveState?.status === 'saved'
+                                      ? 'Salvo'
+                                      : quantitySaveState?.status === 'error'
+                                        ? quantitySaveState.message
+                                        : availableStock !== null && availableStock <= 0
+                                          ? 'Estoque indisponível.'
+                                          : `Limite atual: ${availableStock ?? quantityValue} pneu(s).`}
+                                </span>
                               </div>
                             ) : (
                               <div className="lead-sale-quantity-summary">
@@ -674,7 +865,7 @@ export default function Leads() {
 
                         <td style={{ padding: '16px 24px', fontSize: '13px', color: 'var(--text-secondary)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Calendar size={14} style={{ color: 'var(--text-muted)' }} />
+                            <CalendarDays className="lead-icon lead-icon--calendar" />
                             <span>
                               {new Date(lead.created_at).toLocaleDateString('pt-BR')} às {new Date(lead.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </span>
@@ -780,8 +971,8 @@ export default function Leads() {
         }
 
         .lead-row--lost {
-          background: rgba(148, 163, 184, 0.055) !important;
-          border-left: 3px solid rgba(148, 163, 184, 0.5) !important;
+          background: rgba(239, 68, 68, 0.08) !important;
+          border-left: 3px solid rgba(248, 113, 113, 0.78) !important;
         }
 
         .lead-source {
@@ -801,6 +992,51 @@ export default function Leads() {
         .lead-source--product {
           background-color: rgba(59, 130, 246, 0.1);
           color: #3b82f6;
+        }
+
+        .lead-icon-box,
+        .lead-quantity-stepper {
+          box-sizing: border-box;
+          flex-shrink: 0;
+        }
+
+        .lead-icon-box {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          min-width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          flex-shrink: 0;
+        }
+
+        .lead-icon-box--client {
+          background-color: var(--whatsapp-glow);
+          color: var(--whatsapp);
+        }
+
+        .lead-icon-box--status {
+          width: 18px;
+          min-width: 18px;
+          height: 18px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.08);
+          color: currentColor;
+        }
+
+        .lead-icon {
+          display: block;
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+          stroke-width: 2;
+        }
+
+        .lead-icon--calendar {
+          width: 13px;
+          height: 13px;
+          color: var(--text-muted);
         }
 
         .lead-status-cell {
@@ -840,9 +1076,9 @@ export default function Leads() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 6px;
+          gap: 5px;
           min-height: 34px;
-          padding: 7px 10px;
+          padding: 6px 8px;
           border-radius: 999px;
           font-size: 12px;
           font-weight: 800;
@@ -854,14 +1090,20 @@ export default function Leads() {
           color: #fbbf24;
         }
 
+        .lead-status--attending .lead-icon {
+          width: 14px;
+          height: 14px;
+          flex-shrink: 0;
+        }
+
         .lead-status--sold {
           background: rgba(34, 197, 94, 0.14);
           color: #86efac;
         }
 
         .lead-status--lost {
-          background: rgba(148, 163, 184, 0.14);
-          color: #cbd5e1;
+          background: rgba(239, 68, 68, 0.16);
+          color: #fca5a5;
         }
 
         .lead-status-control select {
@@ -902,6 +1144,17 @@ export default function Leads() {
           gap: 8px;
         }
 
+        .lead-quantity-status {
+          color: var(--text-secondary);
+          font-size: 11px;
+          font-weight: 600;
+          line-height: 1.35;
+        }
+
+        .lead-quantity-status--error {
+          color: var(--error);
+        }
+
         .lead-sale-quantity-field {
           display: grid;
           grid-template-columns: 36px minmax(76px, 96px) 36px;
@@ -933,6 +1186,8 @@ export default function Leads() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          width: 36px;
+          min-width: 36px;
           min-height: 34px;
           border: 1px solid var(--border);
           border-radius: var(--radius-md);
@@ -952,6 +1207,11 @@ export default function Leads() {
         .lead-quantity-stepper:disabled {
           cursor: not-allowed;
           opacity: 0.55;
+        }
+
+        .lead-quantity-stepper .lead-icon {
+          width: 15px;
+          height: 15px;
         }
 
         .lead-sale-quantity-summary {
