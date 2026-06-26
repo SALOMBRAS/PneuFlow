@@ -21,7 +21,13 @@ export default function Login() {
       const rememberSession = localStorage.getItem('pneuflow_remember_session') === 'true';
       
       if (session && rememberSession) {
-        navigate('/dashboard');
+        try {
+          await storageService.completeRegistration();
+          navigate('/dashboard');
+        } catch (err) {
+          console.error('Provisioning error:', err);
+          setError('Não foi possível finalizar a configuração da sua loja. Tente entrar novamente em alguns instantes.');
+        }
         return;
       }
 
@@ -42,6 +48,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    let authenticated = false;
 
     try {
       // Set the session persistence flag BEFORE login so the custom storage knows where to save
@@ -49,6 +56,9 @@ export default function Login() {
 
       const data = await storageService.login(email, password);
       if (data) {
+        authenticated = true;
+        await storageService.completeRegistration();
+
         if (rememberMe) {
           localStorage.setItem('pneuflow_remember_email', email);
           localStorage.setItem('pneuflow_remember_me', 'true');
@@ -62,6 +72,8 @@ export default function Login() {
       console.error('Login error:', err);
       if (err.message === 'Email not confirmed') {
         setError('E-mail ainda não confirmado. Verifique sua caixa de entrada.');
+      } else if (authenticated) {
+        setError('Não foi possível finalizar a configuração da sua loja. Tente entrar novamente em alguns instantes.');
       } else {
         setError('Credenciais inválidas. Verifique seu e-mail e senha.');
       }

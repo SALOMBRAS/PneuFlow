@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { storageService } from '../../services/storage';
 import { Loader2 } from 'lucide-react';
 
 export default function AuthCallback() {
@@ -22,6 +23,7 @@ export default function AuthCallback() {
             navigate('/auth/set-password', { replace: true });
           } else {
             // Normal user or already has password set
+            await storageService.completeRegistration();
             navigate('/dashboard', { replace: true });
           }
         } else {

@@ -1,9 +1,54 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
-import { MessageSquare, Calendar, Car, Search, Trash2 } from 'lucide-react';
+import { Calendar, CheckCircle, ChevronDown, ChevronUp, Clock, MessageSquare, Search, Trash2, XCircle } from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [10, 50, 100, 'all'];
+
+const LEAD_STATUS = {
+  em_atendimento: {
+    label: 'Em atendimento',
+    filterLabel: 'Em atendimento',
+    className: 'lead-status--attending',
+    rowClass: 'lead-row--attending',
+    Icon: Clock
+  },
+  vendido: {
+    label: 'Vendido',
+    filterLabel: 'Vendidos',
+    className: 'lead-status--sold',
+    rowClass: 'lead-row--sold',
+    Icon: CheckCircle
+  },
+  desistencia: {
+    label: 'Desistência',
+    filterLabel: 'Desistência',
+    className: 'lead-status--lost',
+    rowClass: 'lead-row--lost',
+    Icon: XCircle
+  }
+};
+
+const STATUS_FILTERS = ['todos', 'em_atendimento', 'vendido', 'desistencia'];
+
+const normalizeQuantity = (value, fallback = 1) =>
+  Math.max(1, Number.parseInt(value ?? fallback, 10) || 1);
+
+const getLeadFinalQuantity = (lead) =>
+  normalizeQuantity(lead.sold_quantity ?? lead.desired_quantity, 1);
+
+const getLeadEditableQuantity = (lead) =>
+  normalizeQuantity(lead.desired_quantity ?? lead.sold_quantity, 1);
+
+const getLeadAttendanceStatus = (lead) => {
+  if (lead.status_atendimento && LEAD_STATUS[lead.status_atendimento]) {
+    return lead.status_atendimento;
+  }
+
+  return lead.venda_confirmada ? 'vendido' : 'em_atendimento';
+};
+
+const getStatusMeta = (status) => LEAD_STATUS[status] || LEAD_STATUS.em_atendimento;
 
 const getPageNumbers = (currentPage, totalPages) => {
   if (totalPages <= 7) {
@@ -27,7 +72,7 @@ const getPageNumbers = (currentPage, totalPages) => {
 };
 
 export default function Leads() {
-  const { store, isOwner } = useStore();
+  const { store, isOwner, user, member } = useStore();
   const [leads, setLeads] = useState([]);
   const [filterText, setFilterText] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -35,24 +80,29 @@ export default function Leads() {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingLeadId, setDeletingLeadId] = useState(null);
+  const [updatingLeadId, setUpdatingLeadId] = useState(null);
   const [feedbackMessage, setFeedbackMessage] = useState(null);
-  const [soldQuantities, setSoldQuantities] = useState({});
+  const [quantityDrafts, setQuantityDrafts] = useState({});
 
   const loadData = useCallback(async () => {
     if (!store) return;
     setIsLoading(true);
+
     try {
       const storeLeads = await storageService.getLeads(store.id);
       setLeads(storeLeads);
-      setSoldQuantities(
-        (storeLeads || []).reduce((acc, lead) => {
-          const fallbackQuantity = lead.sold_quantity || lead.desired_quantity || 1;
-          acc[lead.id] = Math.max(1, Number.parseInt(fallbackQuantity, 10) || 1);
-          return acc;
-        }, {})
-      );
+      const nextQuantityDrafts = (storeLeads || []).reduce((acc, lead) => {
+        acc[lead.id] = getLeadEditableQuantity(lead);
+        return acc;
+      }, {});
+
+      setQuantityDrafts(nextQuantityDrafts);
     } catch (err) {
       console.error('Erro ao carregar dados dos leads:', err);
+      setFeedbackMessage({
+        type: 'error',
+        text: err.message || 'Não foi possível carregar os leads.'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -89,45 +139,185 @@ export default function Leads() {
     }
   };
 
-  const handleSoldQuantityChange = (leadId, value) => {
-    setSoldQuantities((current) => ({
+  const handleQuantityChange = (leadId, value) => {
+    setQuantityDrafts((current) => ({
       ...current,
-      [leadId]: Math.max(1, Number.parseInt(value, 10) || 1)
+      [leadId]: normalizeQuantity(value)
     }));
   };
 
-  const handleUpdateSaleStatus = async (leadId, currentStatus) => {
+  const stepQuantity = (leadId, delta) => {
+    setQuantityDrafts((current) => ({
+      ...current,
+      [leadId]: Math.max(1, normalizeQuantity(current[leadId]) + delta)
+    }));
+  };
+
+  const isLeadManagedByCurrentSeller = useCallback((lead) => {
+    if (isOwner) return true;
+    if (!user?.id) return false;
+
+    if (lead.seller_id && lead.seller_id === user.id) {
+      return true;
+    }
+
+    if (lead.ref_code && member?.ref_code) {
+      return lead.ref_code === member.ref_code;
+    }
+
+    return false;
+  }, [isOwner, member?.ref_code, user?.id]);
+
+  const getAllowedStatuses = useCallback((lead) => {
+    const currentStatus = getLeadAttendanceStatus(lead);
+
+    if (isOwner) {
+      if (currentStatus === 'vendido' || currentStatus === 'desistencia') {
+        return [currentStatus, 'em_atendimento'];
+      }
+
+      return ['em_atendimento', 'vendido', 'desistencia'];
+    }
+
+    if (!isLeadManagedByCurrentSeller(lead)) {
+      return [currentStatus];
+    }
+
+    if (currentStatus === 'em_atendimento') {
+      return ['em_atendimento', 'vendido', 'desistencia'];
+    }
+
+    return [currentStatus];
+  }, [isLeadManagedByCurrentSeller, isOwner]);
+
+  const handleSaveQuantity = async (lead) => {
+    if (getLeadAttendanceStatus(lead) !== 'em_atendimento') {
+      setFeedbackMessage({ type: 'error', text: 'Reabra a venda antes de alterar a quantidade.' });
+      return;
+    }
+
+    const quantity = normalizeQuantity(quantityDrafts[lead.id], getLeadEditableQuantity(lead));
+
+    setUpdatingLeadId(lead.id);
+    setFeedbackMessage(null);
+
     try {
-      const newStatus = !currentStatus;
-      const soldQuantity = Math.max(1, Number.parseInt(soldQuantities[leadId], 10) || 1);
-      
-      // Call RPC - The database will handle the permissions
-      await storageService.updateLeadSaleStatus(leadId, newStatus, soldQuantity);
-      
-      // Always reload after success to get the real state (timestamps, etc.)
+      await storageService.updateLeadAttendanceStatus(lead.id, 'em_atendimento', null, quantity);
+      setFeedbackMessage({ type: 'success', text: 'Quantidade atualizada.' });
       await loadData();
     } catch (err) {
-      console.error('Erro ao atualizar status da venda:', err);
-      // Show the real error message from database/RPC
-      alert(err.message || 'Não foi possível atualizar o status da venda.');
-      // Revert UI to real state
+      console.error('Erro ao salvar quantidade do lead:', err);
+      setFeedbackMessage({
+        type: 'error',
+        text: err.message || 'Não foi possível ajustar a quantidade.'
+      });
       await loadData();
+    } finally {
+      setUpdatingLeadId(null);
+    }
+  };
+
+  const handleUpdateLeadStatus = async (lead, nextStatus) => {
+    const currentStatus = getLeadAttendanceStatus(lead);
+    if (currentStatus === nextStatus) return;
+
+    const quantity = normalizeQuantity(
+      quantityDrafts[lead.id],
+      currentStatus === 'vendido' ? getLeadFinalQuantity(lead) : getLeadEditableQuantity(lead)
+    );
+
+    if (nextStatus === 'vendido') {
+      const confirmed = window.confirm(`Confirmar a venda de ${quantity} pneu(s)?`);
+      if (!confirmed) return;
+    }
+
+    if (currentStatus === 'vendido' && nextStatus === 'em_atendimento') {
+      const confirmed = window.confirm('Reabrir esta venda para edição?');
+      if (!confirmed) return;
+    }
+
+    if (currentStatus === 'desistencia' && nextStatus === 'em_atendimento') {
+      const confirmed = window.confirm('Reabrir este lead para atendimento?');
+      if (!confirmed) return;
+    }
+
+    setUpdatingLeadId(lead.id);
+    setFeedbackMessage(null);
+
+    try {
+      const soldQuantity = nextStatus === 'vendido' ? quantity : null;
+      const desiredQuantity = quantity;
+      await storageService.updateLeadAttendanceStatus(lead.id, nextStatus, soldQuantity, desiredQuantity);
+      setFeedbackMessage({
+        type: 'success',
+        text: nextStatus === 'vendido'
+          ? 'Venda confirmada com sucesso.'
+          : currentStatus === 'vendido' && nextStatus === 'em_atendimento'
+            ? 'Venda reaberta. A quantidade pode ser corrigida.'
+            : 'Status do lead atualizado.'
+      });
+      await loadData();
+    } catch (err) {
+      console.error('Erro ao atualizar status do lead:', err);
+      setFeedbackMessage({
+        type: 'error',
+        text: err.message || 'Não foi possível atualizar o status do lead.'
+      });
+      await loadData();
+    } finally {
+      setUpdatingLeadId(null);
     }
   };
 
   const handleRefreshSoldQuantity = async (leadId) => {
+    const lead = leads.find((item) => item.id === leadId);
+    if (!lead) return;
+
+    setUpdatingLeadId(leadId);
+    setFeedbackMessage(null);
+
     try {
       const soldQuantity = Math.max(1, Number.parseInt(soldQuantities[leadId], 10) || 1);
-      await storageService.updateLeadSaleStatus(leadId, true, soldQuantity);
-      setFeedbackMessage({ type: 'success', text: 'Quantidade vendida atualizada e estoque ajustado.' });
+      const desiredQuantity = Math.max(1, Number.parseInt(desiredQuantities[leadId], 10) || 1);
+      const status = getLeadAttendanceStatus(lead);
+      await storageService.updateLeadAttendanceStatus(leadId, status, soldQuantity, desiredQuantity);
+      setFeedbackMessage({ type: 'success', text: 'Quantidade vendida atualizada.' });
       await loadData();
     } catch (err) {
-      console.error('Erro ao ajustar quantidade vendida:', err);
+      console.error('Erro ao ajustar quantidade:', err);
       setFeedbackMessage({
         type: 'error',
-        text: err.message || 'NÃ£o foi possÃ­vel ajustar a quantidade vendida.'
+        text: err.message || 'Não foi possível ajustar a quantidade.'
       });
       await loadData();
+    } finally {
+      setUpdatingLeadId(null);
+    }
+  };
+
+  const handleRefreshDesiredQuantity = async (leadId) => {
+    const lead = leads.find((item) => item.id === leadId);
+    if (!lead) return;
+
+    setUpdatingLeadId(leadId);
+    setFeedbackMessage(null);
+
+    try {
+      const soldQuantity = Math.max(1, Number.parseInt(soldQuantities[leadId], 10) || 1);
+      const desiredQuantity = Math.max(1, Number.parseInt(desiredQuantities[leadId], 10) || 1);
+      const status = getLeadAttendanceStatus(lead);
+      await storageService.updateLeadAttendanceStatus(leadId, status, soldQuantity, desiredQuantity);
+      setFeedbackMessage({ type: 'success', text: 'Quantidade desejada atualizada.' });
+      await loadData();
+    } catch (err) {
+      console.error('Erro ao ajustar quantidade desejada:', err);
+      setFeedbackMessage({
+        type: 'error',
+        text: err.message || 'Não foi possível ajustar a quantidade desejada.'
+      });
+      await loadData();
+    } finally {
+      setUpdatingLeadId(null);
     }
   };
 
@@ -135,26 +325,23 @@ export default function Leads() {
     setCurrentPage(1);
   }, [filterText, statusFilter, pageSize]);
 
-  // Filter logic
-  const filteredLeads = useMemo(() => leads.filter(l => {
-    // 1. Text filter
+  const filteredLeads = useMemo(() => leads.filter((lead) => {
     const text = filterText.toLowerCase();
-    const productName = (l.produto_nome || '').toLowerCase();
-    const customerName = (l.nome_cliente || '').toLowerCase();
-    const sellerName = (l.vendedor_nome || '').toLowerCase();
-    const sellerEmail = (l.vendedor_email || '').toLowerCase();
-    const refCode = (l.vendedor_ref_code || l.ref_code || '').toLowerCase();
+    const productName = (lead.produto_nome || '').toLowerCase();
+    const customerName = (lead.nome_cliente || '').toLowerCase();
+    const sellerName = (lead.vendedor_nome || '').toLowerCase();
+    const sellerEmail = (lead.vendedor_email || '').toLowerCase();
+    const refCode = (lead.vendedor_ref_code || lead.ref_code || '').toLowerCase();
 
-    const matchesText = productName.includes(text) || 
-                       customerName.includes(text) || 
-                       sellerName.includes(text) || 
-                       sellerEmail.includes(text) || 
-                       refCode.includes(text);
-    
-    // 2. Status filter
-    let matchesStatus = true;
-    if (statusFilter === 'pendentes') matchesStatus = !l.venda_confirmada;
-    if (statusFilter === 'vendidos') matchesStatus = l.venda_confirmada;
+    const matchesText =
+      productName.includes(text) ||
+      customerName.includes(text) ||
+      sellerName.includes(text) ||
+      sellerEmail.includes(text) ||
+      refCode.includes(text);
+
+    const status = getLeadAttendanceStatus(lead);
+    const matchesStatus = statusFilter === 'todos' || statusFilter === status;
 
     return matchesText && matchesStatus;
   }), [leads, filterText, statusFilter]);
@@ -180,7 +367,6 @@ export default function Leads() {
 
   return (
     <div className="animate-fade">
-      {/* Header */}
       <div className="flex-between" style={{ marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '32px', margin: 0, textAlign: 'left' }}>Leads de WhatsApp</h1>
@@ -188,13 +374,12 @@ export default function Leads() {
         </div>
       </div>
 
-      {/* Filter and Search */}
       <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{ position: 'relative', maxWidth: '400px' }}>
           <Search size={18} style={{ position: 'absolute', left: '14px', top: '13px', color: 'var(--text-muted)' }} />
-          <input 
-            type="text" 
-            placeholder="Buscar por pneu, cliente ou vendedor..." 
+          <input
+            type="text"
+            placeholder="Buscar por pneu, cliente ou vendedor..."
             className="form-input"
             style={{ paddingLeft: '44px' }}
             value={filterText}
@@ -204,16 +389,17 @@ export default function Leads() {
 
         <div className="leads-filter-row" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {['todos', 'pendentes', 'vendidos'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`btn ${statusFilter === status ? 'btn-primary' : 'btn-outline'}`}
-              style={{ padding: '6px 16px', fontSize: '13px', textTransform: 'capitalize' }}
-            >
-              {status}
-            </button>
-          ))}
+            {STATUS_FILTERS.map((status) => (
+              <button
+                key={status}
+                type="button"
+                onClick={() => setStatusFilter(status)}
+                className={`btn ${statusFilter === status ? 'btn-primary' : 'btn-outline'}`}
+                style={{ padding: '6px 16px', fontSize: '13px' }}
+              >
+                {status === 'todos' ? 'Todos' : getStatusMeta(status).filterLabel}
+              </button>
+            ))}
           </div>
 
           <div className="leads-page-size-control" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -254,7 +440,6 @@ export default function Leads() {
         )}
       </div>
 
-      {/* Leads Table/List */}
       <div className="card leads-table-card" style={{ padding: '0', overflow: 'hidden' }}>
         {isLoading ? (
           <div style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -267,292 +452,533 @@ export default function Leads() {
           </div>
         ) : (
           <>
-          <div className="leads-table-wrap" style={{ overflowX: 'auto', position: 'relative' }}>
-            <div className="leads-swipe-hint">
-              <span>Arraste para o lado para ver cliente, produto, vendedor, compra, valor e ações.</span>
-            </div>
-            <table className="leads-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ backgroundColor: 'var(--secondary)', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Cliente</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Produto</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Vendedor</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Compra</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Valor</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Data/Hora</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', textAlign: 'right' }}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedLeads.map((lead) => {
-                  const isSold = lead.venda_confirmada;
-                  const rowStyle = isSold ? {
-                    backgroundColor: 'rgba(34, 197, 94, 0.08)',
-                    borderLeft: '3px solid #22c55e'
-                  } : {};
+            <div className="leads-table-wrap" style={{ overflowX: 'auto', position: 'relative' }}>
+              <div className="leads-swipe-hint">
+                <span>Arraste para o lado para ver cliente, produto, vendedor, status, valor e ações.</span>
+              </div>
+              <table className="leads-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'var(--secondary)', borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Cliente</th>
+                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Produto</th>
+                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Vendedor</th>
+                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Status</th>
+                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Valor</th>
+                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Data/Hora</th>
+                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', textAlign: 'right' }}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedLeads.map((lead) => {
+                    const status = getLeadAttendanceStatus(lead);
+                    const statusMeta = getStatusMeta(status);
+                    const StatusIcon = statusMeta.Icon;
+                    const isSold = status === 'vendido';
+                    const isUpdating = updatingLeadId === lead.id;
+                    const allowedStatuses = getAllowedStatuses(lead);
+                    const canEditStatus = allowedStatuses.length > 1;
+                    const isLost = status === 'desistencia';
+                    const isManagedByCurrentSeller = isLeadManagedByCurrentSeller(lead);
+                    const canEditQuantity = status === 'em_atendimento' && (isOwner || isManagedByCurrentSeller);
+                    const canReopen = isOwner && (isSold || isLost);
+                    const quantityValue = normalizeQuantity(
+                      quantityDrafts[lead.id],
+                      isSold ? getLeadFinalQuantity(lead) : getLeadEditableQuantity(lead)
+                    );
+                    const finalSoldQuantity = getLeadFinalQuantity(lead);
 
-                  return (
-                    <tr 
-                      key={lead.id} 
-                      style={{ ...rowStyle, borderBottom: '1px solid var(--border)' }} 
-                      className={isSold ? 'lead-row sold' : 'lead-row'}
-                    >
-                      {/* Customer Info */}
-                      <td style={{ padding: '16px 24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ 
-                            backgroundColor: 'var(--whatsapp-glow)', 
-                            color: 'var(--whatsapp)', 
-                            padding: '8px', 
-                            borderRadius: '8px', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center' 
-                          }}>
-                            <MessageSquare size={16} />
-                          </div>
-                          <span style={{ fontWeight: 600, fontSize: '14px' }}>{lead.nome_cliente || 'Cliente Interessado'}</span>
-                        </div>
-                      </td>
-
-                      {/* Product info */}
-                      <td style={{ padding: '16px 24px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{lead.produto_nome}</span>
-                          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lead.produto_medida || 'Medida não inf.'}</span>
-                          <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 700 }}>
-                            Qtd. desejada: {Math.max(1, Number.parseInt(lead.desired_quantity, 10) || 1)}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Seller Info */}
-                      <td style={{ padding: '16px 24px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {lead.vendedor_nome ? (
-                            <>
-                              <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{lead.vendedor_nome}</span>
-                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lead.vendedor_email}</span>
-                            </>
-                          ) : lead.seller_id ? (
-                            <>
-                              <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>ID: {lead.seller_id}</span>
-                              <span style={{ fontSize: '11px', color: 'var(--error)', fontStyle: 'italic' }}>vendedor não encontrado</span>
-                            </>
-                          ) : lead.vendedor_ref_code ? (
-                            <>
-                              <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>Ref: {lead.vendedor_ref_code}</span>
-                              <span style={{ fontSize: '11px', color: 'var(--error)', fontStyle: 'italic' }}>vendedor não encontrado</span>
-                            </>
-                          ) : (
-                            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Sem vendedor</span>
-                          )}
-                          
-                          {/* Attribution Badge */}
-                          <div style={{ marginTop: '4px' }}>
-                            {lead.attribution_source === 'referral' ? (
-                              <span style={{ 
-                                fontSize: '10px', 
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)', 
-                                color: '#10b981', 
-                                padding: '2px 8px', 
-                                borderRadius: '100px',
-                                fontWeight: 700,
-                                textTransform: 'uppercase'
-                              }}>Indicação</span>
-                            ) : lead.attribution_source === 'product' ? (
-                              <span style={{ 
-                                fontSize: '10px', 
-                                backgroundColor: 'rgba(59, 130, 246, 0.1)', 
-                                color: '#3b82f6', 
-                                padding: '2px 8px', 
-                                borderRadius: '100px',
-                                fontWeight: 700,
-                                textTransform: 'uppercase'
-                              }}>Anúncio</span>
-                            ) : null}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Sale Confirmation */}
-                      <td style={{ padding: '16px 24px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <label style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '8px', 
-                            cursor: (isSold && !isOwner) ? 'not-allowed' : 'pointer',
-                            opacity: (isSold && !isOwner) ? 0.7 : 1
-                          }}>
-                            <input 
-                              type="checkbox" 
-                              checked={isSold}
-                              onChange={() => handleUpdateSaleStatus(lead.id, isSold)}
-                              disabled={isSold && !isOwner}
-                              style={{ 
-                                width: '18px', 
-                                height: '18px', 
-                                accentColor: '#22c55e',
-                                cursor: (isSold && !isOwner) ? 'not-allowed' : 'pointer'
-                              }}
-                            />
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: isSold ? '#22c55e' : 'var(--text-secondary)' }}>
-                              {isSold ? 'Vendido' : 'Pendente'}
-                            </span>
-                          </label>
-                          
-                          {isSold && (
-                            <div style={{ 
-                              fontSize: '10px', 
-                              color: '#22c55e', 
-                              fontWeight: 600,
-                              backgroundColor: 'rgba(34, 197, 94, 0.1)', 
-                              padding: '2px 8px', 
-                              borderRadius: '4px',
-                              display: 'inline-block',
-                              alignSelf: 'flex-start'
+                    return (
+                      <tr
+                        key={lead.id}
+                        style={{ borderBottom: '1px solid var(--border)' }}
+                        className={`lead-row ${statusMeta.rowClass}`}
+                      >
+                        <td style={{ padding: '16px 24px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                              backgroundColor: 'var(--whatsapp-glow)',
+                              color: 'var(--whatsapp)',
+                              padding: '8px',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
                             }}>
-                              Confirmado em {new Date(lead.venda_confirmada_em).toLocaleDateString()}
+                              <MessageSquare size={16} />
                             </div>
-                          )}
+                            <span style={{ fontWeight: 600, fontSize: '14px' }}>{lead.nome_cliente || 'Cliente Interessado'}</span>
+                          </div>
+                        </td>
 
-                          <div className="lead-sale-quantity-control">
-                            <label htmlFor={`sold-quantity-${lead.id}`}>
-                              Qtd. vendida
+                        <td style={{ padding: '16px 24px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{lead.produto_nome}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lead.produto_medida || 'Medida não inf.'}</span>
+                          </div>
+                        </td>
+
+                        <td style={{ padding: '16px 24px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {lead.vendedor_nome ? (
+                              <>
+                                <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{lead.vendedor_nome}</span>
+                                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lead.vendedor_email}</span>
+                              </>
+                            ) : lead.seller_id ? (
+                              <>
+                                <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>Vendedor vinculado</span>
+                                <span style={{ fontSize: '11px', color: 'var(--error)', fontStyle: 'italic' }}>dados do vendedor indisponíveis</span>
+                              </>
+                            ) : lead.vendedor_ref_code ? (
+                              <>
+                                <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>Ref: {lead.vendedor_ref_code}</span>
+                                <span style={{ fontSize: '11px', color: 'var(--error)', fontStyle: 'italic' }}>vendedor não encontrado</span>
+                              </>
+                            ) : (
+                              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Sem vendedor</span>
+                            )}
+
+                            <div style={{ marginTop: '4px' }}>
+                              {lead.attribution_source === 'referral' ? (
+                                <span className="lead-source lead-source--referral">Indicação</span>
+                              ) : lead.attribution_source === 'product' ? (
+                                <span className="lead-source lead-source--product">Anúncio</span>
+                              ) : null}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td style={{ padding: '16px 24px' }}>
+                          <div className="lead-status-cell">
+                            <label className="lead-status-label" htmlFor={`status-${lead.id}`}>
+                              Status
                             </label>
-                            <input
-                              id={`sold-quantity-${lead.id}`}
-                              type="number"
-                              min="1"
-                              value={soldQuantities[lead.id] || Math.max(1, Number.parseInt(lead.sold_quantity || lead.desired_quantity, 10) || 1)}
-                              onChange={(event) => handleSoldQuantityChange(lead.id, event.target.value)}
-                              disabled={isSold && !isOwner}
-                              aria-label="Quantidade vendida"
-                            />
-                            {isSold && isOwner && (
-                              <button
-                                type="button"
-                                className="btn btn-outline"
-                                onClick={() => handleRefreshSoldQuantity(lead.id)}
+                            <div className="lead-status-control">
+                              <span className={`lead-status-pill ${statusMeta.className}`}>
+                                <StatusIcon size={14} />
+                                {statusMeta.label}
+                              </span>
+                              {status === 'em_atendimento' ? (
+                                <select
+                                id={`status-${lead.id}`}
+                                value={status}
+                                onChange={(event) => handleUpdateLeadStatus(lead, event.target.value)}
+                                disabled={isUpdating || !canEditStatus}
+                                aria-label="Status do lead"
                               >
-                                Atualizar qtd.
+                                <option value="em_atendimento">Em atendimento</option>
+                                <option value="vendido">Vendido</option>
+                                <option value="desistencia">Desistência</option>
+                                </select>
+                              ) : (
+                                <div className="lead-status-closed-actions">
+                                  {canReopen ? (
+                                    <button
+                                      type="button"
+                                      className="btn btn-outline"
+                                      onClick={() => handleUpdateLeadStatus(lead, 'em_atendimento')}
+                                      disabled={isUpdating}
+                                    >
+                                      {isSold ? 'Reabrir venda' : 'Reabrir lead'}
+                                    </button>
+                                  ) : (
+                                    <span className="lead-status-note lead-status-note--neutral">
+                                      Apenas o dono pode reabrir este lead.
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {!canEditStatus && !isOwner && status === 'em_atendimento' && (
+                              <span className="lead-status-note lead-status-note--neutral">
+                                Apenas o dono pode reabrir este lead.
+                              </span>
+                            )}
+
+                            {isSold && lead.venda_confirmada_em && (
+                              <span className="lead-status-note">
+                                Confirmado em {new Date(lead.venda_confirmada_em).toLocaleDateString('pt-BR')}
+                              </span>
+                            )}
+
+                            {status === 'em_atendimento' ? (
+                              <div className="lead-sale-quantity-control">
+                                <label htmlFor={`quantity-${lead.id}`}>
+                                  Quantidade de pneus
+                                </label>
+                                <div className="lead-sale-quantity-field">
+                                  <button
+                                    type="button"
+                                    className="lead-quantity-stepper"
+                                    onClick={() => stepQuantity(lead.id, -1)}
+                                    disabled={isUpdating || !canEditQuantity || quantityValue <= 1}
+                                    aria-label="Diminuir quantidade"
+                                  >
+                                    <ChevronDown size={14} />
+                                  </button>
+                                  <input
+                                    id={`quantity-${lead.id}`}
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    value={quantityValue}
+                                    onChange={(event) => handleQuantityChange(lead.id, event.target.value)}
+                                    disabled={isUpdating || !canEditQuantity}
+                                    aria-label="Quantidade de pneus"
+                                  />
+                                  <button
+                                    type="button"
+                                    className="lead-quantity-stepper"
+                                    onClick={() => stepQuantity(lead.id, 1)}
+                                    disabled={isUpdating || !canEditQuantity}
+                                    aria-label="Aumentar quantidade"
+                                  >
+                                    <ChevronUp size={14} />
+                                  </button>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline"
+                                  onClick={() => handleSaveQuantity(lead)}
+                                  disabled={isUpdating || !canEditQuantity}
+                                >
+                                  Salvar quantidade
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="lead-sale-quantity-summary">
+                                <span className="lead-sale-quantity-summary__label">
+                                  {isSold ? 'Quantidade final' : 'Quantidade registrada'}
+                                </span>
+                                <strong>{finalSoldQuantity} pneu(s)</strong>
+                                <span>
+                                  {isSold
+                                    ? (isOwner
+                                      ? 'Reabra a venda para corrigir a quantidade.'
+                                      : 'Quantidade bloqueada apos a confirmacao da venda.')
+                                    : (isOwner
+                                      ? 'Reabra o lead para voltar a editar a quantidade.'
+                                      : 'Quantidade bloqueada enquanto o lead estiver em desistencia.')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        <td style={{ padding: '16px 24px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)' }}>
+                            {lead.produto_preco ? Number(lead.produto_preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '---'}
+                          </span>
+                        </td>
+
+                        <td style={{ padding: '16px 24px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Calendar size={14} style={{ color: 'var(--text-muted)' }} />
+                            <span>
+                              {new Date(lead.created_at).toLocaleDateString('pt-BR')} às {new Date(lead.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                            {isOwner && (
+                              <button
+                                onClick={() => handleDeleteLead(lead.id)}
+                                disabled={deletingLeadId === lead.id}
+                                className="btn btn-outline"
+                                style={{ padding: '6px 8px', borderColor: 'rgba(239,68,68,0.2)', color: 'var(--error)', opacity: deletingLeadId === lead.id ? 0.6 : 1 }}
+                                title="Excluir lead"
+                                aria-label="Excluir lead"
+                              >
+                                <Trash2 size={14} />
                               </button>
                             )}
                           </div>
-                        </div>
-                      </td>
-                      
-                      {/* Price */}
-                      <td style={{ padding: '16px 24px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)' }}>
-                          {lead.produto_preco ? Number(lead.produto_preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '---'}
-                        </span>
-                      </td>
-
-                      {/* Date/Time */}
-                      <td style={{ padding: '16px 24px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Calendar size={14} style={{ color: 'var(--text-muted)' }} />
-                          <span>
-                            {new Date(lead.created_at).toLocaleDateString('pt-BR')} às {new Date(lead.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Actions */}
-                      <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                          {isOwner && (
-                            <button 
-                              onClick={() => handleDeleteLead(lead.id)}
-                              disabled={deletingLeadId === lead.id}
-                              className="btn btn-outline" 
-                              style={{ padding: '6px 8px', borderColor: 'rgba(239,68,68,0.2)', color: 'var(--error)', opacity: deletingLeadId === lead.id ? 0.6 : 1 }}
-                              title="Excluir lead"
-                              aria-label="Excluir lead"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="leads-pagination">
-            <div className="leads-pagination__summary">
-              <span>
-                Mostrando {pageSize === 'all' ? filteredLeads.length : paginatedLeads.length} de {filteredLeads.length} lead{filteredLeads.length === 1 ? '' : 's'}
-              </span>
-              <strong>Página {currentPage} de {totalPages}</strong>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
-            {pageSize !== 'all' && totalPages > 1 && (
-              <div className="leads-pagination__controls" aria-label="Paginação de leads">
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Anterior
-                </button>
-
-                <div className="leads-pagination__pages">
-                  {paginationItems.map((item) => (
-                    typeof item === 'number' ? (
-                      <button
-                        key={item}
-                        type="button"
-                        className={`btn ${currentPage === item ? 'btn-primary' : 'btn-outline'}`}
-                        onClick={() => setCurrentPage(item)}
-                        aria-current={currentPage === item ? 'page' : undefined}
-                      >
-                        {item}
-                      </button>
-                    ) : (
-                      <span key={item} className="leads-pagination__ellipsis">...</span>
-                    )
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Próxima
-                </button>
+            <div className="leads-pagination">
+              <div className="leads-pagination__summary">
+                <span>
+                  Mostrando {pageSize === 'all' ? filteredLeads.length : paginatedLeads.length} de {filteredLeads.length} lead{filteredLeads.length === 1 ? '' : 's'}
+                </span>
+                <strong>Página {currentPage} de {totalPages}</strong>
               </div>
-            )}
-          </div>
+
+              {pageSize !== 'all' && totalPages > 1 && (
+                <div className="leads-pagination__controls" aria-label="Paginação de leads">
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Anterior
+                  </button>
+
+                  <div className="leads-pagination__pages">
+                    {paginationItems.map((item) => (
+                      typeof item === 'number' ? (
+                        <button
+                          key={item}
+                          type="button"
+                          className={`btn ${currentPage === item ? 'btn-primary' : 'btn-outline'}`}
+                          onClick={() => setCurrentPage(item)}
+                          aria-current={currentPage === item ? 'page' : undefined}
+                        >
+                          {item}
+                        </button>
+                      ) : (
+                        <span key={item} className="leads-pagination__ellipsis">...</span>
+                      )
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Próxima
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
-      
-      {/* Styles */}
+
       <style>{`
         .lead-row {
-          transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+          transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
         }
 
         .lead-row:hover {
-          background-color: rgba(255, 255, 255, 0.01);
+          background-color: rgba(255, 255, 255, 0.015);
         }
 
-        .lead-row.sold {
+        .lead-row--attending {
+          border-left: 3px solid rgba(245, 158, 11, 0.74);
+        }
+
+        .lead-row--sold {
           background: rgba(34, 197, 94, 0.08) !important;
           border-left: 3px solid #22c55e !important;
         }
 
-        .lead-row.sold:hover {
+        .lead-row--sold:hover {
           background: rgba(34, 197, 94, 0.12) !important;
           box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.18);
+        }
+
+        .lead-row--lost {
+          background: rgba(148, 163, 184, 0.055) !important;
+          border-left: 3px solid rgba(148, 163, 184, 0.5) !important;
+        }
+
+        .lead-source {
+          display: inline-flex;
+          padding: 2px 8px;
+          border-radius: 100px;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+
+        .lead-source--referral {
+          background-color: rgba(16, 185, 129, 0.1);
+          color: #10b981;
+        }
+
+        .lead-source--product {
+          background-color: rgba(59, 130, 246, 0.1);
+          color: #3b82f6;
+        }
+
+        .lead-status-cell {
+          display: flex;
+          min-width: 220px;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .lead-status-label,
+        .lead-sale-quantity-control label {
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+
+        .lead-status-control {
+          display: grid;
+          grid-template-columns: minmax(118px, 1fr) minmax(150px, 1fr);
+          gap: 8px;
+          align-items: center;
+        }
+
+        .lead-status-closed-actions {
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .lead-status-closed-actions .btn {
+          min-height: 36px;
+          width: 100%;
+          justify-content: center;
+        }
+
+        .lead-status-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          min-height: 34px;
+          padding: 7px 10px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .lead-status--attending {
+          background: rgba(245, 158, 11, 0.14);
+          color: #fbbf24;
+        }
+
+        .lead-status--sold {
+          background: rgba(34, 197, 94, 0.14);
+          color: #86efac;
+        }
+
+        .lead-status--lost {
+          background: rgba(148, 163, 184, 0.14);
+          color: #cbd5e1;
+        }
+
+        .lead-status-control select {
+          min-height: 36px;
+          width: 100%;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          background: var(--secondary);
+          color: var(--text-primary);
+          font-size: 13px;
+          font-weight: 700;
+          padding: 0 10px;
+        }
+
+        .lead-status-control select:focus-visible,
+        .lead-sale-quantity-control input:focus-visible {
+          outline: 3px solid rgba(245, 158, 11, 0.24);
+          outline-offset: 2px;
+        }
+
+        .lead-status-note {
+          width: fit-content;
+          padding: 3px 8px;
+          border-radius: 6px;
+          background: rgba(34, 197, 94, 0.1);
+          color: #22c55e;
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .lead-status-note--neutral {
+          background: rgba(148, 163, 184, 0.12);
+          color: #cbd5e1;
+        }
+
+        .lead-sale-quantity-control {
+          display: grid;
+          gap: 8px;
+        }
+
+        .lead-sale-quantity-field {
+          display: grid;
+          grid-template-columns: 36px minmax(76px, 96px) 36px;
+          gap: 6px;
+          align-items: center;
+        }
+
+        .lead-sale-quantity-control input {
+          min-height: 34px;
+          width: 100%;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          background: var(--secondary);
+          color: var(--text-primary);
+          font-size: 13px;
+          font-weight: 700;
+          padding: 0 10px;
+          text-align: center;
+        }
+
+        .lead-sale-quantity-control .btn {
+          min-height: 34px;
+          padding: 6px 10px;
+          font-size: 12px;
+          white-space: nowrap;
+        }
+
+        .lead-quantity-stepper {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 34px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          background: var(--secondary);
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+        }
+
+        .lead-quantity-stepper:hover:not(:disabled),
+        .lead-quantity-stepper:focus-visible {
+          border-color: rgba(245, 158, 11, 0.4);
+          background: rgba(245, 158, 11, 0.08);
+          outline: none;
+        }
+
+        .lead-quantity-stepper:disabled {
+          cursor: not-allowed;
+          opacity: 0.55;
+        }
+
+        .lead-sale-quantity-summary {
+          display: grid;
+          gap: 4px;
+          padding: 12px 14px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: var(--radius-md);
+          background: rgba(255, 255, 255, 0.03);
+        }
+
+        .lead-sale-quantity-summary__label {
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+
+        .lead-sale-quantity-summary strong {
+          color: var(--text-primary);
+          font-size: 15px;
+        }
+
+        .lead-sale-quantity-summary span:last-child {
+          color: var(--text-secondary);
+          font-size: 12px;
+          line-height: 1.4;
         }
 
         .leads-swipe-hint {
@@ -610,7 +1036,7 @@ export default function Leads() {
           }
 
           .leads-table {
-            min-width: 920px;
+            min-width: 980px;
           }
 
           .leads-swipe-hint {

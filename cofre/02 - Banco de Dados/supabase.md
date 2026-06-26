@@ -8,9 +8,10 @@ fonte:
   - src/services/storage.js
   - supabase/migrations/20260618171439_remote_schema.sql
   - supabase/migrations/20260618172000_store_subscription_trial.sql
+  - supabase/migrations/20260623143000_signup_store_provisioning.sql
   - supabase/migrations/20260624120000_stock_sale_quantity.sql
   - cofre/02 - Banco de Dados/schema-remoto-confirmado.md
-atualizado: 2026-06-24
+atualizado: 2026-06-25
 tags: []
 ---
 
@@ -106,6 +107,7 @@ tags: []
 - `registrar_visita_referral`
 
 `registrar_visita_referral` e chamada em `storage.js` com `store_id`, `seller_id`, `ref_code`, `visitor_id`, `path` e `user_agent`.
+- `ensure_store_provisioned`: cria/garante `profiles`, `stores` e o membro dono em `store_members` para usuarios autenticados de cadastro normal. Usa `auth.uid()` e `user_metadata`; antes de criar loja, retorna a loja de `store_members.status = active` para proteger vendedores e membros existentes.
 
 ## Regras de seguranca
 
@@ -115,9 +117,9 @@ tags: []
 
 ## Estado atual das migrations
 
-- `supabase/migrations/` continha a baseline `20260618171439_remote_schema.sql` e a migration de trial `20260618172000_store_subscription_trial.sql`.
-- Em 2026-06-24 foi criada a migration local `20260624120000_stock_sale_quantity.sql` para quantidade desejada/vendida e baixa atomica de estoque por RPC.
-- Essa migration nova ainda precisa ser aplicada no Supabase remoto em etapa autorizada.
+- supabase/migrations/ contem a baseline 20260618171439_remote_schema.sql, a trial 20260618172000_store_subscription_trial.sql, a RPC de provisionamento 20260623143000_signup_store_provisioning.sql e a migration local 20260624120000_stock_sale_quantity.sql.
+- 20260623143000_signup_store_provisioning.sql foi aplicada ao remoto em etapa autorizada para garantir profiles, stores e store_members apos cadastro confirmado.
+- 20260624120000_stock_sale_quantity.sql adiciona quantidade desejada/vendida e baixa atomica de estoque por RPC; confirmar/aplicar no Supabase remoto em etapa propria autorizada.
 - Migrations antigas ficam em `docs/legacy-migrations/pre-baseline/` e nao devem ser executadas como ativas.
 - O schema remoto confirmado esta documentado em [[schema-remoto-confirmado]].
 

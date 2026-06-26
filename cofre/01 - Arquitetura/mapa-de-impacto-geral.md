@@ -24,7 +24,7 @@ fonte:
   - src/utils/visitorId.js
   - supabase/functions/invite-seller/index.ts
   - supabase/functions/manage-seller-access/index.ts
-atualizado: 2026-06-15
+atualizado: 2026-06-25
 tags: []
 ---
 
@@ -94,10 +94,10 @@ tags: []
 ## 8. Leads
 
 - Arquivos: `Leads.jsx`, `StoreHome.jsx`, `storage.js`.
-- Dados/RPCs: `leads`, `registrar_lead`, `get_leads_com_vendedor`, `atualizar_status_venda_lead`, `excluir_lead`.
+- Dados/RPCs: `leads`, `registrar_lead`, `get_leads_com_vendedor`, `atualizar_status_atendimento_lead`, `atualizar_status_venda_lead`, `expirar_leads_inativos`, `excluir_lead`.
 - Impacta: Dashboard Home, ranking, faturamento, WhatsApp.
-- Fragilidade: vendedor pode ser vinculado por `seller_id` ou fallback `ref_code`.
-- Regressao minima: criar lead na vitrine, ver no dashboard, marcar/desmarcar venda, excluir.
+- Fragilidade: vendedor pode ser vinculado por `seller_id` ou fallback `ref_code`; expiracao de 24h agora depende tambem de job cron em migration local.
+- Regressao minima: criar lead na vitrine, ver no dashboard, marcar/desmarcar venda, ajustar quantidades, excluir e validar expiração automática.
 
 ## 9. Vendedores
 

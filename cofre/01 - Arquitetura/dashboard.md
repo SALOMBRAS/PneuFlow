@@ -20,7 +20,7 @@ fonte:
   - supabase/migrations/20260618171439_remote_schema.sql
   - cofre/01 - Arquitetura/mapa-de-impacto-geral.md
   - cofre/01 - Arquitetura/checklists-regressao.md
-atualizado: 2026-06-24
+atualizado: 2026-06-25
 tags: []
 ---
 
@@ -48,7 +48,7 @@ As rotas filhas vivem sob `/dashboard` em `src/App.jsx`.
 
 - Home e metricas comerciais.
 - Catalogo de pneus com upload de ate 2 imagens por anuncio.
-- Leads de WhatsApp com status de venda.
+- Leads de WhatsApp com status de atendimento/venda.
 - Vendedores e convites/acesso.
 - Configuracoes da loja.
 
@@ -112,17 +112,19 @@ O calculo local em `DashboardHome.jsx` considera:
 
 ## Leads, venda e estoque
 
-`Leads.jsx` mostra a quantidade desejada do comprador e permite informar a quantidade vendida antes de confirmar a venda.
+`Leads.jsx` mostra a quantidade desejada do comprador e permite ajustar quantidade desejada e quantidade vendida no proprio painel.
 
-A baixa de estoque nao acontece no frontend. `storageService.updateLeadSaleStatus` chama a RPC `atualizar_status_venda_lead` com `p_sold_quantity`; a migration local `20260624120000_stock_sale_quantity.sql` faz o decremento/restauracao atomica em `pneus.estoque`.
+A baixa de estoque nao acontece no frontend. `storageService.updateLeadAttendanceStatus` chama a RPC `atualizar_status_atendimento_lead` com `p_sold_quantity` e `p_desired_quantity`; as migrations locais `20260624120000_stock_sale_quantity.sql` e `20260625143000_lead_attendance_status.sql` fazem o decremento/restauracao atomica em `pneus.estoque` e controlam o status do lead.
 
 Regras:
 
-- lead pendente pode ser confirmado com quantidade vendida;
+- lead em `em_atendimento` pode virar `vendido` ou `desistencia`;
 - confirmar novamente a mesma venda nao deve baixar estoque duplicado;
 - dono pode ajustar quantidade de venda confirmada e a RPC aplica apenas a diferenca;
 - dono pode desmarcar venda confirmada e restaurar estoque;
-- vendedor continua impedido de alterar venda ja confirmada.
+- vendedor responsavel pode corrigir `sold_quantity` enquanto o lead continuar como `vendido`;
+- vendedor responsavel nao pode reabrir lead vendido nem lead em `desistencia`;
+- `last_interaction_at` deve ser atualizado em acao humana relevante, mas nao na expiracao automatica.
 
 Detalhes: [[../03 - Decisões/estoque-e-vendas|Estoque e vendas]].
 

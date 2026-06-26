@@ -7,6 +7,8 @@ fonte:
   - supabase/migrations/20260618171439_remote_schema.sql
   - supabase/migrations/20260618172000_store_subscription_trial.sql
   - supabase/migrations/20260624120000_stock_sale_quantity.sql
+  - supabase/migrations/20260625143000_lead_attendance_status.sql
+  - supabase/migrations/20260625150000_lead_expiration_cron.sql
   - docs/legacy-migrations/pre-baseline/README.md
   - docs/legacy-migrations/pre-baseline/20260604090000_get_leads_com_vendedor.sql
   - docs/legacy-migrations/pre-baseline/20260604091000_lead_conversion_tracking.sql
@@ -18,12 +20,12 @@ fonte:
   - docs/legacy-migrations/pre-baseline/20260612090000_delete_lead_rpc.sql
   - docs/legacy-migrations/pre-baseline/20260615090000_store_referral_visits_visitor_tracking.sql
   - docs/legacy-migrations/pre-baseline/20260616090000_store_referral_visits_nullable_referral.sql
-atualizado: 2026-06-24
+atualizado: 2026-06-25
 tags: []
 ---
 
 > [!tldr]
-> A pasta ativa tem a baseline, trial e a nova migration local de estoque por venda.
+> A pasta ativa tem a baseline, trial, a migration local de estoque por venda e duas migrations locais de status/expiracao de leads.
 > Migrations antigas arquivadas continuam fora da pasta ativa e nao devem ser executadas.
 
 # Migrations e RPCs
@@ -35,6 +37,8 @@ Arquivos ativos/locais confirmados em `supabase/migrations/`:
 - `20260618171439_remote_schema.sql`
 - `20260618172000_store_subscription_trial.sql`
 - `20260624120000_stock_sale_quantity.sql` (criada localmente em 2026-06-24; pendente de aplicar no remoto)
+- `20260625143000_lead_attendance_status.sql` (criada localmente em 2026-06-25; pendente de aplicar no remoto)
+- `20260625150000_lead_expiration_cron.sql` (criada localmente em 2026-06-25; pendente de aplicar no remoto)
 
 Resultado confirmado anteriormente via Supabase CLI:
 
@@ -80,7 +84,9 @@ Tambem adiciona constraint para `subscription_status` com:
 
 - `get_leads_com_vendedor`
 - `registrar_lead`
+- `atualizar_status_atendimento_lead`
 - `atualizar_status_venda_lead`
+- `expirar_leads_inativos`
 - `excluir_lead`
 - `get_public_referral_seller`
 - `get_referral_seller`
@@ -97,6 +103,28 @@ Tambem adiciona constraint para `subscription_status` com:
 - `get_leads_com_vendedor` retornando quantidade desejada e vendida.
 
 Nao executar `supabase db push` ou aplicar essa migration sem autorizacao explicita.
+
+## Status e expiracao de leads
+
+`20260625143000_lead_attendance_status.sql` prepara:
+
+- `leads.status_atendimento` com `em_atendimento`, `vendido` e `desistencia`;
+- `leads.last_interaction_at` para marcar a ultima interacao humana relevante;
+- `atualizar_status_atendimento_lead(..., p_sold_quantity, p_desired_quantity)` com permissao em RPC:
+  - owner pode reabrir lead, desfazer venda e ajustar quantidades;
+  - vendedor responsavel pode sair de `em_atendimento` para `vendido` ou `desistencia`;
+  - vendedor responsavel pode corrigir `desired_quantity` e `sold_quantity`;
+  - vendedor nao pode reabrir lead vendido ou em desistencia;
+- `registrar_lead` sempre criando lead com status inicial `em_atendimento`;
+- `get_leads_com_vendedor` retornando status, `last_interaction_at`, `desired_quantity` e `sold_quantity`.
+
+`20260625150000_lead_expiration_cron.sql` prepara:
+
+- funcao interna `public.expirar_leads_inativos_job()` sem dependencia de `auth.uid()`;
+- tentativa idempotente de instalar `pg_cron` apenas se a extensao estiver disponivel;
+- job `pneuflow-expire-inactive-leads` com frequencia `5 * * * *`;
+- expiracao automatica de leads em `em_atendimento` com mais de 24h sem interacao;
+- revogacao de execucao publica da funcao interna do job.
 
 ## Historico arquivado
 

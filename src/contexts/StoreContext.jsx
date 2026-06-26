@@ -80,7 +80,16 @@ export function StoreProvider({ children }) {
             throw new Error('Vínculo com a loja não encontrado.');
           }
         } else {
-          throw new Error('Loja ou permissão não encontrada');
+          const isInvitedUser = currentUser.user_metadata?.invited_to_store;
+          const provisionedStore = isInvitedUser ? null : await storageService.completeRegistration();
+
+          if (provisionedStore) {
+            finalStore = provisionedStore;
+            finalRole = 'owner';
+            finalMember = null;
+          } else {
+            throw new Error('Loja ou permissão não encontrada');
+          }
         }
       }
 
