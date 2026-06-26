@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -7,7 +7,6 @@ import {
   Gauge,
   MessageSquare,
   PackageSearch,
-  Plus,
   Search,
   Smartphone,
   Store,
@@ -23,39 +22,39 @@ const demoTabs = [
     icon: Store,
     title: 'Seu cliente encontra o pneu certo sozinho',
     description:
-      'A vitrine organiza seus pneus e permite que o cliente pesquise por medida, aro ou veículo antes de chamar no WhatsApp.',
+      'A vitrine organiza pneus ficticios e mostra como o cliente pesquisaria por medida, aro ou veiculo antes de chamar no atendimento.',
     benefit: 'Menos perguntas repetidas. Mais clientes prontos para comprar.',
   },
   {
     id: 'catalogo',
-    label: 'Catálogo',
+    label: 'Catalogo',
     icon: PackageSearch,
-    title: 'Catálogo profissional e sempre organizado',
+    title: 'Catalogo profissional e sempre organizado',
     description:
-      'Cadastre marca, modelo, medida, preço e estoque em uma apresentação mais clara e profissional.',
+      'Veja uma previa simples de como produtos poderiam ficar organizados por marca, medida, preco e status.',
     benefit: 'Sua loja deixa de depender de fotos soltas e listas confusas.',
   },
   {
     id: 'leads',
     label: 'Leads',
     icon: Users,
-    title: 'Organize interessados e pedidos em um só lugar',
+    title: 'Organize interessados e pedidos em um so lugar',
     description:
-      'Acompanhe quem chamou, qual pneu procurou e em que etapa está o atendimento.',
+      'Acompanhe poucos contatos ficticios e mude status apenas para entender o fluxo visual do PneuFlow.',
     benefit: 'Mais controle sobre seus contatos e oportunidades de venda.',
   },
   {
     id: 'dashboard',
     label: 'Dashboard',
     icon: BarChart3,
-    title: 'Controle sua loja digital em um só painel',
+    title: 'Controle sua loja digital em um so painel',
     description:
-      'Veja catálogo, leads, vitrine e dados principais em uma interface simples feita para lojas de pneus.',
-    benefit: 'Menos bagunça. Mais velocidade no atendimento.',
+      'Indicadores simples mostram como catalogo, leads e vitrine podem aparecer juntos em uma visao rapida.',
+    benefit: 'Menos bagunca. Mais velocidade no atendimento.',
   },
 ];
 
-const demoTires = [
+const initialProducts = [
   {
     id: 'michelin-energy-xm2',
     brand: 'Michelin',
@@ -64,7 +63,8 @@ const demoTires = [
     rim: '14',
     condition: 'Novo',
     price: 'R$ 329,90',
-    stock: '8 em estoque',
+    stock: 8,
+    active: true,
   },
   {
     id: 'pirelli-cinturato-p1',
@@ -74,7 +74,8 @@ const demoTires = [
     rim: '15',
     condition: 'Novo',
     price: 'R$ 389,90',
-    stock: '5 em estoque',
+    stock: 5,
+    active: true,
   },
   {
     id: 'goodyear-efficientgrip',
@@ -84,7 +85,8 @@ const demoTires = [
     rim: '16',
     condition: 'Novo',
     price: 'R$ 489,90',
-    stock: '3 em estoque',
+    stock: 3,
+    active: true,
   },
   {
     id: 'firestone-f600-usado',
@@ -94,27 +96,15 @@ const demoTires = [
     rim: '14',
     condition: 'Usado',
     price: 'R$ 189,90',
-    stock: '2 em estoque',
+    stock: 2,
+    active: false,
   },
 ];
 
-const catalogItems = [
-  { name: 'Michelin 195/55 R16', price: 'R$ 329,90', stock: '8 em estoque' },
-  { name: 'Pirelli 175/65 R14', price: 'R$ 249,90', stock: '12 em estoque' },
-  { name: 'Goodyear 205/55 R16', price: 'R$ 359,90', stock: '5 em estoque' },
-];
-
-const leads = [
-  { name: 'João', request: 'Procura 175/65 R14', status: 'Pendente', tone: 'warning' },
-  { name: 'Mariana', request: 'Interessada em Michelin R16', status: 'Em atendimento', tone: 'info' },
-  { name: 'Carlos', request: 'Pedido concluído', status: 'Vendido', tone: 'success' },
-];
-
-const metrics = [
-  { label: 'Pneus cadastrados', value: '42' },
-  { label: 'Leads no WhatsApp', value: '18' },
-  { label: 'Visualizações', value: '1.248' },
-  { label: 'Conversão', value: '12%' },
+const initialLeads = [
+  { id: 'joao', name: 'Joao', request: 'Procura 175/65 R14', status: 'Pendente' },
+  { id: 'mariana', name: 'Mariana', request: 'Interessada em Michelin R16', status: 'Em atendimento' },
+  { id: 'carlos', name: 'Carlos', request: 'Pedido concluido', status: 'Vendido' },
 ];
 
 const rimFilters = [
@@ -126,14 +116,22 @@ const rimFilters = [
 
 const conditionFilters = ['Todos', 'Novo', 'Usado'];
 
-function VitrinePanel({ onInterest }) {
+const statusCycle = ['Pendente', 'Em atendimento', 'Vendido'];
+
+function getLeadTone(status) {
+  if (status === 'Vendido') return 'success';
+  if (status === 'Em atendimento') return 'info';
+  return 'warning';
+}
+
+function VitrinePanel({ products, onInterest }) {
   const [activeRim, setActiveRim] = useState('all');
   const [activeCondition, setActiveCondition] = useState('Todos');
 
-  const filteredTires = demoTires.filter((tire) => {
-    const matchesRim = activeRim === 'all' || tire.rim === activeRim;
-    const matchesCondition = activeCondition === 'Todos' || tire.condition === activeCondition;
-    return matchesRim && matchesCondition;
+  const filteredProducts = products.filter((product) => {
+    const matchesRim = activeRim === 'all' || product.rim === activeRim;
+    const matchesCondition = activeCondition === 'Todos' || product.condition === activeCondition;
+    return product.active && matchesRim && matchesCondition;
   });
 
   return (
@@ -141,21 +139,21 @@ function VitrinePanel({ onInterest }) {
       <div className="demo-store-header">
         <div>
           <span className="demo-status-dot" />
-          <span className="demo-store-status">Aberto agora</span>
+          <span className="demo-store-status">Loja ficticia aberta</span>
           <h4>Pneus Express</h4>
         </div>
         <span className="demo-whatsapp-pill">
           <MessageSquare size={14} />
-          WhatsApp
+          Atendimento simulado
         </span>
       </div>
 
-      <div className="demo-search">
+      <div className="demo-search" aria-label="Campo de busca demonstrativo">
         <Search size={16} />
-        <span>Digite medida, aro ou veículo</span>
+        <span>Digite medida, aro ou veiculo</span>
       </div>
 
-      <div className="demo-chip-row" aria-label="Filtros por aro">
+      <div className="demo-chip-row" aria-label="Filtros ficticios por aro">
         {rimFilters.map((filter) => (
           <button
             type="button"
@@ -169,7 +167,7 @@ function VitrinePanel({ onInterest }) {
         ))}
       </div>
 
-      <div className="demo-condition-row" aria-label="Filtros por condição">
+      <div className="demo-condition-row" aria-label="Filtros ficticios por condicao">
         {conditionFilters.map((condition) => (
           <button
             type="button"
@@ -184,111 +182,181 @@ function VitrinePanel({ onInterest }) {
       </div>
 
       <div className="demo-product-grid">
-        {filteredTires.map((product) => (
+        {filteredProducts.map((product) => (
           <article className="demo-product-card" key={product.id}>
-            <div className="demo-product-thumb">
+            <div className="demo-product-thumb" aria-hidden="true">
               <span />
             </div>
             <div>
               <strong>{product.size}</strong>
               <p>{product.brand} {product.model}</p>
-              <small>{product.condition} · {product.stock}</small>
+              <small>{product.condition} · {product.stock} em estoque</small>
             </div>
             <div className="demo-product-footer">
               <span>{product.price}</span>
               <button
                 type="button"
                 onClick={() => onInterest(product)}
-                aria-label={`Simular contato pelo WhatsApp sobre ${product.brand} ${product.model} ${product.size}`}
+                aria-label={`Simular interesse no pneu ${product.brand} ${product.model} ${product.size}`}
               >
                 <MessageSquare size={13} />
-                WhatsApp
+                Simular
               </button>
             </div>
           </article>
         ))}
       </div>
+
+      {filteredProducts.length === 0 && (
+        <p className="demo-empty-state">Nenhum produto ficticio nesse filtro.</p>
+      )}
     </div>
   );
 }
 
-function CatalogoPanel() {
+function CatalogoPanel({ products, onToggleProduct }) {
+  const [catalogFilter, setCatalogFilter] = useState('Todos');
+  const filteredProducts = products.filter((product) => {
+    if (catalogFilter === 'Ativos') return product.active;
+    if (catalogFilter === 'Ocultos') return !product.active;
+    return true;
+  });
+
   return (
     <div className="demo-screen">
       <div className="demo-panel-header">
         <div>
-          <span>Gestão da loja</span>
-          <h4>Catálogo de Pneus</h4>
+          <span>Gestao ficticia</span>
+          <h4>Catalogo de Pneus</h4>
         </div>
-        <button type="button" className="demo-mini-action">
-          <Plus size={14} />
-          Novo pneu
-        </button>
+        <span className="demo-mini-action">4 produtos</span>
       </div>
 
-      <div className="demo-filter-row">
-        <span className="is-active">Todos</span>
-        <span>Novos</span>
-        <span>Usados</span>
+      <div className="demo-filter-row" aria-label="Filtros demonstrativos">
+        {['Todos', 'Ativos', 'Ocultos'].map((filter) => (
+          <button
+            type="button"
+            key={filter}
+            className={catalogFilter === filter ? 'is-active' : ''}
+            aria-pressed={catalogFilter === filter}
+            onClick={() => setCatalogFilter(filter)}
+          >
+            {filter}
+          </button>
+        ))}
       </div>
 
       <div className="demo-list">
-        {catalogItems.map((item) => (
-          <article className="demo-list-item" key={item.name}>
+        {filteredProducts.map((item) => (
+          <article className={`demo-list-item ${!item.active ? 'is-muted' : ''}`} key={item.id}>
             <div className="demo-list-icon">
               <PackageSearch size={17} />
             </div>
             <div>
-              <strong>{item.name}</strong>
-              <p>{item.price} · {item.stock}</p>
+              <strong>{item.brand} {item.size}</strong>
+              <p>{item.price} · {item.stock} em estoque</p>
             </div>
-            <span className="demo-status demo-status--success">Ativo</span>
+            <button
+              type="button"
+              className={`demo-status demo-status-button ${item.active ? 'demo-status--success' : 'demo-status--muted'}`}
+              aria-pressed={item.active}
+              aria-label={`${item.active ? 'Ocultar' : 'Reativar'} produto ficticio ${item.brand} ${item.size}`}
+              onClick={() => onToggleProduct(item.id)}
+            >
+              {item.active ? 'Ativo' : 'Oculto'}
+            </button>
           </article>
         ))}
       </div>
+
+      {filteredProducts.length === 0 && (
+        <p className="demo-empty-state">Nenhum produto ficticio nesse filtro.</p>
+      )}
     </div>
   );
 }
 
-function LeadsPanel() {
+function LeadsPanel({ leads, onCycleLeadStatus }) {
+  const [leadFilter, setLeadFilter] = useState('Todos');
+  const filteredLeads = leads.filter((lead) => {
+    if (leadFilter === 'Pendentes') return lead.status !== 'Vendido';
+    if (leadFilter === 'Vendidos') return lead.status === 'Vendido';
+    return true;
+  });
+
   return (
     <div className="demo-screen">
       <div className="demo-panel-header">
         <div>
-          <span>Atendimento</span>
+          <span>Atendimento ficticio</span>
           <h4>Leads no WhatsApp</h4>
         </div>
         <MessageSquare className="demo-panel-icon" size={22} />
       </div>
 
-      <div className="demo-filter-row">
-        <span className="is-active">Todos</span>
-        <span>Pendentes</span>
-        <span>Vendidos</span>
+      <div className="demo-filter-row" aria-label="Filtros demonstrativos de leads">
+        {['Todos', 'Pendentes', 'Vendidos'].map((filter) => (
+          <button
+            type="button"
+            key={filter}
+            className={leadFilter === filter ? 'is-active' : ''}
+            aria-pressed={leadFilter === filter}
+            onClick={() => setLeadFilter(filter)}
+          >
+            {filter}
+          </button>
+        ))}
       </div>
 
       <div className="demo-list demo-list--leads">
-        {leads.map((lead) => (
-          <article className="demo-list-item" key={lead.name}>
-            <div className={`demo-avatar demo-avatar--${lead.tone}`}>{lead.name[0]}</div>
-            <div>
-              <strong>{lead.name}</strong>
-              <p>{lead.request}</p>
-            </div>
-            <span className={`demo-status demo-status--${lead.tone}`}>{lead.status}</span>
-          </article>
-        ))}
+        {filteredLeads.map((lead) => {
+          const tone = getLeadTone(lead.status);
+
+          return (
+            <article className="demo-list-item" key={lead.id}>
+              <div className={`demo-avatar demo-avatar--${tone}`}>{lead.name[0]}</div>
+              <div>
+                <strong>{lead.name}</strong>
+                <p>{lead.request}</p>
+              </div>
+              <button
+                type="button"
+                className={`demo-status demo-status-button demo-status--${tone}`}
+                onClick={() => onCycleLeadStatus(lead.id)}
+                aria-label={`Mudar status ficticio de ${lead.name}`}
+              >
+                {lead.status}
+              </button>
+            </article>
+          );
+        })}
       </div>
+
+      {filteredLeads.length === 0 && (
+        <p className="demo-empty-state">Nenhum lead ficticio nesse filtro.</p>
+      )}
     </div>
   );
 }
 
-function DashboardPanel() {
+function DashboardPanel({ products, leads, onNavigate }) {
+  const activeProducts = products.filter((product) => product.active).length;
+  const soldLeads = leads.filter((lead) => lead.status === 'Vendido').length;
+  const pendingLeads = leads.filter((lead) => lead.status !== 'Vendido').length;
+  const conversion = leads.length > 0 ? Math.round((soldLeads / leads.length) * 100) : 0;
+
+  const metrics = [
+    { label: 'Pneus ativos', value: String(activeProducts) },
+    { label: 'Leads ficticios', value: String(leads.length) },
+    { label: 'Em atendimento', value: String(pendingLeads) },
+    { label: 'Conversao simulada', value: `${conversion}%` },
+  ];
+
   return (
     <div className="demo-screen">
       <div className="demo-panel-header">
         <div>
-          <span>Visão geral</span>
+          <span>Visao geral ficticia</span>
           <h4>Painel do Lojista</h4>
         </div>
         <Gauge className="demo-panel-icon" size={23} />
@@ -304,42 +372,71 @@ function DashboardPanel() {
       </div>
 
       <div className="demo-actions-box">
-        <span>Ações rápidas</span>
+        <span>Acoes rapidas demonstrativas</span>
         <div>
-          <button type="button">Cadastrar pneu</button>
-          <button type="button">Ver leads</button>
-          <button type="button">Personalizar vitrine</button>
+          <button type="button" onClick={() => onNavigate('catalogo')}>Ver catalogo</button>
+          <button type="button" onClick={() => onNavigate('leads')}>Ver leads</button>
+          <button type="button" onClick={() => onNavigate('vitrine')}>Ver vitrine</button>
         </div>
       </div>
     </div>
   );
 }
 
-function DemoPanel({ activeTab, onInterest }) {
-  if (activeTab === 'vitrine') return <VitrinePanel onInterest={onInterest} />;
-  if (activeTab === 'catalogo') return <CatalogoPanel />;
-  if (activeTab === 'leads') return <LeadsPanel />;
-  return <DashboardPanel />;
+function DemoPanel({ activeTab, products, leads, onInterest, onToggleProduct, onCycleLeadStatus, onNavigate }) {
+  if (activeTab === 'vitrine') return <VitrinePanel products={products} onInterest={onInterest} />;
+  if (activeTab === 'catalogo') return <CatalogoPanel products={products} onToggleProduct={onToggleProduct} />;
+  if (activeTab === 'leads') return <LeadsPanel leads={leads} onCycleLeadStatus={onCycleLeadStatus} />;
+  return <DashboardPanel products={products} leads={leads} onNavigate={onNavigate} />;
 }
 
 export default function InteractiveDemo() {
   const [activeTab, setActiveTab] = useState('vitrine');
-  const [showToast, setShowToast] = useState(false);
+  const [products, setProducts] = useState(initialProducts);
+  const [leads, setLeads] = useState(initialLeads);
+
   const active = demoTabs.find((tab) => tab.id === activeTab) ?? demoTabs[0];
   const ActiveIcon = active.icon;
 
-  useEffect(() => {
-    if (!showToast) return undefined;
+  const handleInterest = (product) => {
+    setLeads((currentLeads) => {
+      const demoLead = {
+        id: 'cliente-demo',
+        name: 'Cliente demo',
+        request: `Interesse em ${product.size}`,
+        status: 'Pendente',
+      };
 
-    const timer = window.setTimeout(() => {
-      setShowToast(false);
-    }, 2600);
+      if (currentLeads.some((lead) => lead.id === demoLead.id)) {
+        return currentLeads.map((lead) => (lead.id === demoLead.id ? demoLead : lead));
+      }
 
-    return () => window.clearTimeout(timer);
-  }, [showToast]);
+      return [demoLead, ...currentLeads].slice(0, 4);
+    });
+    setActiveTab('leads');
+  };
 
-  const handleInterest = () => {
-    setShowToast(true);
+  const handleToggleProduct = (productId) => {
+    setProducts((currentProducts) =>
+      currentProducts.map((product) =>
+        product.id === productId ? { ...product, active: !product.active } : product
+      )
+    );
+  };
+
+  const handleCycleLeadStatus = (leadId) => {
+    setLeads((currentLeads) =>
+      currentLeads.map((lead) => {
+        if (lead.id !== leadId) return lead;
+        const currentIndex = statusCycle.indexOf(lead.status);
+        const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
+        return { ...lead, status: nextStatus };
+      })
+    );
+  };
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
   };
 
   return (
@@ -348,18 +445,21 @@ export default function InteractiveDemo() {
         <div className="interactive-demo-heading">
           <span className="interactive-demo-eyebrow">
             <Zap size={13} fill="currentColor" />
-            Demonstração interativa
+            Demonstracao interativa
           </span>
-          <h2 id="interactive-demo-title">Teste uma prévia da sua vitrine inteligente</h2>
+          <h2 id="interactive-demo-title">Teste uma previa da sua vitrine inteligente</h2>
           <p>
-            Uma experiência visual simples para mostrar como o cliente encontra pneus,
-            demonstra interesse e chega até o WhatsApp.
+            Uma experiencia visual simples para mostrar como o cliente encontra pneus,
+            demonstra interesse e chega ate o atendimento.
           </p>
+          <small className="interactive-demo-disclaimer">
+            Demonstracao interativa — dados ficticios, sem envio e sem alteracao real.
+          </small>
         </div>
 
         <div className="interactive-demo-grid">
           <aside className="interactive-demo-copy">
-            <span className="interactive-demo-kicker">Experimente uma prévia sem cadastrar nada</span>
+            <span className="interactive-demo-kicker">Experimente uma previa sem cadastrar nada</span>
             <div className="interactive-demo-copy-card" key={active.id}>
               <ActiveIcon size={28} />
               <h3>{active.title}</h3>
@@ -372,14 +472,14 @@ export default function InteractiveDemo() {
 
             <div className="interactive-demo-cta">
               <Link to="/register" className="btn btn-primary interactive-demo-primary-cta">
-                Criar minha vitrine grátis
+                Criar minha vitrine gratis
                 <ArrowRight size={17} />
               </Link>
             </div>
           </aside>
 
           <div className="interactive-demo-stage">
-            <div className="interactive-demo-tabbar" role="tablist" aria-label="Prévia do PneuFlow">
+            <div className="interactive-demo-tabbar" role="tablist" aria-label="Previa demonstrativa do PneuFlow">
               {demoTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -393,7 +493,7 @@ export default function InteractiveDemo() {
                     aria-selected={isActive}
                     aria-controls={`demo-panel-${tab.id}`}
                     className={isActive ? 'is-active' : ''}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => handleTabChange(tab.id)}
                   >
                     <Icon size={16} />
                     {tab.label}
@@ -415,22 +515,23 @@ export default function InteractiveDemo() {
                   <span />
                   <span />
                 </div>
-                <p>pneuflow.app/preview</p>
+                <p>pneuflow.app/preview-ficticio</p>
               </div>
 
-              <DemoPanel activeTab={activeTab} onInterest={handleInterest} />
-
-              {showToast && (
-                <div className="interactive-demo-toast" role="status">
-                  <MessageSquare size={16} />
-                  Interesse enviado para o lojista
-                </div>
-              )}
+              <DemoPanel
+                activeTab={activeTab}
+                products={products}
+                leads={leads}
+                onInterest={handleInterest}
+                onToggleProduct={handleToggleProduct}
+                onCycleLeadStatus={handleCycleLeadStatus}
+                onNavigate={handleTabChange}
+              />
             </div>
 
             <p className="interactive-demo-hint">
               <Smartphone size={15} />
-              Clique nas abas para testar
+              Clique nas abas para testar uma previa ficticia
             </p>
           </div>
         </div>

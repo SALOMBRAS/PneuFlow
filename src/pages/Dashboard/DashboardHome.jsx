@@ -8,7 +8,7 @@ import {
   Layers, 
   MessageSquare, 
   Eye, 
-  Percent, 
+  Percent,
   Plus, 
   Copy, 
   Check, 
@@ -49,6 +49,17 @@ const formatPercent = (value) => {
     maximumFractionDigits: 1
   });
 };
+
+const createMetricTheme = (accent, accentRgb, iconBackground) => ({
+  accent,
+  accentRgb,
+  iconBackground,
+  style: {
+    '--metric-accent': accent,
+    '--metric-accent-rgb': accentRgb,
+    '--metric-icon-bg': iconBackground
+  }
+});
 
 const isSameCalendarDay = (dateValueA, dateValueB = new Date()) => {
   if (!dateValueA) return false;
@@ -170,13 +181,14 @@ function MetricButton({ metric, isSelected, onClick }) {
       type="button"
       className={`dashboard-metric-card ${isSelected ? 'is-selected' : ''}`}
       onClick={onClick}
+      style={metric.theme?.style}
       aria-expanded={isSelected}
       aria-pressed={isSelected}
       aria-controls="dashboard-metric-details"
     >
       <div className="dashboard-metric-card__top">
         <span>{metric.label}</span>
-        <div className={`dashboard-metric-card__icon dashboard-metric-card__icon--${metric.tone || 'primary'}`}>
+        <div className={`dashboard-metric-card__icon dashboard-metric-card__icon--${metric.tone || 'amber'}`}>
           {metric.icon}
         </div>
       </div>
@@ -371,6 +383,9 @@ export default function DashboardHome() {
   const latestLead = leads[0] || null;
   const topPopularTire = popularTires[0];
   const topSellerConversion = commercialMetrics.sellerRanking.find((seller) => seller.visits > 0);
+  const averageTicket = commercialMetrics.totalSales > 0
+    ? commercialMetrics.confirmedRevenue / commercialMetrics.totalSales
+    : null;
   const tireActiveRate = commercialMetrics.totalTires > 0
     ? (commercialMetrics.activeTires / commercialMetrics.totalTires) * 100
     : null;
@@ -388,7 +403,8 @@ export default function DashboardHome() {
       value: commercialMetrics.totalTires,
       helper: `${commercialMetrics.activeTires} ativos • ${commercialMetrics.totalStock} em estoque`,
       icon: <Layers size={20} />,
-      tone: 'primary',
+      tone: 'amber',
+      theme: createMetricTheme('#f59e0b', '245, 158, 11', 'rgba(245, 158, 11, 0.12)'),
       details: [
         { label: 'Total de pneus', value: commercialMetrics.totalTires },
         { label: 'Pneus ativos', value: commercialMetrics.activeTires },
@@ -412,7 +428,8 @@ export default function DashboardHome() {
       value: commercialMetrics.totalLeads,
       helper: 'Cliques em "Tenho Interesse"',
       icon: <MessageSquare size={20} />,
-      tone: 'whatsapp',
+      tone: 'green',
+      theme: createMetricTheme('#22c55e', '34, 197, 94', 'rgba(34, 197, 94, 0.12)'),
       details: [
         { label: 'Total de leads', value: commercialMetrics.totalLeads },
         { label: 'Vendas confirmadas', value: commercialMetrics.totalSales },
@@ -436,23 +453,38 @@ export default function DashboardHome() {
       value: formatCurrency(commercialMetrics.confirmedRevenue),
       helper: 'Somente vendas confirmadas',
       icon: <DollarSign size={20} />,
-      tone: 'primary',
+      tone: 'yellow',
+      theme: createMetricTheme('#eab308', '234, 179, 8', 'rgba(234, 179, 8, 0.14)'),
       details: [
         { label: 'Valor total confirmado', value: formatCurrency(commercialMetrics.confirmedRevenue) },
-        { label: 'Leads gerados', value: commercialMetrics.totalLeads },
+        { label: 'Vendas confirmadas', value: commercialMetrics.totalSales },
         { label: 'Taxa de conversão', value: `${conversionRate}%` },
-        { label: 'Vendas confirmadas', value: commercialMetrics.totalSales }
+        ...(averageTicket
+          ? [{ label: 'Ticket medio', value: formatCurrency(averageTicket) }]
+          : []),
+        {
+          label: 'Resumo comercial',
+          value: commercialMetrics.totalSales > 0
+            ? `${commercialMetrics.totalSales} vendas em ${commercialMetrics.totalLeads} leads`
+            : 'Aguardando a primeira venda confirmada'
+        }
       ],
       description: 'Receita estimada apenas com vendas confirmadas no painel.',
-      summaryTitle: commercialMetrics.totalSales > 0 ? `${commercialMetrics.totalSales} vendas confirmadas` : 'Sem venda confirmada ainda',
+      summaryTitle: commercialMetrics.totalSales > 0
+        ? `${commercialMetrics.totalSales} vendas confirmadas com ${conversionRate}% de conversao`
+        : 'Sem venda confirmada ainda',
       progress: leadSaleRate,
       progressLabel: 'Conversao de leads em vendas',
-      actionHint: 'Confirme vendas na aba de leads para manter o faturamento mais fiel.',
+      actionHint: commercialMetrics.totalSales > 0
+        ? 'O painel cruza faturamento, vendas e conversao para mostrar a eficiencia comercial atual.'
+        : 'Confirme vendas na aba de leads para liberar uma leitura mais fiel do faturamento.',
       actions: [
         { label: 'Ver leads', to: '/dashboard/leads' },
         { label: 'Ver catalogo', to: '/dashboard/catalog' }
       ],
-      note: 'Soma de produto_preco em vendas confirmadas.'
+      note: averageTicket
+        ? 'Soma de produto_preco em vendas confirmadas, com taxa de conversao e ticket medio reaproveitando os dados ja carregados.'
+        : 'Soma de produto_preco em vendas confirmadas, com taxa de conversao reaproveitando os dados ja carregados.'
     },
     {
       id: 'visits',
@@ -461,6 +493,7 @@ export default function DashboardHome() {
       helper: 'Vitrine pública e referral',
       icon: <Eye size={20} />,
       tone: 'blue',
+      theme: createMetricTheme('#3b82f6', '59, 130, 246', 'rgba(59, 130, 246, 0.12)'),
       details: [
         { label: 'Total de visitas', value: visits },
         { label: 'Visualizacoes hoje', value: commercialMetrics.totalVisitsToday },
@@ -503,7 +536,7 @@ export default function DashboardHome() {
       ],
       note: 'Se nao houver visualizacoes, a conversao sera 0%.'
     }
-  ].filter((metric) => metric.id !== 'sales');
+  ].filter((metric) => metric.id !== 'sales' && metric.id !== 'conversion');
   const activeMetric = selectedMetric ? metricCards.find((metric) => metric.id === selectedMetric) : null;
 
   const closeMetricDetail = () => {
@@ -1390,6 +1423,9 @@ export default function DashboardHome() {
         }
 
         .dashboard-metric-card {
+          --metric-accent: var(--primary);
+          --metric-accent-rgb: 245, 158, 11;
+          --metric-icon-bg: rgba(245, 158, 11, 0.12);
           width: 100%;
           min-width: 0;
           min-height: 132px;
@@ -1412,18 +1448,18 @@ export default function DashboardHome() {
 
         .dashboard-metric-card:hover,
         .dashboard-metric-card:focus-visible {
-          border-color: rgba(245, 158, 11, 0.55);
-          box-shadow: 0 18px 38px rgba(245, 158, 11, 0.12), 0 10px 24px rgba(0, 0, 0, 0.26);
+          border-color: rgba(var(--metric-accent-rgb), 0.55);
+          box-shadow: 0 18px 38px rgba(var(--metric-accent-rgb), 0.12), 0 10px 24px rgba(0, 0, 0, 0.26);
           transform: translateY(-4px) rotateX(1.2deg) rotateY(-1.2deg) scale(1.012);
           outline: none;
         }
 
         .dashboard-metric-card.is-selected {
-          border-color: var(--primary);
+          border-color: var(--metric-accent);
           background:
-            radial-gradient(circle at top right, rgba(245, 158, 11, 0.22), transparent 34%),
-            linear-gradient(145deg, rgba(245, 158, 11, 0.16), rgba(255, 255, 255, 0.025));
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 38px rgba(245, 158, 11, 0.14);
+            radial-gradient(circle at top right, rgba(var(--metric-accent-rgb), 0.22), transparent 34%),
+            linear-gradient(145deg, rgba(var(--metric-accent-rgb), 0.16), rgba(255, 255, 255, 0.025));
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 38px rgba(var(--metric-accent-rgb), 0.14);
           transform: translateY(-2px) scale(1.006);
         }
 
@@ -1447,8 +1483,8 @@ export default function DashboardHome() {
           flex-shrink: 0;
           border-radius: 10px;
           padding: 7px;
-          color: var(--primary);
-          background: var(--primary-glow);
+          color: var(--metric-accent);
+          background: var(--metric-icon-bg);
           transition: transform 0.24s ease, box-shadow 0.24s ease, filter 0.24s ease;
         }
 
@@ -1456,28 +1492,28 @@ export default function DashboardHome() {
         .dashboard-metric-card:focus-visible .dashboard-metric-card__icon,
         .dashboard-metric-card.is-selected .dashboard-metric-card__icon {
           filter: brightness(1.12);
-          box-shadow: 0 8px 22px rgba(245, 158, 11, 0.16);
+          box-shadow: 0 8px 22px rgba(var(--metric-accent-rgb), 0.16);
           transform: translateZ(14px) scale(1.08);
         }
 
-        .dashboard-metric-card__icon--success {
+        .dashboard-metric-card__icon--amber {
+          color: #f59e0b;
+          background: rgba(245, 158, 11, 0.12);
+        }
+
+        .dashboard-metric-card__icon--green {
           color: #22c55e;
-          background: rgba(34, 197, 94, 0.1);
+          background: rgba(34, 197, 94, 0.12);
+        }
+
+        .dashboard-metric-card__icon--yellow {
+          color: #eab308;
+          background: rgba(234, 179, 8, 0.14);
         }
 
         .dashboard-metric-card__icon--blue {
           color: #3b82f6;
-          background: rgba(59, 130, 246, 0.1);
-        }
-
-        .dashboard-metric-card__icon--purple {
-          color: #a855f7;
-          background: rgba(168, 85, 247, 0.1);
-        }
-
-        .dashboard-metric-card__icon--whatsapp {
-          color: var(--whatsapp);
-          background: var(--whatsapp-glow);
+          background: rgba(59, 130, 246, 0.12);
         }
 
         .dashboard-metric-card strong {

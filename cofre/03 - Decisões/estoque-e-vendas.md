@@ -12,7 +12,8 @@ fonte:
   - src/pages/Dashboard/Leads.jsx
   - src/services/storage.js
   - supabase/migrations/20260624120000_stock_sale_quantity.sql
-atualizado: 2026-06-24
+  - supabase/migrations/20260625143000_lead_attendance_status.sql
+atualizado: 2026-06-25
 tags: []
 ---
 
@@ -51,7 +52,8 @@ Constraints:
 ## RPCs alteradas pela migration local
 
 - `registrar_lead(..., p_desired_quantity integer default 1)` valida estoque disponivel e salva a quantidade desejada, sem decrementar estoque.
-- `atualizar_status_venda_lead(p_lead_id, p_venda_confirmada, p_sold_quantity)` confirma/desmarca venda e ajusta `pneus.estoque` de forma atomica.
+- `atualizar_status_venda_lead(p_lead_id, p_venda_confirmada, p_sold_quantity)` continua como compatibilidade e redireciona para o fluxo novo.
+- `atualizar_status_atendimento_lead(p_lead_id, p_status_atendimento, p_sold_quantity, p_desired_quantity)` centraliza status, estoque e quantidades.
 - `get_leads_com_vendedor(p_store_id)` passa a retornar `desired_quantity` e `sold_quantity`.
 
 ## Frontend
@@ -66,9 +68,10 @@ Vitrine publica:
 Dashboard:
 
 - `Leads.jsx` mostra `Qtd. desejada`.
-- `Leads.jsx` permite informar `Qtd. vendida` antes de confirmar venda.
-- Dono pode atualizar quantidade vendida de lead ja confirmado; a RPC ajusta apenas a diferenca.
-- Vendedor nao pode alterar venda ja confirmada, preservando a regra anterior.
+- `Leads.jsx` permite ajustar `Qtd. desejada` e `Qtd. vendida`.
+- Dono pode atualizar quantidade vendida de lead ja confirmado, reabrir lead e desfazer venda; a RPC ajusta apenas a diferenca.
+- Vendedor responsavel pode confirmar venda, ajustar `desired_quantity` e corrigir `sold_quantity` enquanto o lead continuar como `vendido`.
+- Vendedor responsavel nao pode reabrir lead vendido nem lead em `desistencia`.
 
 ## Pendencia obrigatoria
 

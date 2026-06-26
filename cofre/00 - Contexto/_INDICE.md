@@ -30,7 +30,7 @@ fonte:
   - cofre/03 - Decisões/mercado-pago-checkout-pro-etapa-1.md
   - cofre/03 - Decisões/seguranca-e-hardening.md
   - cofre/03 - Decisões/estoque-e-vendas.md
-atualizado: 2026-06-24
+atualizado: 2026-06-25
 tags: []
 ---
 

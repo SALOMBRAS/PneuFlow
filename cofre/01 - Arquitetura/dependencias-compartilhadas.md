@@ -14,7 +14,7 @@ fonte:
   - src/pages/Dashboard/Catalog.jsx
   - src/pages/StoreFront/StoreHome.jsx
   - src/pages/LandingPage.jsx
-atualizado: 2026-06-15
+atualizado: 2026-06-25
 tags: []
 ---
 
@@ -44,7 +44,13 @@ tags: []
 
 - Impacta: [[vitrine-publica]], leads do dashboard e atribuicao de vendedor.
 - Depende de: RPC `registrar_lead`, `seller_id`, `ref_code`, `attribution_source`.
-- Risco: alterar assinatura da RPC quebra criacao de leads.
+- Risco: alterar assinatura da RPC quebra criacao de leads; o status inicial deve continuar forçado para `em_atendimento`.
+
+`storageService.getLeads`, `updateLeadAttendanceStatus` e `updateLeadSaleStatus`
+
+- Impacta: [[dashboard]], ranking comercial, estoque e funil de leads.
+- Depende de: RPCs `get_leads_com_vendedor`, `atualizar_status_atendimento_lead`, `atualizar_status_venda_lead` e `expirar_leads_inativos`.
+- Risco: permissoes owner/seller e fallback por `ref_code` precisam continuar coerentes entre frontend e banco; expiracao automatica definitiva agora tambem depende do job em `pg_cron`.
 
 `storageService.getSellerByRefCode` e `registerReferralVisit`
 

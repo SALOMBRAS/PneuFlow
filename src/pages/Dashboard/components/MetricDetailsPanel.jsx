@@ -1,8 +1,9 @@
 import { ArrowRight, X } from 'lucide-react';
 
 const toneLabels = {
-  primary: 'Amber',
-  whatsapp: 'WhatsApp',
+  amber: 'Pneus',
+  green: 'Leads',
+  yellow: 'Faturamento',
   blue: 'Visitas',
   purple: 'Conversao',
   success: 'Sucesso'
@@ -13,7 +14,7 @@ export default function MetricDetailsPanel({ metric, onClose, onNavigate, compac
 
   const hasProgress = Number.isFinite(metric.progress);
   const progress = hasProgress ? Math.max(0, Math.min(100, metric.progress)) : 0;
-  const tone = metric.tone || 'primary';
+  const tone = metric.tone || 'amber';
 
   const handleAction = (action) => {
     if (action.href) {
@@ -25,7 +26,10 @@ export default function MetricDetailsPanel({ metric, onClose, onNavigate, compac
   };
 
   return (
-    <article className={`metric-details-panel metric-details-panel--${tone} ${compact ? 'is-compact' : ''}`}>
+    <article
+      className={`metric-details-panel metric-details-panel--${tone} ${compact ? 'is-compact' : ''}`}
+      style={metric.theme?.style}
+    >
       <div className="metric-details-panel__glow" aria-hidden="true" />
 
       <header className="metric-details-panel__header">

@@ -6,6 +6,31 @@ const PUBLIC_STORE_COLUMNS = 'id, nome, whatsapp, telefone, endereco, cidade, es
 const STORE_MEMBER_COLUMNS = 'id, store_id, user_id, email, nome, role, status, invited_by, invited_at, accepted_at, created_at, updated_at, ref_code, disabled_at, removed_at, auth_deleted_at, removed_by, senha_inicial, whatsapp';
 const PNEU_COLUMNS = 'id, loja_id, marca, modelo, medida, preco, estoque, descricao, status, compatibilidade, foto_principal_url, fotos, created_at, updated_at, tipo_veiculo, created_by, updated_by';
 
+const normalizeLeadQuantity = (value, fallback = 1) =>
+  Math.max(1, Number.parseInt(value ?? fallback, 10) || 1);
+
+const mapLeadAttendanceErrorMessage = (error) => {
+  const message = String(error?.message || '').toLowerCase();
+
+  if (message.includes('estoque insuficiente')) {
+    return 'Estoque insuficiente para essa quantidade.';
+  }
+
+  if (message.includes('sem permissao')) {
+    return 'Você não possui permissão para esta ação.';
+  }
+
+  if (message.includes('reabra a venda')) {
+    return 'Reabra a venda antes de alterar a quantidade.';
+  }
+
+  if (message.includes('quantidade') && message.includes('inval')) {
+    return 'Informe uma quantidade válida.';
+  }
+
+  return error?.message || 'Não foi possível atualizar este lead.';
+};
+
 const normalizeStoreSlug = (value) =>
   String(value || '')
     .normalize('NFD')
@@ -477,6 +502,15 @@ export const storageService = {
 
   // --- Leads ---
   getLeads: async (storeId) => {
+    try {
+      await supabase.rpc('expirar_leads_inativos', {
+        p_store_id: storeId
+      });
+    } catch (error) {
+      // Keeps the current dashboard usable before the new migration is applied.
+      console.warn('Não foi possível expirar leads inativos automaticamente:', error?.message || error);
+    }
+
     const { data, error } = await supabase.rpc('get_leads_com_vendedor', { 
       p_store_id: storeId 
     });
@@ -534,12 +568,36 @@ export const storageService = {
     const { data, error } = await supabase.rpc('atualizar_status_venda_lead', {
       p_lead_id: leadId,
       p_venda_confirmada: vendaConfirmada,
-      p_sold_quantity: Math.max(1, Number.parseInt(soldQuantity, 10) || 1)
+      p_sold_quantity: normalizeLeadQuantity(soldQuantity)
     });
 
     if (error) {
       console.error('Erro ao atualizar status de venda RPC:', error);
-      throw error;
+      throw new Error(mapLeadAttendanceErrorMessage(error));
+    }
+    return data;
+  },
+
+  updateLeadAttendanceStatus: async (leadId, status, soldQuantity = 1, desiredQuantity = null) => {
+    const normalizedDesiredQuantity =
+      desiredQuantity == null
+        ? null
+        : normalizeLeadQuantity(desiredQuantity);
+    const normalizedSoldQuantity =
+      status === 'vendido'
+        ? normalizeLeadQuantity(soldQuantity ?? desiredQuantity)
+        : null;
+
+    const { data, error } = await supabase.rpc('atualizar_status_atendimento_lead', {
+      p_lead_id: leadId,
+      p_status_atendimento: status,
+      p_sold_quantity: normalizedSoldQuantity,
+      p_desired_quantity: normalizedDesiredQuantity
+    });
+
+    if (error) {
+      console.error('Erro ao atualizar status de atendimento do lead:', error);
+      throw new Error(mapLeadAttendanceErrorMessage(error));
     }
     return data;
   },
