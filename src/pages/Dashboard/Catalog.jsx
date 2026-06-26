@@ -14,7 +14,10 @@ import {
   Star,
   Upload,
   AlertCircle,
-  Loader2
+  Loader2,
+  Package,
+  TriangleAlert,
+  Boxes
 } from 'lucide-react';
 
 const MAX_IMAGES_PER_TIRE = 2;
@@ -248,6 +251,40 @@ export default function Catalog() {
   const uniqueBrands = [...new Set(tires.map(t => t.marca))];
   const activeTiresCount = tires.filter((tire) => tire.status === 'ativo').length;
   const totalStockCount = tires.reduce((sum, tire) => sum + Number(tire.estoque || 0), 0);
+  const getStockState = (stock) => {
+    const qty = Number(stock || 0);
+
+    if (qty <= 0) {
+      return {
+        label: 'Esgotado',
+        tone: 'out',
+        icon: TriangleAlert,
+        badgeClass: 'catalog-stock-badge--out',
+        cardClass: 'catalog-stock-card--out',
+        ariaLabel: 'Esgotado'
+      };
+    }
+
+    if (qty <= 3) {
+      return {
+        label: `Estoque baixo · ${qty}`,
+        tone: 'low',
+        icon: TriangleAlert,
+        badgeClass: 'catalog-stock-badge--low',
+        cardClass: 'catalog-stock-card--low',
+        ariaLabel: `Estoque baixo, ${qty} unidades`
+      };
+    }
+
+    return {
+      label: `${qty} em estoque`,
+      tone: 'available',
+      icon: qty >= 12 ? Boxes : Package,
+      badgeClass: 'catalog-stock-badge--available',
+      cardClass: '',
+      ariaLabel: `${qty} unidades em estoque`
+    };
+  };
 
   if (loading) {
     return (
@@ -326,7 +363,7 @@ export default function Catalog() {
       ) : (
         <div className="grid-cols-3">
           {filteredTires.map((tire) => (
-            <div key={tire.id} className="card catalog-product-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px', opacity: tire.status === 'ativo' ? 1 : 0.6 }}>
+            <div key={tire.id} className={`card catalog-product-card ${getStockState(tire.estoque).cardClass}`.trim()} style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px', opacity: tire.status === 'ativo' ? 1 : 0.6 }}>
               {/* Product Image */}
               <div style={{ 
                 height: '180px', 
@@ -338,9 +375,21 @@ export default function Catalog() {
                 marginBottom: '16px',
                 backgroundColor: 'var(--secondary)'
               }}>
-                <span className={`badge ${tire.estoque > 0 ? 'badge-success' : 'badge-danger'}`} style={{ position: 'absolute', top: '10px', left: '10px' }}>
-                  {tire.estoque > 0 ? `${tire.estoque} em estoque` : 'Sem estoque'}
-                </span>
+                {(() => {
+                  const stockState = getStockState(tire.estoque);
+                  const StockIcon = stockState.icon;
+
+                  return (
+                    <span
+                      className={`catalog-stock-badge ${stockState.badgeClass}`}
+                      title={stockState.ariaLabel}
+                      aria-label={stockState.ariaLabel}
+                    >
+                      <StockIcon size={11} />
+                      <span>{stockState.label}</span>
+                    </span>
+                  );
+                })()}
                 {tire.status !== 'ativo' && (
                   <span className="badge badge-warning" style={{ position: 'absolute', top: '10px', right: '10px' }}>
                     Inativo
@@ -359,6 +408,19 @@ export default function Catalog() {
                 <h3 style={{ fontSize: '18px', margin: '2px 0 6px', fontWeight: 600 }}>{tire.modelo}</h3>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                   <span className="badge badge-warning" style={{ fontSize: '11px' }}>{tire.medida}</span>
+                </div>
+                <div className="catalog-stock-inline" aria-label={`Estoque atual: ${tire.estoque || 0}`}>
+                  {(() => {
+                    const stockState = getStockState(tire.estoque);
+                    const StockIcon = stockState.icon;
+
+                    return (
+                      <>
+                        <StockIcon size={13} />
+                        <span>Estoque: {Number(tire.estoque || 0)}</span>
+                      </>
+                    );
+                  })()}
                 </div>
                 
                 <div style={{ marginTop: 'auto' }}>
@@ -675,6 +737,16 @@ export default function Catalog() {
           overflow: hidden;
         }
 
+        .catalog-stock-card--low {
+          border-color: rgba(245, 158, 11, 0.26);
+          box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.06);
+        }
+
+        .catalog-stock-card--out {
+          border-color: rgba(239, 68, 68, 0.26);
+          box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.06);
+        }
+
         .catalog-product-card::before {
           content: '';
           position: absolute;
@@ -692,6 +764,60 @@ export default function Catalog() {
         .catalog-product-card > * {
           position: relative;
           z-index: 1;
+        }
+
+        .catalog-stock-badge {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 6px 8px;
+          border-radius: 999px;
+          border: 1px solid transparent;
+          background: rgba(8, 11, 16, 0.72);
+          backdrop-filter: blur(8px);
+          color: #f8fafc;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.01em;
+          line-height: 1;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+        }
+
+        .catalog-stock-badge--available {
+          background: rgba(34, 197, 94, 0.14);
+          border-color: rgba(34, 197, 94, 0.3);
+          color: #4ade80;
+        }
+
+        .catalog-stock-badge--low {
+          background: rgba(245, 158, 11, 0.14);
+          border-color: rgba(245, 158, 11, 0.35);
+          color: #fbbf24;
+        }
+
+        .catalog-stock-badge--out {
+          background: rgba(239, 68, 68, 0.14);
+          border-color: rgba(239, 68, 68, 0.35);
+          color: #f87171;
+        }
+
+        .catalog-stock-inline {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 12px;
+          color: var(--text-secondary);
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.2;
+        }
+
+        .catalog-stock-inline svg {
+          flex: 0 0 auto;
+          color: inherit;
         }
 
         .catalog-empty-state svg {
@@ -729,6 +855,16 @@ export default function Catalog() {
         }
 
         @media (max-width: 480px) {
+          .catalog-stock-badge {
+            max-width: calc(100% - 20px);
+            font-size: 10px;
+            padding: 5px 7px;
+          }
+
+          .catalog-stock-inline {
+            font-size: 11px;
+          }
+
           .catalog-card-actions {
             gap: 6px !important;
           }
