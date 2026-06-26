@@ -9,6 +9,44 @@ const PNEU_COLUMNS = 'id, loja_id, marca, modelo, medida, preco, estoque, descri
 const normalizeLeadQuantity = (value, fallback = 1) =>
   Math.max(1, Number.parseInt(value ?? fallback, 10) || 1);
 
+const loadLeadStockMap = async (storeId) => {
+  const { data: leadRelations, error: leadRelationsError } = await supabase
+    .from('leads')
+    .select('id, produto_id, pneu_id')
+    .eq('loja_id', storeId);
+
+  if (leadRelationsError) {
+    throw leadRelationsError;
+  }
+
+  const productIds = Array.from(
+    new Set(
+      (leadRelations || [])
+        .flatMap((lead) => [lead.produto_id, lead.pneu_id])
+        .filter(Boolean)
+    )
+  );
+
+  if (productIds.length === 0) {
+    return { leadRelations: leadRelations || [], stockByProductId: new Map() };
+  }
+
+  const { data: pneuRows, error: pneuRowsError } = await supabase
+    .from('pneus')
+    .select('id, estoque')
+    .in('id', productIds);
+
+  if (pneuRowsError) {
+    throw pneuRowsError;
+  }
+
+  const stockByProductId = new Map(
+    (pneuRows || []).map((row) => [row.id, Math.max(0, Number(row.estoque || 0))])
+  );
+
+  return { leadRelations: leadRelations || [], stockByProductId };
+};
+
 const mapLeadAttendanceErrorMessage = (error) => {
   const message = String(error?.message || '').toLowerCase();
 
@@ -511,15 +549,38 @@ export const storageService = {
       console.warn('Não foi possível expirar leads inativos automaticamente:', error?.message || error);
     }
 
-    const { data, error } = await supabase.rpc('get_leads_com_vendedor', { 
-      p_store_id: storeId 
-    });
-    
+    const [{ data, error }, relationResult] = await Promise.all([
+      supabase.rpc('get_leads_com_vendedor', {
+        p_store_id: storeId
+      }),
+      loadLeadStockMap(storeId).catch((stockError) => {
+        console.warn('Não foi possível carregar o estoque dos leads:', stockError?.message || stockError);
+        return { leadRelations: [], stockByProductId: new Map() };
+      })
+    ]);
+
     if (error) {
       console.error('Erro RPC get_leads_com_vendedor:', error);
       throw error;
     }
-    return data || [];
+
+    const relationMap = new Map(
+      (relationResult.leadRelations || []).map((relation) => [relation.id, relation])
+    );
+
+    return (data || []).map((lead) => {
+      const relation = relationMap.get(lead.id);
+      const productId = relation?.produto_id || relation?.pneu_id || null;
+
+      return {
+        ...lead,
+        produto_id: productId,
+        pneu_id: relation?.pneu_id || null,
+        estoque_disponivel: productId
+          ? relationResult.stockByProductId.get(productId) ?? null
+          : null
+      };
+    });
   },
 
   createLead: async (payload) => {
