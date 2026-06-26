@@ -1039,6 +1039,20 @@ a {
   overflow-wrap: anywhere;
 }
 
+.metric-details-panel__insight-note {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-description-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.metric-details-panel__insight-note.is-danger {
+  color: rgba(248, 113, 113, 0.92);
+}
+
 .metric-details-panel__actions {
   display: flex;
   flex-direction: column;
