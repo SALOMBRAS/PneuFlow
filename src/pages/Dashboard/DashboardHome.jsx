@@ -4,6 +4,14 @@ import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
 import '../../components/MagicBento/MagicBento.css';
 import MetricDetailsPanel from './components/MetricDetailsPanel';
+import DashboardReportModal from './components/DashboardReportModal';
+import {
+  buildDashboardReport,
+  buildPresetRange,
+  createInitialReportConfig,
+  formatDate,
+  validateReportConfig
+} from './components/dashboardReportUtils';
 import { 
   Layers, 
   MessageSquare, 
@@ -16,6 +24,7 @@ import {
   TrendingUp,
   Info,
   Clock,
+  FileText,
   DollarSign,
   CheckCircle2,
   Edit3,
@@ -215,6 +224,12 @@ export default function DashboardHome() {
   const [tooltipTimeout, setTooltipTimeout] = useState(null);
   const [selectedMetric, setSelectedMetric] = useState(null);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportStep, setReportStep] = useState('config');
+  const [reportConfig, setReportConfig] = useState(() => createInitialReportConfig());
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState('');
+  const [reportPreview, setReportPreview] = useState(null);
 
   const handleMouseEnter = () => {
     if (tooltipTimeout) {
@@ -244,7 +259,7 @@ export default function DashboardHome() {
       console.error('Erro ao carregar dados do dashboard:', err);
       setCommercialMetrics(emptyCommercialMetrics);
       setLeads([]);
-      setMetricsError('Algumas métricas não puderam ser carregadas agora.');
+      setMetricsError('Algumas mÃ©tricas nÃ£o puderam ser carregadas agora.');
     } finally {
       setMetricsLoading(false);
     }
@@ -267,6 +282,17 @@ export default function DashboardHome() {
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [selectedMetric]);
+
+  useEffect(() => {
+    if (reportConfig.preset === 'custom') return;
+
+    const nextRange = buildPresetRange(reportConfig.preset);
+    setReportConfig((current) => ({
+      ...current,
+      startDate: nextRange.startDate,
+      endDate: nextRange.endDate
+    }));
+  }, [reportConfig.preset]);
 
   if (!store) return null;
 
@@ -366,7 +392,7 @@ export default function DashboardHome() {
   const getPopularTires = () => {
     const counts = {};
     leads.forEach(l => {
-      const name = l.produto_nome || 'Pneu não identificado';
+      const name = l.produto_nome || 'Pneu nÃ£o identificado';
       counts[name] = (counts[name] || 0) + 1;
     });
     
@@ -401,7 +427,7 @@ export default function DashboardHome() {
       id: 'tires',
       label: isSeller ? 'Meus Pneus' : 'Total de Pneus',
       value: commercialMetrics.totalTires,
-      helper: `${commercialMetrics.activeTires} ativos • ${commercialMetrics.totalStock} em estoque`,
+      helper: `${commercialMetrics.activeTires} ativos â€¢ ${commercialMetrics.totalStock} em estoque`,
       icon: <Layers size={20} />,
       tone: 'amber',
       theme: createMetricTheme('#f59e0b', '245, 158, 11', 'rgba(245, 158, 11, 0.12)'),
@@ -433,7 +459,7 @@ export default function DashboardHome() {
       details: [
         { label: 'Total de leads', value: commercialMetrics.totalLeads },
         { label: 'Vendas confirmadas', value: commercialMetrics.totalSales },
-        { label: 'Último lead', value: latestLead?.nome_cliente || 'Nenhum' },
+        { label: 'Ãšltimo lead', value: latestLead?.nome_cliente || 'Nenhum' },
         { label: 'Origem principal', value: latestLead?.origem || 'WhatsApp' }
       ],
       description: 'Contatos comerciais gerados pelos CTAs da vitrine.',
@@ -488,9 +514,9 @@ export default function DashboardHome() {
     },
     {
       id: 'visits',
-      label: 'Visualizações',
+      label: 'VisualizaÃ§Ãµes',
       value: visits,
-      helper: 'Vitrine pública e referral',
+      helper: 'Vitrine pÃºblica e referral',
       icon: <Eye size={20} />,
       tone: 'blue',
       theme: createMetricTheme('#3b82f6', '59, 130, 246', 'rgba(59, 130, 246, 0.12)'),
@@ -498,7 +524,7 @@ export default function DashboardHome() {
         { label: 'Total de visitas', value: visits },
         { label: 'Visualizacoes hoje', value: commercialMetrics.totalVisitsToday },
         { label: 'Melhor vendedor', value: bestSeller?.name || 'Sem dados' },
-        { label: 'Ranking resumido', value: bestSeller ? `${bestSeller.sales} vendas • ${bestSeller.leads} leads` : 'Sem dados' },
+        { label: 'Ranking resumido', value: bestSeller ? `${bestSeller.sales} vendas â€¢ ${bestSeller.leads} leads` : 'Sem dados' },
         { label: 'Conversao por vendedor', value: topSellerConversion ? `${topSellerConversion.name}: ${formatPercent(topSellerConversion.conversionRate)}%` : 'Sem dados' }
       ],
       description: 'Movimento da vitrine publica e visitas vindas de referral.',
@@ -514,9 +540,9 @@ export default function DashboardHome() {
     },
     {
       id: 'conversion',
-      label: 'Taxa de conversão',
+      label: 'Taxa de conversÃ£o',
       value: `${conversionRate}%`,
-      helper: 'Leads por visualizações',
+      helper: 'Leads por visualizaÃ§Ãµes',
       icon: <Percent size={20} />,
       tone: 'purple',
       details: [
@@ -544,6 +570,79 @@ export default function DashboardHome() {
     setMobileDetailOpen(false);
   };
 
+  const closeReportModal = () => {
+    setReportModalOpen(false);
+    setReportStep('config');
+    setReportLoading(false);
+    setReportError('');
+    setReportPreview(null);
+  };
+
+  const handleOpenReportModal = () => {
+    if (role !== 'owner') return;
+    setReportError('');
+    setReportPreview(null);
+    setReportStep('config');
+    setReportModalOpen(true);
+  };
+
+  const handleReportConfigChange = (updater) => {
+    setReportError('');
+    setReportConfig((current) => (typeof updater === 'function' ? updater(current) : updater));
+  };
+
+  const handleBuildReportPreview = async () => {
+    if (!store?.id) return;
+
+    if (role !== 'owner') {
+      setReportError('Somente o dono da loja pode gerar este relatorio.');
+      return;
+    }
+
+    const validationError = validateReportConfig(reportConfig);
+    if (validationError) {
+      setReportError(validationError);
+      return;
+    }
+
+    const selectedSections = Object.entries(reportConfig.sections || {})
+      .filter(([, selected]) => selected)
+      .map(([sectionId]) => sectionId);
+    const startAt = `${reportConfig.startDate}T00:00:00`;
+    const endAt = `${reportConfig.endDate}T23:59:59.999`;
+    const rangeLabel = `${formatDate(startAt)} a ${formatDate(endAt)}`;
+
+    setReportLoading(true);
+    setReportError('');
+
+    try {
+      const rawData = await storageService.getDashboardReportData(store.id, {
+        startAt,
+        endAt,
+        selectedSections
+      });
+
+      setReportPreview(buildDashboardReport({
+        store,
+        rangeLabel,
+        generatedAt: new Date().toISOString(),
+        selectedSections,
+        rawData
+      }));
+      setReportStep('preview');
+    } catch (error) {
+      console.error('Erro ao gerar relatorio do dashboard:', error);
+      setReportError(error.message || 'Nao foi possivel gerar o relatorio agora.');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handlePrintReport = () => {
+    if (typeof window === 'undefined') return;
+    window.print();
+  };
+
   const openMetricDetail = (metricId) => {
     const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
 
@@ -559,13 +658,13 @@ export default function DashboardHome() {
       {/* Welcome Header */}
       <div className="flex-between" style={{ marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '32px', margin: 0, textAlign: 'left' }}>Olá, {user?.user_metadata?.full_name?.split(' ')[0] || 'Usuário'}!</h1>
+          <h1 style={{ fontSize: '32px', margin: 0, textAlign: 'left' }}>OlÃ¡, {user?.user_metadata?.full_name?.split(' ')[0] || 'UsuÃ¡rio'}!</h1>
           <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              🏪 <strong>{store.nome}</strong>
+              ðŸª <strong>{store.nome}</strong>
             </span>
             <span style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              👤 Função: <strong style={{ textTransform: 'capitalize' }}>{role === 'owner' ? 'Dono' : 'Vendedor'}</strong>
+              ðŸ‘¤ FunÃ§Ã£o: <strong style={{ textTransform: 'capitalize' }}>{role === 'owner' ? 'Dono' : 'Vendedor'}</strong>
             </span>
             {!isSeller && (
               <span style={{ 
@@ -579,7 +678,7 @@ export default function DashboardHome() {
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
               >
-                💎 Plano: <strong style={{ color: 'var(--primary)', textTransform: 'uppercase' }}>{store.plano}</strong>
+                ðŸ’Ž Plano: <strong style={{ color: 'var(--primary)', textTransform: 'uppercase' }}>{store.plano}</strong>
                 <div 
                   onClick={() => setShowPlanTooltip(!showPlanTooltip)}
                   style={{ 
@@ -626,11 +725,11 @@ export default function DashboardHome() {
                     }} />
                     
                     {store.plano === 'free' ? (
-                      <p>Você está no <strong>plano Free</strong>. Entre em contato com o suporte para desbloquear os recursos avançados do plano PRO.</p>
+                      <p>VocÃª estÃ¡ no <strong>plano Free</strong>. Entre em contato com o suporte para desbloquear os recursos avanÃ§ados do plano PRO.</p>
                     ) : (
                       <p>
-                        Seu plano PRO vence em <strong>{store.plan_due_date ? new Date(store.plan_due_date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Data Indisponível'}</strong>. 
-                        Para evitar a alteração automática para o plano Free, entre em contato com o suporte e regularize sua renovação.
+                        Seu plano PRO vence em <strong>{store.plan_due_date ? new Date(store.plan_due_date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Data IndisponÃ­vel'}</strong>.
+                        Para evitar a alteraÃ§Ã£o automÃ¡tica para o plano Free, entre em contato com o suporte e regularize sua renovaÃ§Ã£o.
                       </p>
                     )}
                     <button 
@@ -659,7 +758,7 @@ export default function DashboardHome() {
             )}
             {!isSeller && (
               <span style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                📅 Desde: <strong>{new Date(store.created_at).toLocaleDateString('pt-BR')}</strong>
+                ðŸ“… Desde: <strong>{new Date(store.created_at).toLocaleDateString('pt-BR')}</strong>
               </span>
             )}
           </div>
@@ -739,6 +838,18 @@ export default function DashboardHome() {
             )}
           </div>
         </div>
+
+        {!isSeller && (
+          <button
+            type="button"
+            onClick={handleOpenReportModal}
+            className="btn btn-primary"
+            style={{ minHeight: '44px', gap: '8px' }}
+          >
+            <FileText size={16} />
+            Gerar relatorio
+          </button>
+        )}
       </div>
 
       {(metricsLoading || metricsError) && (
@@ -754,7 +865,7 @@ export default function DashboardHome() {
             textAlign: 'left'
           }}
         >
-          {metricsLoading ? 'Carregando métricas comerciais...' : metricsError}
+          {metricsLoading ? 'Carregando mÃ©tricas comerciais...' : metricsError}
         </div>
       )}
 
@@ -785,7 +896,7 @@ export default function DashboardHome() {
             className="dashboard-mobile-detail-sheet"
             role="dialog"
             aria-modal="true"
-            aria-label={`Detalhes de ${activeMetric?.label || 'métrica'}`}
+            aria-label={`Detalhes de ${activeMetric?.label || 'mÃ©trica'}`}
             onClick={(event) => event.stopPropagation()}
           >
             <MetricDetailsPanel
@@ -804,7 +915,7 @@ export default function DashboardHome() {
           <div className="flex-between dashboard-home-section-header" style={{ marginBottom: '18px' }}>
             <div>
               <h3 style={{ fontSize: '18px', margin: 0 }}>Leads Recentes</h3>
-              <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>Últimos contatos recebidos pela vitrine.</p>
+              <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>Ãšltimos contatos recebidos pela vitrine.</p>
             </div>
             <button onClick={() => navigate('/dashboard/leads')} className="btn btn-outline dashboard-small-action">
               Ver todos <ArrowRight size={12} />
@@ -813,7 +924,7 @@ export default function DashboardHome() {
 
           {leads.length === 0 ? (
             <div className="dashboard-empty-block">
-              Nenhum lead gerado ainda. Divulgue sua vitrine para começar a receber contatos.
+              Nenhum lead gerado ainda. Divulgue sua vitrine para comeÃ§ar a receber contatos.
             </div>
           ) : (
             <div className="dashboard-home-leads-list">
@@ -822,7 +933,7 @@ export default function DashboardHome() {
                   <div className="flex-between dashboard-home-lead-top">
                     <div className="dashboard-home-lead-name">
                       <span>{lead.nome_cliente || 'Cliente Interessado'}</span>
-                      <span>{lead.produto_nome || 'Pneu não identificado'}</span>
+                      <span>{lead.produto_nome || 'Pneu nÃ£o identificado'}</span>
                     </div>
                     <span className="dashboard-home-lead-date">
                       {lead.created_at ? new Date(lead.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}
@@ -848,7 +959,7 @@ export default function DashboardHome() {
             className="card dashboard-home-actions-card dashboard-glow-card dashboard-actions-compact"
             style={{ '--dashboard-glow-color': '245, 158, 11' }}
           >
-            <h3>Ações Rápidas</h3>
+            <h3>AÃ§Ãµes RÃ¡pidas</h3>
             <div className="dashboard-home-actions">
               <button onClick={() => navigate('/dashboard/catalog')} className="btn btn-primary">
                 <Plus size={15} /> Cadastrar Pneu
@@ -866,7 +977,7 @@ export default function DashboardHome() {
               <TrendingUp size={18} style={{ color: 'var(--primary)' }} /> Pneus Mais Procurados
             </h3>
             {popularTires.length === 0 ? (
-              <p className="dashboard-empty-text">Aguardando interações na vitrine para gerar estatísticas.</p>
+              <p className="dashboard-empty-text">Aguardando interaÃ§Ãµes na vitrine para gerar estatÃ­sticas.</p>
             ) : (
               <div className="dashboard-home-popular-list">
                 {popularTires.map((tire, idx) => (
@@ -886,7 +997,7 @@ export default function DashboardHome() {
             </h3>
 
             {commercialMetrics.sellerRanking.length === 0 ? (
-              <p className="dashboard-empty-text">Ainda não há leads, vendas ou visitas para montar o ranking.</p>
+              <p className="dashboard-empty-text">Ainda nÃ£o hÃ¡ leads, vendas ou visitas para montar o ranking.</p>
             ) : (
               <div className="dashboard-home-ranking-list">
                 {commercialMetrics.sellerRanking.slice(0, 5).map((seller, idx) => (
@@ -920,7 +1031,7 @@ export default function DashboardHome() {
             className="card dashboard-home-actions-card dashboard-glow-card dashboard-actions-compact"
             style={{ '--dashboard-glow-color': '245, 158, 11' }}
           >
-            <h3>Ações Rápidas</h3>
+            <h3>AÃ§Ãµes RÃ¡pidas</h3>
             <div className="dashboard-home-actions">
               <button onClick={() => navigate('/dashboard/catalog')} className="btn btn-primary">
                 <Plus size={15} /> Cadastrar Pneu
@@ -970,19 +1081,19 @@ export default function DashboardHome() {
               icon={<DollarSign size={18} />}
             />
             <MetricTile
-              label="Taxa de conversão"
+              label="Taxa de conversÃ£o"
               value={`${conversionRate}%`}
               helper="Vendas confirmadas por visitas"
               icon={<Percent size={18} />}
               tone="purple"
             />
           </div>
-          <p className="dashboard-section-note">Conversão calculada por vendas confirmadas / visualizações.</p>
+          <p className="dashboard-section-note">ConversÃ£o calculada por vendas confirmadas / visualizaÃ§Ãµes.</p>
         </DashboardSection>
 
         <DashboardSection
           id="dashboard-catalog-section"
-          title="Catálogo e Estoque"
+          title="CatÃ¡logo e Estoque"
           isOpen={openSections.catalog}
           onToggle={() => toggleSection('catalog')}
           summary={
@@ -997,7 +1108,7 @@ export default function DashboardHome() {
             <MetricTile
               label={isSeller ? 'Meus pneus' : 'Total de pneus'}
               value={commercialMetrics.totalTires}
-              helper="Modelos no catálogo"
+              helper="Modelos no catÃ¡logo"
               icon={<Layers size={18} />}
             />
             <MetricTile
@@ -1020,7 +1131,7 @@ export default function DashboardHome() {
               <TrendingUp size={18} style={{ color: 'var(--primary)' }} /> Pneus Mais Procurados
             </h3>
             {popularTires.length === 0 ? (
-              <p className="dashboard-empty-text">Aguardando interações na vitrine para gerar estatísticas.</p>
+              <p className="dashboard-empty-text">Aguardando interaÃ§Ãµes na vitrine para gerar estatÃ­sticas.</p>
             ) : (
               <div className="dashboard-home-popular-list">
                 {popularTires.map((tire, idx) => (
@@ -1037,27 +1148,27 @@ export default function DashboardHome() {
 
         <DashboardSection
           id="dashboard-sellers-section"
-          title="Indicações e Vendedores"
+          title="IndicaÃ§Ãµes e Vendedores"
           isOpen={openSections.sellers}
           onToggle={() => toggleSection('sellers')}
           summary={
             <>
-              <SummaryPill label="Visualizações" value={visits} tone="primary" />
+              <SummaryPill label="VisualizaÃ§Ãµes" value={visits} tone="primary" />
               <SummaryPill label="Melhor vendedor" value={bestSeller?.name || 'Sem dados'} />
-              <SummaryPill label="Conversão geral" value={`${conversionRate}%`} tone="success" />
+              <SummaryPill label="ConversÃ£o geral" value={`${conversionRate}%`} tone="success" />
             </>
           }
         >
           <div className="dashboard-section-grid">
             <MetricTile
-              label="Visualizações da vitrine"
+              label="VisualizaÃ§Ãµes da vitrine"
               value={visits}
-              helper="Visitas por indicação"
+              helper="Visitas por indicaÃ§Ã£o"
               icon={<Eye size={18} />}
               tone="blue"
             />
             <MetricTile
-              label="Conversão geral"
+              label="ConversÃ£o geral"
               value={`${conversionRate}%`}
               helper="Vendas confirmadas por visitas"
               icon={<Percent size={18} />}
@@ -1066,7 +1177,7 @@ export default function DashboardHome() {
             <MetricTile
               label="Melhor vendedor"
               value={bestSeller?.name || 'Sem dados'}
-              helper={bestSeller ? `${bestSeller.sales} vendas • ${formatCurrency(bestSeller.revenue)}` : 'Aguardando dados'}
+              helper={bestSeller ? `${bestSeller.sales} vendas â€¢ ${formatCurrency(bestSeller.revenue)}` : 'Aguardando dados'}
               icon={<TrendingUp size={18} />}
               tone="success"
             />
@@ -1078,7 +1189,7 @@ export default function DashboardHome() {
             </h3>
 
             {commercialMetrics.sellerRanking.length === 0 ? (
-              <p className="dashboard-empty-text">Ainda não há leads, vendas ou visitas para montar o ranking.</p>
+              <p className="dashboard-empty-text">Ainda nÃ£o hÃ¡ leads, vendas ou visitas para montar o ranking.</p>
             ) : (
               <div className="dashboard-home-ranking-list">
                 {commercialMetrics.sellerRanking.slice(0, 5).map((seller, idx) => (
@@ -1115,14 +1226,14 @@ export default function DashboardHome() {
           summary={
             <>
               <SummaryPill label="Recentes" value={Math.min(leads.length, 4)} />
-              <SummaryPill label="Último lead" value={latestLead?.nome_cliente || 'Nenhum'} tone="primary" />
+              <SummaryPill label="Ãšltimo lead" value={latestLead?.nome_cliente || 'Nenhum'} tone="primary" />
             </>
           }
         >
           <div className="dashboard-section-header-row">
             <div>
               <h3>Leads Recentes (WhatsApp)</h3>
-              <p>Últimos contatos recebidos pela vitrine.</p>
+              <p>Ãšltimos contatos recebidos pela vitrine.</p>
             </div>
             <button onClick={() => navigate('/dashboard/leads')} className="btn btn-outline">
               Ver todos <ArrowRight size={12} />
@@ -1131,7 +1242,7 @@ export default function DashboardHome() {
 
           {leads.length === 0 ? (
             <div className="dashboard-empty-block">
-              Nenhum lead gerado ainda. Coloque o link da sua vitrine nas redes sociais para começar a receber contatos!
+              Nenhum lead gerado ainda. Coloque o link da sua vitrine nas redes sociais para comeÃ§ar a receber contatos!
             </div>
           ) : (
             <div className="dashboard-home-leads-list">
@@ -1140,7 +1251,7 @@ export default function DashboardHome() {
                   <div className="flex-between dashboard-home-lead-top">
                     <div className="dashboard-home-lead-name">
                       <span>{lead.nome_cliente || 'Cliente Interessado'}</span>
-                      <span>{lead.produto_nome || 'Pneu não identificado'}</span>
+                      <span>{lead.produto_nome || 'Pneu nÃ£o identificado'}</span>
                     </div>
                     <span className="dashboard-home-lead-date">
                       {lead.created_at ? new Date(lead.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}
@@ -1181,7 +1292,7 @@ export default function DashboardHome() {
           <div>
             <h3 style={{ fontSize: '28px', lineHeight: '1.2' }}>{commercialMetrics.totalTires}</h3>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              {commercialMetrics.activeTires} ativos • {commercialMetrics.totalStock} em estoque
+              {commercialMetrics.activeTires} ativos â€¢ {commercialMetrics.totalStock} em estoque
             </p>
           </div>
         </div>
@@ -1230,14 +1341,14 @@ export default function DashboardHome() {
         {!isSeller && (
           <div {...metricCardProps} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '20px', '--dashboard-glow-color': '245, 158, 11' }}>
             <div className="flex-between" style={{ marginBottom: '12px' }}>
-              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>Visualizações</span>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>VisualizaÃ§Ãµes</span>
               <div style={{ color: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '6px', borderRadius: '6px' }}>
                 <Eye size={20} />
               </div>
             </div>
             <div>
               <h3 style={{ fontSize: '28px', lineHeight: '1.2' }}>{visits}</h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Visitas à sua vitrine</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Visitas Ã  sua vitrine</p>
             </div>
           </div>
         )}
@@ -1245,7 +1356,7 @@ export default function DashboardHome() {
         {!isSeller && (
           <div {...metricCardProps} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '20px', '--dashboard-glow-color': '245, 158, 11' }}>
             <div className="flex-between" style={{ marginBottom: '12px' }}>
-              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>Taxa de Conversão</span>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>Taxa de ConversÃ£o</span>
               <div style={{ color: '#a855f7', backgroundColor: 'rgba(168, 85, 247, 0.1)', padding: '6px', borderRadius: '6px' }}>
                 <Percent size={20} />
               </div>
@@ -1279,7 +1390,7 @@ export default function DashboardHome() {
           
           {leads.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)' }}>
-              Nenhum lead gerado ainda. Coloque o link da sua vitrine nas redes sociais para começar a receber contatos!
+              Nenhum lead gerado ainda. Coloque o link da sua vitrine nas redes sociais para comeÃ§ar a receber contatos!
             </div>
           ) : (
             <div className="dashboard-home-leads-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1298,19 +1409,19 @@ export default function DashboardHome() {
                   <div className="flex-between dashboard-home-lead-top" style={{ marginBottom: '8px' }}>
                     <div className="dashboard-home-lead-name" style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                       <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{lead.nome_cliente || 'Cliente Interessado'}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 600, wordBreak: 'break-word' }}>{lead.produto_nome || 'Pneu não identificado'}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 600, wordBreak: 'break-word' }}>{lead.produto_nome || 'Pneu nÃ£o identificado'}</span>
                     </div>
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {lead.created_at ? new Date(lead.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}
                     </span>
                   </div>
                   <div className="dashboard-home-lead-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
-                    <span>📦 Origem:</span>
+                    <span>ðŸ“¦ Origem:</span>
                     <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{lead.origem || 'WhatsApp'}</span>
                     {lead.produto_medida && (
                       <>
                         <span style={{ margin: '0 4px', opacity: 0.3 }}>|</span>
-                        <span>📏 Ref: {lead.produto_medida}</span>
+                        <span>ðŸ“ Ref: {lead.produto_medida}</span>
                       </>
                     )}
                   </div>
@@ -1330,7 +1441,7 @@ export default function DashboardHome() {
             </h3>
             
             {popularTires.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Aguardando interações na vitrine para gerar estatísticas.</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Aguardando interaÃ§Ãµes na vitrine para gerar estatÃ­sticas.</p>
             ) : (
               <div className="dashboard-home-popular-list">
                 {popularTires.map((tire, idx) => (
@@ -1351,7 +1462,7 @@ export default function DashboardHome() {
             </h3>
 
             {commercialMetrics.sellerRanking.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Ainda não há leads, vendas ou visitas para montar o ranking.</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Ainda nÃ£o hÃ¡ leads, vendas ou visitas para montar o ranking.</p>
             ) : (
               <div className="dashboard-home-ranking-list">
                 {commercialMetrics.sellerRanking.slice(0, 5).map((seller, idx) => (
@@ -1388,7 +1499,7 @@ export default function DashboardHome() {
 
           {/* Quick Actions */}
           <div {...metricCardProps} className="card dashboard-home-actions-card dashboard-glow-card" style={{ padding: '24px', '--dashboard-glow-color': '245, 158, 11' }}>
-            <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>Ações Rápidas</h3>
+            <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>AÃ§Ãµes RÃ¡pidas</h3>
             <div className="dashboard-home-actions" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <button 
                 onClick={() => navigate('/dashboard/catalog')} 
@@ -1509,6 +1620,11 @@ export default function DashboardHome() {
         .dashboard-metric-card__icon--yellow {
           color: #eab308;
           background: rgba(234, 179, 8, 0.14);
+        }
+
+        .dashboard-metric-card__icon--red {
+          color: #f87171;
+          background: rgba(239, 68, 68, 0.12);
         }
 
         .dashboard-metric-card__icon--blue {
@@ -1670,7 +1786,7 @@ export default function DashboardHome() {
 
         @media (max-width: 768px) {
           .dashboard-metric-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: 1fr;
             gap: 10px;
             margin-bottom: 16px;
           }
@@ -2489,7 +2605,468 @@ export default function DashboardHome() {
             justify-self: start;
           }
         }
+
+        .dashboard-report-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 140;
+          display: grid;
+          place-items: center;
+          padding: 24px;
+        }
+
+        .dashboard-report-backdrop {
+          position: absolute;
+          inset: 0;
+          background: rgba(5, 8, 14, 0.72);
+          backdrop-filter: blur(8px);
+        }
+
+        .dashboard-report-container {
+          position: relative;
+          width: min(1220px, 100%);
+          max-height: calc(100dvh - 48px);
+          overflow: auto;
+          border-radius: 26px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.98));
+          box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+        }
+
+        .dashboard-report-sheet {
+          position: relative;
+          padding: 28px;
+          color: var(--text-primary);
+        }
+
+        .dashboard-report-sheet--preview {
+          background: #f3f4f6;
+        }
+
+        .dashboard-report-sheet__header,
+        .dashboard-report-sheet__actions,
+        .dashboard-report-card__top,
+        .dashboard-report-bulk-actions {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+
+        .dashboard-report-sheet__header {
+          margin-bottom: 22px;
+        }
+
+        .dashboard-report-sheet__eyebrow {
+          display: inline-block;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #fbbf24;
+          margin-bottom: 8px;
+        }
+
+        .dashboard-report-sheet__header h2,
+        .dashboard-report-card h3 {
+          margin: 0;
+        }
+
+        .dashboard-report-sheet__header p,
+        .dashboard-report-card p,
+        .dashboard-report-section-row span {
+          color: var(--text-secondary);
+        }
+
+        .dashboard-report-close {
+          width: 42px;
+          height: 42px;
+          border-radius: 999px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.04);
+          color: var(--text-primary);
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .dashboard-report-config-grid {
+          display: grid;
+          grid-template-columns: 0.95fr 1.05fr;
+          gap: 18px;
+        }
+
+        .dashboard-report-card {
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 22px;
+          padding: 20px;
+          background: rgba(255, 255, 255, 0.04);
+          display: grid;
+          gap: 18px;
+        }
+
+        .dashboard-report-presets,
+        .dashboard-report-sections {
+          display: grid;
+          gap: 10px;
+        }
+
+        .dashboard-report-choice {
+          width: 100%;
+          text-align: left;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 14px;
+          padding: 12px 14px;
+          background: rgba(255, 255, 255, 0.03);
+          color: var(--text-primary);
+          cursor: pointer;
+          font-weight: 700;
+        }
+
+        .dashboard-report-choice.is-active {
+          border-color: rgba(245, 158, 11, 0.55);
+          background: rgba(245, 158, 11, 0.14);
+          color: #fde68a;
+        }
+
+        .dashboard-report-date-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .dashboard-report-date-grid label,
+        .dashboard-report-section-row {
+          display: grid;
+          gap: 8px;
+        }
+
+        .dashboard-report-date-grid span {
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+        }
+
+        .dashboard-report-date-grid input {
+          min-height: 44px;
+          border-radius: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(15, 23, 42, 0.88);
+          color: var(--text-primary);
+          padding: 0 12px;
+        }
+
+        .dashboard-report-section-row {
+          grid-template-columns: auto minmax(0, 1fr);
+          align-items: start;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 16px;
+          padding: 12px 14px;
+          background: rgba(255, 255, 255, 0.02);
+        }
+
+        .dashboard-report-section-row input {
+          margin-top: 2px;
+        }
+
+        .dashboard-report-section-row strong {
+          display: block;
+          margin-bottom: 4px;
+        }
+
+        .dashboard-report-section-row.is-disabled {
+          opacity: 0.58;
+        }
+
+        .dashboard-report-feedback {
+          margin-top: 18px;
+          padding: 12px 14px;
+          border-radius: 14px;
+          font-size: 13px;
+          font-weight: 600;
+        }
+
+        .dashboard-report-feedback.is-error,
+        .dashboard-report-missing-data {
+          border: 1px solid rgba(248, 113, 113, 0.24);
+          background: rgba(127, 29, 29, 0.12);
+          color: #fecaca;
+        }
+
+        .dashboard-report-sheet__actions {
+          margin-top: 22px;
+        }
+
+        .dashboard-report-privacy-note {
+          padding: 12px 14px;
+          border-radius: 14px;
+          background: rgba(245, 158, 11, 0.12);
+          border: 1px solid rgba(245, 158, 11, 0.24);
+          color: #fde68a;
+          font-size: 13px;
+        }
+
+        .dashboard-report-preview {
+          background: #ffffff;
+          color: #111827;
+          min-height: 100%;
+          border-radius: 22px;
+          padding: 32px;
+        }
+
+        .dashboard-report-preview__header,
+        .dashboard-report-preview__footer {
+          display: flex;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .dashboard-report-brand {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .dashboard-report-brand img,
+        .dashboard-report-logo-fallback {
+          width: 64px;
+          height: 64px;
+          border-radius: 18px;
+          object-fit: cover;
+          background: #111827;
+          color: #fbbf24;
+          display: grid;
+          place-items: center;
+          font-weight: 800;
+        }
+
+        .dashboard-report-brand span {
+          display: block;
+          color: #6b7280;
+          font-size: 13px;
+          margin-bottom: 4px;
+        }
+
+        .dashboard-report-brand h1 {
+          margin: 0;
+          font-size: 28px;
+          line-height: 1.1;
+        }
+
+        .dashboard-report-meta {
+          display: grid;
+          gap: 6px;
+          color: #4b5563;
+          font-size: 13px;
+          text-align: right;
+        }
+
+        .dashboard-report-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+          margin: 24px 0;
+        }
+
+        .dashboard-report-summary-card {
+          border: 1px solid #e5e7eb;
+          border-radius: 18px;
+          padding: 16px;
+          background: #f9fafb;
+        }
+
+        .dashboard-report-summary-card span,
+        .dashboard-report-inline-summary span,
+        .dashboard-report-total span,
+        .dashboard-report-empty {
+          color: #6b7280;
+        }
+
+        .dashboard-report-summary-card strong,
+        .dashboard-report-inline-summary strong,
+        .dashboard-report-total strong {
+          display: block;
+          margin-top: 6px;
+          color: #111827;
+        }
+
+        .dashboard-report-preview__sections {
+          display: grid;
+          gap: 18px;
+        }
+
+        .dashboard-report-preview-section {
+          break-inside: avoid;
+          page-break-inside: avoid;
+          border: 1px solid #e5e7eb;
+          border-radius: 20px;
+          padding: 18px;
+        }
+
+        .dashboard-report-preview-section h3 {
+          margin: 0 0 14px;
+          font-size: 18px;
+        }
+
+        .dashboard-report-inline-summary {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .dashboard-report-inline-summary div {
+          border: 1px solid #e5e7eb;
+          border-radius: 14px;
+          padding: 12px;
+          background: #f9fafb;
+        }
+
+        .dashboard-report-table-wrap {
+          overflow: auto;
+        }
+
+        .dashboard-report-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 13px;
+        }
+
+        .dashboard-report-table thead {
+          display: table-header-group;
+        }
+
+        .dashboard-report-table th,
+        .dashboard-report-table td {
+          padding: 10px 12px;
+          border-bottom: 1px solid #e5e7eb;
+          text-align: left;
+          vertical-align: top;
+        }
+
+        .dashboard-report-table th {
+          color: #374151;
+          background: #f3f4f6;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+
+        .dashboard-report-total {
+          margin-top: 12px;
+          display: flex;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+          font-size: 13px;
+        }
+
+        .dashboard-report-missing-data {
+          margin: 0 0 18px;
+          border-radius: 16px;
+          padding: 14px 16px;
+        }
+
+        .dashboard-report-preview__footer {
+          margin-top: 22px;
+          padding-top: 14px;
+          border-top: 1px solid #e5e7eb;
+          color: #6b7280;
+          font-size: 12px;
+        }
+
+        .spin {
+          animation: dashboardReportSpin 0.9s linear infinite;
+        }
+
+        @keyframes dashboardReportSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 960px) {
+          .dashboard-report-config-grid,
+          .dashboard-report-summary-grid,
+          .dashboard-report-inline-summary {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-report-overlay {
+            padding: 0;
+          }
+
+          .dashboard-report-container {
+            width: 100%;
+            max-height: 100dvh;
+            border-radius: 0;
+          }
+
+          .dashboard-report-sheet,
+          .dashboard-report-preview {
+            padding: 18px;
+          }
+
+          .dashboard-report-date-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+
+          .print-surface,
+          .print-surface * {
+            visibility: visible;
+          }
+
+          .print-surface {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            border-radius: 0;
+            padding: 0;
+          }
+
+          .no-print {
+            display: none !important;
+          }
+
+          @page {
+            size: auto;
+            margin: 14mm;
+          }
+
+          .dashboard-report-preview-section,
+          .dashboard-report-table tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+        }
       `}</style>
+
+      <DashboardReportModal
+        isOpen={reportModalOpen}
+        step={reportStep}
+        report={reportPreview}
+        config={reportConfig}
+        loading={reportLoading}
+        error={reportError}
+        isOwner={role === 'owner'}
+        onConfigChange={handleReportConfigChange}
+        onPreview={handleBuildReportPreview}
+        onBackToConfig={() => setReportStep('config')}
+        onClose={closeReportModal}
+        onPrint={handlePrintReport}
+      />
     </div>
   );
 }

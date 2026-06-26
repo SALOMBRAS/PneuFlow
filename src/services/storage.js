@@ -511,10 +511,10 @@ export const storageService = {
       console.warn('Não foi possível expirar leads inativos automaticamente:', error?.message || error);
     }
 
-    const { data, error } = await supabase.rpc('get_leads_com_vendedor', { 
-      p_store_id: storeId 
+    const { data, error } = await supabase.rpc('get_leads_com_vendedor', {
+      p_store_id: storeId
     });
-    
+
     if (error) {
       console.error('Erro RPC get_leads_com_vendedor:', error);
       throw error;
@@ -656,6 +656,180 @@ export const storageService = {
       sellers: [],
       visits: []
     });
+  },
+
+  getDashboardReportData: async (storeId, options = {}) => {
+    const {
+      startAt,
+      endAt,
+      selectedSections = []
+    } = options;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) {
+      throw new Error('Sessao nao encontrada. Faca login novamente.');
+    }
+
+    const ownerStore = await storageService.getStoreByOwner(session.user.id);
+    if (!ownerStore || ownerStore.id !== storeId) {
+      throw new Error('Somente o dono da loja pode gerar este relatorio.');
+    }
+
+    const safeSelect = async (label, queryBuilder) => {
+      try {
+        const { data, error } = await queryBuilder;
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error(`[DashboardReport] Erro ao buscar ${label}:`, error);
+        throw new Error(`Nao foi possivel carregar ${label} para o relatorio.`);
+      }
+    };
+
+    const selected = new Set(selectedSections);
+    const shouldLoadLeadFlow =
+      selected.has('summary') ||
+      selected.has('leads') ||
+      selected.has('pending') ||
+      selected.has('withdrawals') ||
+      selected.has('seller_performance');
+    const shouldLoadSales =
+      selected.has('summary') ||
+      selected.has('sales') ||
+      selected.has('sold_products') ||
+      selected.has('seller_performance');
+    const shouldLoadVisits = selected.has('summary');
+    const shouldLoadSellers = selected.has('seller_performance') || selected.has('leads') || selected.has('sales') || selected.has('pending') || selected.has('withdrawals');
+    const shouldLoadStock = selected.has('stock') || selected.has('sold_products');
+
+    const leadColumns = [
+      'id',
+      'loja_id',
+      'produto_id',
+      'seller_id',
+      'ref_code',
+      'nome_cliente',
+      'produto_nome',
+      'produto_medida',
+      'produto_preco',
+      'created_at',
+      'desired_quantity',
+      'sold_quantity',
+      'status_atendimento',
+      'venda_confirmada',
+      'venda_confirmada_em',
+      'origem'
+    ].join(', ');
+
+    const requests = [];
+
+    if (shouldLoadLeadFlow) {
+      requests.push([
+        'leads',
+        safeSelect(
+          'clientes interessados',
+          supabase
+            .from('leads')
+            .select(leadColumns)
+            .eq('loja_id', storeId)
+            .gte('created_at', startAt)
+            .lte('created_at', endAt)
+            .order('created_at', { ascending: false })
+        )
+      ]);
+    }
+
+    if (shouldLoadSales) {
+      requests.push([
+        'soldLeads',
+        safeSelect(
+          'vendas confirmadas',
+          supabase
+            .from('leads')
+            .select(leadColumns)
+            .eq('loja_id', storeId)
+            .eq('status_atendimento', 'vendido')
+            .gte('venda_confirmada_em', startAt)
+            .lte('venda_confirmada_em', endAt)
+            .order('venda_confirmada_em', { ascending: false })
+        )
+      ]);
+    }
+
+    if (shouldLoadVisits) {
+      requests.push([
+        'visits',
+        safeSelect(
+          'visualizacoes',
+          supabase
+            .from('store_referral_visits')
+            .select('id, created_at, seller_id, ref_code')
+            .eq('store_id', storeId)
+            .gte('created_at', startAt)
+            .lte('created_at', endAt)
+        )
+      ]);
+    }
+
+    if (shouldLoadSellers) {
+      requests.push([
+        'sellers',
+        safeSelect(
+          'vendedores',
+          supabase
+            .from('store_members')
+            .select('id, user_id, nome, email, role, status, ref_code')
+            .eq('store_id', storeId)
+        )
+      ]);
+    }
+
+    if (shouldLoadStock) {
+      requests.push([
+        'stock',
+        safeSelect(
+          'estoque',
+          supabase
+            .from('pneus')
+            .select('id, marca, modelo, medida, estoque, status')
+            .eq('loja_id', storeId)
+            .order('estoque', { ascending: true })
+        )
+      ]);
+    }
+
+    const results = await Promise.all(requests.map(([, promise]) => promise));
+
+    const baseResult = requests.reduce((acc, [label], index) => {
+      acc[label] = results[index] || [];
+      return acc;
+    }, {
+      leads: [],
+      soldLeads: [],
+      visits: [],
+      sellers: [],
+      stock: []
+    });
+
+    const stockById = new Map(
+      (baseResult.stock || []).map((item) => [item.id, item])
+    );
+
+    const enrichLead = (lead) => {
+      const product = stockById.get(lead.produto_id);
+      return {
+        ...lead,
+        marca: product?.marca || '',
+        modelo: product?.modelo || '',
+        medida: product?.medida || lead.produto_medida || ''
+      };
+    };
+
+    return {
+      ...baseResult,
+      leads: (baseResult.leads || []).map(enrichLead),
+      soldLeads: (baseResult.soldLeads || []).map(enrichLead)
+    };
   },
 
   // --- Legacy Aliases ---
