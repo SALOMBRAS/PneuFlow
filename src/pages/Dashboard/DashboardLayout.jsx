@@ -100,11 +100,11 @@ export default function DashboardLayout({ children }) {
   }
 
   const menuItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: <BarChart2 size={18} />, roles: ['owner', 'seller'] },
-    { name: 'Catálogo de Pneus', path: '/dashboard/catalog', icon: <Layers size={18} />, roles: ['owner', 'seller'] },
-    { name: 'Leads de WhatsApp', path: '/dashboard/leads', icon: <MessageSquare size={18} />, roles: ['owner', 'seller'] },
-    { name: 'Vendedores', path: '/dashboard/sellers', icon: <Users size={18} />, roles: ['owner'] },
-    { name: 'Configurações da Vitrine', path: '/dashboard/settings', icon: <Settings size={18} />, roles: ['owner'] },
+    { name: 'Dashboard', tooltip: 'Visão geral da loja', path: '/dashboard', icon: <BarChart2 size={18} />, roles: ['owner', 'seller'] },
+    { name: 'Pneus', tooltip: 'Pneus, anúncios e controle de estoque', path: '/dashboard/catalog', icon: <Layers size={18} />, roles: ['owner', 'seller'] },
+    { name: 'Leads', tooltip: 'Clientes interessados e vendas no WhatsApp', path: '/dashboard/leads', icon: <MessageSquare size={18} />, roles: ['owner', 'seller'] },
+    { name: 'Vendedores', tooltip: 'Equipe de vendas', path: '/dashboard/sellers', icon: <Users size={18} />, roles: ['owner'] },
+    { name: 'Config. Vitrine', tooltip: 'Configurar a vitrine da loja', path: '/dashboard/settings', icon: <Settings size={18} />, roles: ['owner'] },
   ];
 
   const filteredMenuItems = menuItems.filter((item) => item.roles.includes(role));
@@ -333,6 +333,8 @@ export default function DashboardLayout({ children }) {
                   key={item.path}
                   to={item.path}
                   onClick={() => setMobileMenuOpen(false)}
+                  title={item.tooltip}
+                  aria-label={item.tooltip}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -370,6 +372,8 @@ export default function DashboardLayout({ children }) {
             href={publicStoreUrl}
             target="_blank"
             rel="noopener noreferrer"
+            title="Abrir a vitrine pública da loja"
+            aria-label="Abrir a vitrine pública da loja"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -385,12 +389,14 @@ export default function DashboardLayout({ children }) {
               minHeight: '44px'
             }}
           >
-            <span>Ver Minha Vitrine</span>
+            <span>Ver Vitrine</span>
             <ExternalLink size={14} />
           </a>
 
           <button
             onClick={handleLogout}
+            title="Sair do painel"
+            aria-label="Sair do painel"
             style={{
               display: 'flex',
               alignItems: 'center',
