@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
@@ -49,6 +49,9 @@ const formatPercent = (value) => {
     maximumFractionDigits: 1
   });
 };
+
+const normalizeRevenueQuantity = (value, fallback = 1) =>
+  Math.max(1, Number.parseInt(value ?? fallback, 10) || 1);
 
 const createMetricTheme = (accent, accentRgb, iconBackground) => ({
   accent,
@@ -395,6 +398,38 @@ export default function DashboardHome() {
   const visitTodayRate = visits > 0
     ? (commercialMetrics.totalVisitsToday / visits) * 100
     : null;
+  const revenueOpportunity = useMemo(() => {
+    return leads.reduce((acc, lead) => {
+      const price = Number(lead?.produto_preco || 0);
+      if (!Number.isFinite(price) || price <= 0) {
+        return acc;
+      }
+
+      const status = lead?.status_atendimento || (lead?.venda_confirmada ? 'vendido' : 'em_atendimento');
+      const quantity = normalizeRevenueQuantity(
+        status === 'vendido'
+          ? lead?.sold_quantity ?? lead?.desired_quantity
+          : lead?.desired_quantity ?? lead?.sold_quantity,
+        1
+      );
+
+      if (status === 'em_atendimento') {
+        acc.pendingCount += 1;
+        acc.pendingValue += price * quantity;
+      } else if (status === 'desistencia') {
+        acc.withdrawalCount += 1;
+        acc.withdrawalValue += price * quantity;
+      }
+
+      return acc;
+    }, {
+      pendingCount: 0,
+      pendingValue: 0,
+      withdrawalCount: 0,
+      withdrawalValue: 0
+    });
+  }, [leads]);
+  const totalNotConverted = revenueOpportunity.pendingValue + revenueOpportunity.withdrawalValue;
 
   const metricCards = [
     {
@@ -459,14 +494,18 @@ export default function DashboardHome() {
         { label: 'Valor total confirmado', value: formatCurrency(commercialMetrics.confirmedRevenue) },
         { label: 'Vendas confirmadas', value: commercialMetrics.totalSales },
         { label: 'Taxa de conversão', value: `${conversionRate}%` },
-        ...(averageTicket
-          ? [{ label: 'Ticket medio', value: formatCurrency(averageTicket) }]
-          : []),
+        { label: 'Ticket medio', value: averageTicket ? formatCurrency(averageTicket) : 'Sem dados' },
         {
           label: 'Resumo comercial',
           value: commercialMetrics.totalSales > 0
             ? `${commercialMetrics.totalSales} vendas em ${commercialMetrics.totalLeads} leads`
             : 'Aguardando a primeira venda confirmada'
+        },
+        {
+          label: 'Receita não convertida',
+          value: formatCurrency(totalNotConverted),
+          note: `${formatCurrency(revenueOpportunity.pendingValue)} em atendimento • ${formatCurrency(revenueOpportunity.withdrawalValue)} em desistências`,
+          emphasis: 'danger'
         }
       ],
       description: 'Receita estimada apenas com vendas confirmadas no painel.',

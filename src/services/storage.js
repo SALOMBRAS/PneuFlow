@@ -620,7 +620,7 @@ export const storageService = {
     const requests = {
       leads: supabase
         .from('leads')
-        .select('id, loja_id, produto_id, seller_id, ref_code, attribution_source, nome_cliente, produto_nome, produto_medida, produto_preco, origem, created_at, venda_confirmada, venda_confirmada_em, venda_confirmada_por')
+        .select('id, loja_id, produto_id, seller_id, ref_code, attribution_source, nome_cliente, produto_nome, produto_medida, produto_preco, origem, created_at, desired_quantity, sold_quantity, status_atendimento, venda_confirmada, venda_confirmada_em, venda_confirmada_por')
         .eq('loja_id', storeId),
       pneus: supabase
         .from('pneus')

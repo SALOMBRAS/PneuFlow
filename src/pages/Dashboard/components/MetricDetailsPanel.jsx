@@ -86,6 +86,11 @@ export default function MetricDetailsPanel({ metric, onClose, onNavigate, compac
             >
               <span>{detail.label}</span>
               <strong>{detail.value}</strong>
+              {detail.note && (
+                <small className={`metric-details-panel__insight-note ${detail.emphasis ? `is-${detail.emphasis}` : ''}`}>
+                  {detail.note}
+                </small>
+              )}
             </div>
           ))}
         </section>
