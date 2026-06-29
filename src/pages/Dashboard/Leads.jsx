@@ -503,17 +503,17 @@ export default function Leads() {
       const soldQuantity = nextStatus === 'vendido' ? quantity : null;
       const desiredQuantity = quantity;
       await storageService.updateLeadAttendanceStatus(lead.id, nextStatus, soldQuantity, desiredQuantity);
-      await createPersistentNotification({
-        type: 'success',
-        title: nextStatus === 'vendido' ? 'Venda finalizada' : 'Lead atualizado',
-        message: nextStatus === 'vendido'
-          ? `Venda confirmada para ${lead.nome_cliente}.`
-          : 'O status do lead foi atualizado com sucesso.',
-        category: nextStatus === 'vendido' ? 'sales' : 'general',
-        actionPath: '/dashboard/leads',
-        entityType: 'lead',
-        entityId: lead.id
-      });
+      if (nextStatus !== 'vendido') {
+        await createPersistentNotification({
+          type: 'success',
+          title: 'Lead atualizado',
+          message: 'O status do lead foi atualizado com sucesso.',
+          category: 'general',
+          actionPath: '/dashboard/leads',
+          entityType: 'lead',
+          entityId: lead.id
+        });
+      }
       setFeedbackMessage({
         type: 'success',
         text: nextStatus === 'vendido'

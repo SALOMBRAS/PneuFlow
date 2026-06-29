@@ -688,6 +688,36 @@ begin
         sold_quantity = v_requested_quantity
     where id = p_lead_id;
 
+    if v_current_status <> 'vendido' then
+      select s.owner_id
+      into v_owner_id
+      from public.stores s
+      where s.id = v_lead.loja_id;
+
+      v_recipients := array_remove(array[v_owner_id, v_lead.seller_id], null);
+      v_product_label := coalesce(nullif(trim(coalesce(v_lead.produto_nome, '')), ''), 'pneu');
+
+      if array_length(v_recipients, 1) is not null then
+        perform public.create_notifications_for_users(
+          v_lead.loja_id,
+          v_recipients,
+          'success',
+          'sales',
+          'Venda finalizada',
+          format('Venda de %s pneu(s) confirmada para %s.', v_requested_quantity, trim(coalesce(v_lead.nome_cliente, 'Cliente'))),
+          'lead',
+          v_lead.id,
+          '/dashboard/leads',
+          jsonb_build_object(
+            'cliente', trim(coalesce(v_lead.nome_cliente, 'Cliente')),
+            'produto', v_product_label,
+            'quantidade', v_requested_quantity
+          ),
+          concat('sale-completed:', v_lead.id::text)
+        );
+      end if;
+    end if;
+
     return jsonb_build_object(
       'success', true,
       'lead_id', p_lead_id,
