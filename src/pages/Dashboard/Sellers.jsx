@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
+import { useNotifications } from '../../hooks/useNotifications';
 import {
   Users,
   UserPlus,
@@ -21,6 +22,11 @@ import {
 
 export default function Sellers() {
   const { store, isOwner } = useStore();
+  const {
+    createPersistentNotification,
+    notifyTransientError,
+    notifyTransientWarning
+  } = useNotifications();
   const emptySellerForm = { nome: '', email: '', whatsapp: '', password: '', confirmPassword: '' };
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,11 +101,19 @@ export default function Sellers() {
 
     if (formData.password) {
       if (!isPasswordValid(formData.password)) {
-        alert('A senha precisa ter mínimo 5 caracteres, 1 número, 1 letra maiúscula e 1 letra minúscula.');
+        notifyTransientWarning({
+          title: 'Senha invalida',
+          message: 'A senha precisa ter minimo 5 caracteres, 1 numero, 1 letra maiuscula e 1 letra minuscula.',
+          category: 'vendedores'
+        });
         return;
       }
       if (formData.password !== formData.confirmPassword) {
-        alert('As senhas não coincidem.');
+        notifyTransientWarning({
+          title: 'Senha invalida',
+          message: 'As senhas nao coincidem.',
+          category: 'vendedores'
+        });
         return;
       }
     }
@@ -110,12 +124,25 @@ export default function Sellers() {
       if (result?.member_id) {
         await storageService.updateSellerWhatsapp(result.member_id, formData.whatsapp);
       }
-      alert(formData.password ? 'Vendedor criado/atualizado com sucesso.' : 'Convite enviado para o e-mail do vendedor.');
+      await createPersistentNotification({
+        type: 'success',
+        title: 'Vendedor cadastrado com sucesso.',
+        message: formData.password
+          ? 'O vendedor foi criado e ja pode acessar o painel.'
+          : 'O convite foi enviado para o e-mail do vendedor.',
+        category: 'general',
+        actionPath: '/dashboard/sellers'
+      });
       setInviteModalOpen(false);
       setFormData(emptySellerForm);
       loadMembers();
     } catch (err) {
-      alert('Erro ao processar vendedor: ' + err.message);
+      await createPersistentNotification({
+        type: 'error',
+        title: 'Nao foi possivel concluir',
+        message: err.message || 'Erro ao processar vendedor.',
+        category: 'operation_errors'
+      });
     } finally {
       setSubmitting(false);
     }
@@ -126,12 +153,20 @@ export default function Sellers() {
     if (submitting || !selectedMember) return;
 
     if (!isPasswordValid(newPasswordData.password)) {
-      alert('A senha precisa ter mínimo 5 caracteres, 1 número, 1 letra maiúscula e 1 letra minúscula.');
+      notifyTransientWarning({
+        title: 'Senha invalida',
+        message: 'A senha precisa ter minimo 5 caracteres, 1 numero, 1 letra maiuscula e 1 letra minuscula.',
+        category: 'vendedores'
+      });
       return;
     }
 
     if (newPasswordData.password !== newPasswordData.confirmPassword) {
-      alert('As senhas não coincidem.');
+      notifyTransientWarning({
+        title: 'Senha invalida',
+        message: 'As senhas nao coincidem.',
+        category: 'vendedores'
+      });
       return;
     }
 
@@ -142,13 +177,24 @@ export default function Sellers() {
         email: selectedMember.email,
         password: newPasswordData.password
       });
-      alert('Senha alterada com sucesso no sistema e no login.');
+      await createPersistentNotification({
+        type: 'success',
+        title: 'Senha alterada com sucesso.',
+        message: 'A nova senha do vendedor ja esta ativa no sistema.',
+        category: 'general',
+        actionPath: '/dashboard/sellers'
+      });
       setPasswordModalOpen(false);
       setNewPasswordData({ password: '', confirmPassword: '' });
       setSelectedMember(null);
       loadMembers();
     } catch (err) {
-      alert('Erro ao alterar senha: ' + err.message);
+      await createPersistentNotification({
+        type: 'error',
+        title: 'Nao foi possivel concluir',
+        message: err.message || 'Erro ao alterar senha.',
+        category: 'operation_errors'
+      });
     } finally {
       setSubmitting(false);
     }
@@ -161,7 +207,11 @@ export default function Sellers() {
       setCopiedEmailId(member.id);
       setTimeout(() => setCopiedEmailId(null), 2000);
     } catch (err) {
-      alert('Nao foi possivel copiar o e-mail. Tente novamente.');
+      notifyTransientError({
+        title: 'Falha ao copiar',
+        message: 'Nao foi possivel copiar o e-mail. Tente novamente.',
+        category: 'vendedores'
+      });
     }
   };
 
@@ -179,10 +229,21 @@ export default function Sellers() {
         memberId,
         action
       });
-      alert(result.message || 'Ação executada com sucesso');
+      await createPersistentNotification({
+        type: 'info',
+        title: 'Acesso atualizado',
+        message: result.message || 'A acao foi executada com sucesso.',
+        category: 'general',
+        actionPath: '/dashboard/sellers'
+      });
       loadMembers();
     } catch (err) {
-      alert('Erro ao gerenciar vendedor: ' + err.message);
+      await createPersistentNotification({
+        type: 'error',
+        title: 'Nao foi possivel concluir',
+        message: err.message || 'Erro ao gerenciar vendedor.',
+        category: 'operation_errors'
+      });
     }
   };
 
@@ -193,7 +254,11 @@ export default function Sellers() {
       setCopiedId(member.id);
       setTimeout(() => setCopiedId(null), 2000);
     } catch (err) {
-      alert('Nao foi possivel copiar o link. Tente novamente.');
+      notifyTransientError({
+        title: 'Falha ao copiar',
+        message: 'Nao foi possivel copiar o link. Tente novamente.',
+        category: 'vendedores'
+      });
     }
   };
 
@@ -205,16 +270,32 @@ export default function Sellers() {
   const handleSaveRefCode = async (memberId) => {
     const cleanRef = tempRefCode.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-');
     if (!cleanRef) {
-      alert('O código não pode estar vazio.');
+      notifyTransientWarning({
+        title: 'Codigo invalido',
+        message: 'O codigo nao pode estar vazio.',
+        category: 'vendedores'
+      });
       return;
     }
 
     try {
       await storageService.updateSellerRefCode(memberId, cleanRef);
       setEditingRefId(null);
+      await createPersistentNotification({
+        type: 'success',
+        title: 'Codigo atualizado',
+        message: 'O codigo referral do vendedor foi atualizado.',
+        category: 'general',
+        actionPath: '/dashboard/sellers'
+      });
       loadMembers();
     } catch (err) {
-      alert('Erro ao atualizar código: ' + err.message);
+      await createPersistentNotification({
+        type: 'error',
+        title: 'Nao foi possivel concluir',
+        message: err.message || 'Erro ao atualizar codigo.',
+        category: 'operation_errors'
+      });
     }
   };
 
@@ -225,7 +306,11 @@ export default function Sellers() {
 
   const handleSaveWhatsapp = async (memberId) => {
     if (String(tempWhatsapp || '').replace(/\D/g, '').length < 10) {
-      alert('Informe um WhatsApp válido para o vendedor.');
+      notifyTransientWarning({
+        title: 'WhatsApp invalido',
+        message: 'Informe um WhatsApp valido para o vendedor.',
+        category: 'vendedores'
+      });
       return;
     }
 
@@ -233,9 +318,20 @@ export default function Sellers() {
       await storageService.updateSellerWhatsapp(memberId, tempWhatsapp);
       setEditingWhatsappId(null);
       await loadMembers();
-      alert('WhatsApp do vendedor atualizado com sucesso.');
+      await createPersistentNotification({
+        type: 'success',
+        title: 'WhatsApp atualizado',
+        message: 'O WhatsApp do vendedor foi atualizado com sucesso.',
+        category: 'general',
+        actionPath: '/dashboard/sellers'
+      });
     } catch (err) {
-      alert('Erro ao atualizar WhatsApp: ' + err.message);
+      await createPersistentNotification({
+        type: 'error',
+        title: 'Nao foi possivel concluir',
+        message: err.message || 'Erro ao atualizar WhatsApp.',
+        category: 'operation_errors'
+      });
     }
   };
 

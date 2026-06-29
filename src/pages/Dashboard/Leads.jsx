@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
+import { useNotifications } from '../../hooks/useNotifications';
 import { CalendarDays, CheckCircle, Clock3, MessageSquare, Minus, Plus, Search, Trash2, XCircle } from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [10, 50, 100, 'all'];
@@ -90,6 +91,12 @@ const getPageNumbers = (currentPage, totalPages) => {
 
 export default function Leads() {
   const { store, isOwner, user, member } = useStore();
+  const {
+    createPersistentNotification,
+    notifyTransientError,
+    notifyTransientSuccess,
+    notifyTransientWarning
+  } = useNotifications();
   const [leads, setLeads] = useState([]);
   const [filterText, setFilterText] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -223,10 +230,22 @@ export default function Leads() {
 
     try {
       await storageService.deleteLead(leadId, store.id);
+      notifyTransientSuccess({
+        title: 'Lead removido com sucesso.',
+        message: 'O lead foi removido da sua lista.',
+        category: 'leads',
+        actionPath: '/dashboard/leads'
+      });
       setFeedbackMessage({ type: 'success', text: 'Lead removido com sucesso.' });
       await loadData({ silent: true });
     } catch (err) {
       console.error('Erro ao excluir lead:', err);
+      await createPersistentNotification({
+        type: 'error',
+        title: 'Nao foi possivel concluir',
+        message: err.message || 'Nao foi possivel remover este lead.',
+        category: 'operation_errors'
+      });
       setFeedbackMessage({
         type: 'error',
         text: err.message || 'Não foi possível remover este lead. Tente novamente.'
@@ -323,6 +342,11 @@ export default function Leads() {
         updateQuantitySaveState(leadId, {
           status: 'error',
           message: error?.message || 'Não foi possível salvar a quantidade.'
+        });
+        notifyTransientError({
+          title: 'Nao foi possivel concluir',
+          message: error?.message || 'Nao foi possivel salvar a quantidade.',
+          category: 'operation_errors'
         });
         setFeedbackMessage({
           type: 'error',
@@ -449,6 +473,11 @@ export default function Leads() {
 
     if (nextStatus === 'vendido') {
       if (availableStock !== null && availableStock <= 0) {
+        notifyTransientWarning({
+          title: 'Estoque indisponivel',
+          message: 'Nao ha estoque suficiente para confirmar esta venda.',
+          category: 'leads'
+        });
         setFeedbackMessage({ type: 'error', text: 'Estoque indisponível.' });
         return;
       }
@@ -474,6 +503,17 @@ export default function Leads() {
       const soldQuantity = nextStatus === 'vendido' ? quantity : null;
       const desiredQuantity = quantity;
       await storageService.updateLeadAttendanceStatus(lead.id, nextStatus, soldQuantity, desiredQuantity);
+      await createPersistentNotification({
+        type: 'success',
+        title: nextStatus === 'vendido' ? 'Venda finalizada' : 'Lead atualizado',
+        message: nextStatus === 'vendido'
+          ? `Venda confirmada para ${lead.nome_cliente}.`
+          : 'O status do lead foi atualizado com sucesso.',
+        category: nextStatus === 'vendido' ? 'sales' : 'general',
+        actionPath: '/dashboard/leads',
+        entityType: 'lead',
+        entityId: lead.id
+      });
       setFeedbackMessage({
         type: 'success',
         text: nextStatus === 'vendido'
@@ -485,6 +525,12 @@ export default function Leads() {
       await loadData({ silent: true });
     } catch (err) {
       console.error('Erro ao atualizar status do lead:', err);
+      await createPersistentNotification({
+        type: 'error',
+        title: 'Nao foi possivel concluir',
+        message: err.message || 'Nao foi possivel atualizar o status do lead.',
+        category: 'operation_errors'
+      });
       setFeedbackMessage({
         type: 'error',
         text: err.message || 'Não foi possível atualizar o status do lead.'
