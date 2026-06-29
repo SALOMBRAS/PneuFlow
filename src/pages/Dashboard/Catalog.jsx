@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
+import { useNotifications } from '../../hooks/useNotifications';
 import { IMAGE_UPLOAD_ACCEPT } from '../../utils/imageOptimizer';
 import { 
   Plus, 
@@ -24,6 +25,10 @@ const MAX_IMAGES_PER_TIRE = 2;
 
 export default function Catalog() {
   const { store, isOwner } = useStore();
+  const {
+    createPersistentNotification,
+    notifyTransientWarning
+  } = useNotifications();
   const [tires, setTires] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -125,19 +130,31 @@ export default function Catalog() {
     const currentCount = currentImages.length;
 
     if (currentCount >= MAX_IMAGES_PER_TIRE) {
-      alert(`Este anúncio já atingiu o limite de ${MAX_IMAGES_PER_TIRE} imagens. Remova uma imagem para enviar outra.`);
+      notifyTransientWarning({
+        title: 'Limite de imagens',
+        message: `Este anuncio ja atingiu o limite de ${MAX_IMAGES_PER_TIRE} imagens.`,
+        category: 'catalogo'
+      });
       e.target.value = '';
       return;
     }
 
     if (files.length > MAX_IMAGES_PER_TIRE) {
-      alert(`Você pode enviar no máximo ${MAX_IMAGES_PER_TIRE} imagens por anúncio.`);
+      notifyTransientWarning({
+        title: 'Limite de imagens',
+        message: `Voce pode enviar no maximo ${MAX_IMAGES_PER_TIRE} imagens por anuncio.`,
+        category: 'catalogo'
+      });
       e.target.value = '';
       return;
     }
 
     if (currentCount + files.length > MAX_IMAGES_PER_TIRE) {
-      alert(`Você só pode adicionar mais ${MAX_IMAGES_PER_TIRE - currentCount} imagem(ns).`);
+      notifyTransientWarning({
+        title: 'Espaco restante',
+        message: `Voce so pode adicionar mais ${MAX_IMAGES_PER_TIRE - currentCount} imagem(ns).`,
+        category: 'catalogo'
+      });
       e.target.value = '';
       return;
     }
@@ -155,7 +172,12 @@ export default function Catalog() {
         };
       });
     } catch (err) {
-      alert(err.message || 'Erro ao enviar fotos. Verifique se o bucket "pneus-fotos" existe no Supabase.');
+      await createPersistentNotification({
+        type: 'error',
+        title: 'Falha no upload',
+        message: err.message || 'Nao foi possivel enviar as fotos.',
+        category: 'operation_errors'
+      });
     } finally {
       setSubmitting(false);
       e.target.value = '';
@@ -188,7 +210,11 @@ export default function Catalog() {
     if (submitting) return;
 
     if (!formData.marca || !formData.modelo || !formData.medida || !formData.preco) {
-      alert('Preencha os campos obrigatórios (*).');
+      notifyTransientWarning({
+        title: 'Campos obrigatorios',
+        message: 'Preencha os campos obrigatorios antes de salvar.',
+        category: 'catalogo'
+      });
       return;
     }
 
@@ -215,15 +241,38 @@ export default function Catalog() {
 
       if (formData.id) {
         await storageService.updatePneu(formData.id, pneuData);
+        await createPersistentNotification({
+          type: 'success',
+          title: 'Pneu atualizado',
+          message: `${formData.marca} ${formData.modelo} foi atualizado com sucesso.`,
+          category: 'general',
+          actionPath: '/dashboard/catalog',
+          entityType: 'pneu',
+          entityId: formData.id
+        });
       } else {
-        await storageService.createPneu(pneuData);
+        const created = await storageService.createPneu(pneuData);
+        await createPersistentNotification({
+          type: 'success',
+          title: 'Pneu cadastrado com sucesso.',
+          message: `${formData.marca} ${formData.modelo} ja esta disponivel no catalogo.`,
+          category: 'general',
+          actionPath: '/dashboard/catalog',
+          entityType: 'pneu',
+          entityId: created?.id || null
+        });
       }
 
       setTireModalOpen(false);
       loadData();
     } catch (error) {
       console.error('Erro completo ao salvar pneu:', error);
-      alert(`Erro ao salvar pneu: ${error.message}`);
+      await createPersistentNotification({
+        type: 'error',
+        title: 'Nao foi possivel concluir',
+        message: error.message || 'Erro ao salvar pneu.',
+        category: 'operation_errors'
+      });
     } finally {
       setSubmitting(false);
     }
@@ -233,9 +282,21 @@ export default function Catalog() {
     if (window.confirm('Tem certeza que deseja excluir este pneu? Esta ação não pode ser desfeita.')) {
       try {
         await storageService.deletePneu(id);
+        await createPersistentNotification({
+          type: 'success',
+          title: 'Pneu removido',
+          message: 'O pneu foi excluido do catalogo.',
+          category: 'general',
+          actionPath: '/dashboard/catalog'
+        });
         loadData();
       } catch (err) {
-        alert('Erro ao excluir pneu.');
+        await createPersistentNotification({
+          type: 'error',
+          title: 'Nao foi possivel concluir',
+          message: 'Erro ao excluir pneu.',
+          category: 'operation_errors'
+        });
       }
     }
   };
