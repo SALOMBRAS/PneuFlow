@@ -195,7 +195,7 @@ export default function Leads() {
       if (!silent) {
         setFeedbackMessage({
           type: 'error',
-          text: err.message || 'NÃ£o foi possÃ­vel carregar os leads.'
+          text: err.message || 'Não foi possível carregar os leads.'
         });
       }
     } finally {

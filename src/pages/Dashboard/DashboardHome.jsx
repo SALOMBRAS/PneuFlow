@@ -262,7 +262,7 @@ export default function DashboardHome() {
       console.error('Erro ao carregar dados do dashboard:', err);
       setCommercialMetrics(emptyCommercialMetrics);
       setLeads([]);
-      setMetricsError('Algumas mÃ©tricas nÃ£o puderam ser carregadas agora.');
+      setMetricsError('Algumas métricas não puderam ser carregadas agora.');
     } finally {
       setMetricsLoading(false);
     }
@@ -395,7 +395,7 @@ export default function DashboardHome() {
   const getPopularTires = () => {
     const counts = {};
     leads.forEach(l => {
-      const name = l.produto_nome || 'Pneu nÃ£o identificado';
+      const name = l.produto_nome || 'Pneu não identificado';
       counts[name] = (counts[name] || 0) + 1;
     });
     
@@ -496,7 +496,7 @@ export default function DashboardHome() {
       details: [
         { label: 'Total de leads', value: commercialMetrics.totalLeads },
         { label: 'Vendas confirmadas', value: commercialMetrics.totalSales },
-        { label: 'Ãšltimo lead', value: latestLead?.nome_cliente || 'Nenhum' },
+        { label: 'Último lead', value: latestLead?.nome_cliente || 'Nenhum' },
         { label: 'Origem principal', value: latestLead?.origem || 'WhatsApp' }
       ],
       description: 'Contatos comerciais gerados pelos CTAs da vitrine.',
@@ -555,9 +555,9 @@ export default function DashboardHome() {
     },
     {
       id: 'visits',
-      label: 'VisualizaÃ§Ãµes',
+      label: 'Visualizações',
       value: visits,
-      helper: 'Vitrine pÃºblica e referral',
+      helper: 'Vitrine pública e referral',
       icon: <Eye size={20} />,
       tone: 'blue',
       theme: createMetricTheme('#3b82f6', '59, 130, 246', 'rgba(59, 130, 246, 0.12)'),
@@ -581,9 +581,9 @@ export default function DashboardHome() {
     },
     {
       id: 'conversion',
-      label: 'Taxa de conversÃ£o',
+      label: 'Taxa de conversão',
       value: `${conversionRate}%`,
-      helper: 'Leads por visualizaÃ§Ãµes',
+      helper: 'Leads por visualizações',
       icon: <Percent size={20} />,
       tone: 'purple',
       details: [
@@ -699,13 +699,13 @@ export default function DashboardHome() {
       {/* Welcome Header */}
       <div className="flex-between" style={{ marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '32px', margin: 0, textAlign: 'left' }}>OlÃ¡, {user?.user_metadata?.full_name?.split(' ')[0] || 'UsuÃ¡rio'}!</h1>
+          <h1 style={{ fontSize: '32px', margin: 0, textAlign: 'left' }}>Olá, {user?.user_metadata?.full_name?.split(' ')[0] || 'Usuário'}!</h1>
           <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              ðŸª <strong>{store.nome}</strong>
+              🏪 <strong>{store.nome}</strong>
             </span>
             <span style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              ðŸ‘¤ FunÃ§Ã£o: <strong style={{ textTransform: 'capitalize' }}>{role === 'owner' ? 'Dono' : 'Vendedor'}</strong>
+              👤 Função: <strong style={{ textTransform: 'capitalize' }}>{role === 'owner' ? 'Dono' : 'Vendedor'}</strong>
             </span>
             {!isSeller && (
               <span style={{ 
@@ -719,7 +719,7 @@ export default function DashboardHome() {
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
               >
-                ðŸ’Ž Plano: <strong style={{ color: 'var(--primary)', textTransform: 'uppercase' }}>{store.plano}</strong>
+                💎 Plano: <strong style={{ color: 'var(--primary)', textTransform: 'uppercase' }}>{store.plano}</strong>
                 <div 
                   onClick={() => setShowPlanTooltip(!showPlanTooltip)}
                   style={{ 
@@ -766,11 +766,11 @@ export default function DashboardHome() {
                     }} />
                     
                     {store.plano === 'free' ? (
-                      <p>VocÃª estÃ¡ no <strong>plano Free</strong>. Entre em contato com o suporte para desbloquear os recursos avanÃ§ados do plano PRO.</p>
+                      <p>Você está no <strong>plano Free</strong>. Entre em contato com o suporte para desbloquear os recursos avançados do plano PRO.</p>
                     ) : (
                       <p>
-                        Seu plano PRO vence em <strong>{store.plan_due_date ? new Date(store.plan_due_date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Data IndisponÃ­vel'}</strong>.
-                        Para evitar a alteraÃ§Ã£o automÃ¡tica para o plano Free, entre em contato com o suporte e regularize sua renovaÃ§Ã£o.
+                        Seu plano PRO vence em <strong>{store.plan_due_date ? new Date(store.plan_due_date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Data Indisponível'}</strong>.
+                        Para evitar a alteração automática para o plano Free, entre em contato com o suporte e regularize sua renovação.
                       </p>
                     )}
                     <button 
@@ -799,7 +799,7 @@ export default function DashboardHome() {
             )}
             {!isSeller && (
               <span style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                ðŸ“… Desde: <strong>{new Date(store.created_at).toLocaleDateString('pt-BR')}</strong>
+                📅 Desde: <strong>{new Date(store.created_at).toLocaleDateString('pt-BR')}</strong>
               </span>
             )}
           </div>
@@ -906,7 +906,7 @@ export default function DashboardHome() {
             textAlign: 'left'
           }}
         >
-          {metricsLoading ? 'Carregando mÃ©tricas comerciais...' : metricsError}
+          {metricsLoading ? 'Carregando métricas comerciais...' : metricsError}
         </div>
       )}
 
@@ -937,7 +937,7 @@ export default function DashboardHome() {
             className="dashboard-mobile-detail-sheet"
             role="dialog"
             aria-modal="true"
-            aria-label={`Detalhes de ${activeMetric?.label || 'mÃ©trica'}`}
+            aria-label={`Detalhes de ${activeMetric?.label || 'métrica'}`}
             onClick={(event) => event.stopPropagation()}
           >
             <MetricDetailsPanel
@@ -956,7 +956,7 @@ export default function DashboardHome() {
           <div className="flex-between dashboard-home-section-header" style={{ marginBottom: '18px' }}>
             <div>
               <h3 style={{ fontSize: '18px', margin: 0 }}>Leads Recentes</h3>
-              <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>Ãšltimos contatos recebidos pela vitrine.</p>
+              <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>Últimos contatos recebidos pela vitrine.</p>
             </div>
             <button onClick={() => navigate('/dashboard/leads')} className="btn btn-outline dashboard-small-action">
               Ver todos <ArrowRight size={12} />
@@ -965,7 +965,7 @@ export default function DashboardHome() {
 
           {leads.length === 0 ? (
             <div className="dashboard-empty-block">
-              Nenhum lead gerado ainda. Divulgue sua vitrine para comeÃ§ar a receber contatos.
+              Nenhum lead gerado ainda. Divulgue sua vitrine para começar a receber contatos.
             </div>
           ) : (
             <div className="dashboard-home-leads-list">
@@ -974,19 +974,19 @@ export default function DashboardHome() {
                   <div className="flex-between dashboard-home-lead-top">
                     <div className="dashboard-home-lead-name">
                       <span>{lead.nome_cliente || 'Cliente Interessado'}</span>
-                      <span>{lead.produto_nome || 'Pneu nÃ£o identificado'}</span>
+                      <span>{lead.produto_nome || 'Pneu não identificado'}</span>
                     </div>
                     <span className="dashboard-home-lead-date">
                       {lead.created_at ? new Date(lead.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}
                     </span>
                   </div>
                   <div className="dashboard-home-lead-meta">
-                    <span>Origem:</span>
+                    <span>📦 Origem:</span>
                     <strong>{lead.origem || 'WhatsApp'}</strong>
                     {lead.produto_medida && (
                       <>
                         <span className="dashboard-home-lead-separator">|</span>
-                        <span>Ref: {lead.produto_medida}</span>
+                        <span>📏 Ref: {lead.produto_medida}</span>
                       </>
                     )}
                   </div>
@@ -1000,7 +1000,7 @@ export default function DashboardHome() {
             className="card dashboard-home-actions-card dashboard-glow-card dashboard-actions-compact"
             style={{ '--dashboard-glow-color': '245, 158, 11' }}
           >
-            <h3>AÃ§Ãµes RÃ¡pidas</h3>
+            <h3>Ações Rápidas</h3>
             <div className="dashboard-home-actions">
               <button onClick={() => navigate('/dashboard/catalog')} className="btn btn-primary">
                 <Plus size={15} /> Cadastrar Pneu
@@ -1018,7 +1018,7 @@ export default function DashboardHome() {
               <TrendingUp size={18} style={{ color: 'var(--primary)' }} /> Pneus Mais Procurados
             </h3>
             {popularTires.length === 0 ? (
-              <p className="dashboard-empty-text">Aguardando interaÃ§Ãµes na vitrine para gerar estatÃ­sticas.</p>
+              <p className="dashboard-empty-text">Aguardando interações na vitrine para gerar estatísticas.</p>
             ) : (
               <div className="dashboard-home-popular-list">
                 {popularTires.map((tire, idx) => (
@@ -1038,7 +1038,7 @@ export default function DashboardHome() {
             </h3>
 
             {commercialMetrics.sellerRanking.length === 0 ? (
-              <p className="dashboard-empty-text">Ainda nÃ£o hÃ¡ leads, vendas ou visitas para montar o ranking.</p>
+              <p className="dashboard-empty-text">Ainda não há leads, vendas ou visitas para montar o ranking.</p>
             ) : (
               <div className="dashboard-home-ranking-list">
                 {commercialMetrics.sellerRanking.slice(0, 5).map((seller, idx) => (
@@ -1072,7 +1072,7 @@ export default function DashboardHome() {
             className="card dashboard-home-actions-card dashboard-glow-card dashboard-actions-compact"
             style={{ '--dashboard-glow-color': '245, 158, 11' }}
           >
-            <h3>AÃ§Ãµes RÃ¡pidas</h3>
+            <h3>Ações Rápidas</h3>
             <div className="dashboard-home-actions">
               <button onClick={() => navigate('/dashboard/catalog')} className="btn btn-primary">
                 <Plus size={15} /> Cadastrar Pneu
@@ -1122,19 +1122,19 @@ export default function DashboardHome() {
               icon={<DollarSign size={18} />}
             />
             <MetricTile
-              label="Taxa de conversÃ£o"
+              label="Taxa de conversão"
               value={`${conversionRate}%`}
               helper="Vendas confirmadas por visitas"
               icon={<Percent size={18} />}
               tone="purple"
             />
           </div>
-          <p className="dashboard-section-note">ConversÃ£o calculada por vendas confirmadas / visualizaÃ§Ãµes.</p>
+          <p className="dashboard-section-note">Conversão calculada por vendas confirmadas / visualizações.</p>
         </DashboardSection>
 
         <DashboardSection
           id="dashboard-catalog-section"
-          title="CatÃ¡logo e Estoque"
+          title="Catálogo e Estoque"
           isOpen={openSections.catalog}
           onToggle={() => toggleSection('catalog')}
           summary={
@@ -1149,7 +1149,7 @@ export default function DashboardHome() {
             <MetricTile
               label={isSeller ? 'Meus pneus' : 'Total de pneus'}
               value={commercialMetrics.totalTires}
-              helper="Modelos no catÃ¡logo"
+              helper="Modelos no catálogo"
               icon={<Layers size={18} />}
             />
             <MetricTile
@@ -1172,7 +1172,7 @@ export default function DashboardHome() {
               <TrendingUp size={18} style={{ color: 'var(--primary)' }} /> Pneus Mais Procurados
             </h3>
             {popularTires.length === 0 ? (
-              <p className="dashboard-empty-text">Aguardando interaÃ§Ãµes na vitrine para gerar estatÃ­sticas.</p>
+              <p className="dashboard-empty-text">Aguardando interações na vitrine para gerar estatísticas.</p>
             ) : (
               <div className="dashboard-home-popular-list">
                 {popularTires.map((tire, idx) => (
@@ -1189,27 +1189,27 @@ export default function DashboardHome() {
 
         <DashboardSection
           id="dashboard-sellers-section"
-          title="IndicaÃ§Ãµes e Vendedores"
+          title="Indicações e Vendedores"
           isOpen={openSections.sellers}
           onToggle={() => toggleSection('sellers')}
           summary={
             <>
-              <SummaryPill label="VisualizaÃ§Ãµes" value={visits} tone="primary" />
+              <SummaryPill label="Visualizações" value={visits} tone="primary" />
               <SummaryPill label="Melhor vendedor" value={bestSeller?.name || 'Sem dados'} />
-              <SummaryPill label="ConversÃ£o geral" value={`${conversionRate}%`} tone="success" />
+              <SummaryPill label="Conversão geral" value={`${conversionRate}%`} tone="success" />
             </>
           }
         >
           <div className="dashboard-section-grid">
             <MetricTile
-              label="VisualizaÃ§Ãµes da vitrine"
+              label="Visualizações da vitrine"
               value={visits}
-              helper="Visitas por indicaÃ§Ã£o"
+              helper="Visitas por indicação"
               icon={<Eye size={18} />}
               tone="blue"
             />
             <MetricTile
-              label="ConversÃ£o geral"
+              label="Conversão geral"
               value={`${conversionRate}%`}
               helper="Vendas confirmadas por visitas"
               icon={<Percent size={18} />}
@@ -1230,7 +1230,7 @@ export default function DashboardHome() {
             </h3>
 
             {commercialMetrics.sellerRanking.length === 0 ? (
-              <p className="dashboard-empty-text">Ainda nÃ£o hÃ¡ leads, vendas ou visitas para montar o ranking.</p>
+              <p className="dashboard-empty-text">Ainda não há leads, vendas ou visitas para montar o ranking.</p>
             ) : (
               <div className="dashboard-home-ranking-list">
                 {commercialMetrics.sellerRanking.slice(0, 5).map((seller, idx) => (
@@ -1267,14 +1267,14 @@ export default function DashboardHome() {
           summary={
             <>
               <SummaryPill label="Recentes" value={Math.min(leads.length, 4)} />
-              <SummaryPill label="Ãšltimo lead" value={latestLead?.nome_cliente || 'Nenhum'} tone="primary" />
+              <SummaryPill label="Último lead" value={latestLead?.nome_cliente || 'Nenhum'} tone="primary" />
             </>
           }
         >
           <div className="dashboard-section-header-row">
             <div>
               <h3>Leads Recentes (WhatsApp)</h3>
-              <p>Ãšltimos contatos recebidos pela vitrine.</p>
+              <p>Últimos contatos recebidos pela vitrine.</p>
             </div>
             <button onClick={() => navigate('/dashboard/leads')} className="btn btn-outline">
               Ver todos <ArrowRight size={12} />
@@ -1283,7 +1283,7 @@ export default function DashboardHome() {
 
           {leads.length === 0 ? (
             <div className="dashboard-empty-block">
-              Nenhum lead gerado ainda. Coloque o link da sua vitrine nas redes sociais para comeÃ§ar a receber contatos!
+              Nenhum lead gerado ainda. Coloque o link da sua vitrine nas redes sociais para começar a receber contatos!
             </div>
           ) : (
             <div className="dashboard-home-leads-list">
@@ -1292,7 +1292,7 @@ export default function DashboardHome() {
                   <div className="flex-between dashboard-home-lead-top">
                     <div className="dashboard-home-lead-name">
                       <span>{lead.nome_cliente || 'Cliente Interessado'}</span>
-                      <span>{lead.produto_nome || 'Pneu nÃ£o identificado'}</span>
+                      <span>{lead.produto_nome || 'Pneu não identificado'}</span>
                     </div>
                     <span className="dashboard-home-lead-date">
                       {lead.created_at ? new Date(lead.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}
@@ -1382,14 +1382,14 @@ export default function DashboardHome() {
         {!isSeller && (
           <div {...metricCardProps} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '20px', '--dashboard-glow-color': '245, 158, 11' }}>
             <div className="flex-between" style={{ marginBottom: '12px' }}>
-              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>VisualizaÃ§Ãµes</span>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>Visualizações</span>
               <div style={{ color: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '6px', borderRadius: '6px' }}>
                 <Eye size={20} />
               </div>
             </div>
             <div>
               <h3 style={{ fontSize: '28px', lineHeight: '1.2' }}>{visits}</h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Visitas Ã  sua vitrine</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Visitas à sua vitrine</p>
             </div>
           </div>
         )}
@@ -1397,7 +1397,7 @@ export default function DashboardHome() {
         {!isSeller && (
           <div {...metricCardProps} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '20px', '--dashboard-glow-color': '245, 158, 11' }}>
             <div className="flex-between" style={{ marginBottom: '12px' }}>
-              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>Taxa de ConversÃ£o</span>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>Taxa de Conversão</span>
               <div style={{ color: '#a855f7', backgroundColor: 'rgba(168, 85, 247, 0.1)', padding: '6px', borderRadius: '6px' }}>
                 <Percent size={20} />
               </div>
@@ -1431,7 +1431,7 @@ export default function DashboardHome() {
           
           {leads.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)' }}>
-              Nenhum lead gerado ainda. Coloque o link da sua vitrine nas redes sociais para comeÃ§ar a receber contatos!
+              Nenhum lead gerado ainda. Coloque o link da sua vitrine nas redes sociais para começar a receber contatos!
             </div>
           ) : (
             <div className="dashboard-home-leads-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1450,19 +1450,19 @@ export default function DashboardHome() {
                   <div className="flex-between dashboard-home-lead-top" style={{ marginBottom: '8px' }}>
                     <div className="dashboard-home-lead-name" style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                       <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{lead.nome_cliente || 'Cliente Interessado'}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 600, wordBreak: 'break-word' }}>{lead.produto_nome || 'Pneu nÃ£o identificado'}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 600, wordBreak: 'break-word' }}>{lead.produto_nome || 'Pneu não identificado'}</span>
                     </div>
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {lead.created_at ? new Date(lead.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}
                     </span>
                   </div>
                   <div className="dashboard-home-lead-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
-                    <span>ðŸ“¦ Origem:</span>
+                    <span>📦 Origem:</span>
                     <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{lead.origem || 'WhatsApp'}</span>
                     {lead.produto_medida && (
                       <>
                         <span style={{ margin: '0 4px', opacity: 0.3 }}>|</span>
-                        <span>ðŸ“ Ref: {lead.produto_medida}</span>
+                        <span>📏 Ref: {lead.produto_medida}</span>
                       </>
                     )}
                   </div>
@@ -1482,7 +1482,7 @@ export default function DashboardHome() {
             </h3>
             
             {popularTires.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Aguardando interaÃ§Ãµes na vitrine para gerar estatÃ­sticas.</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Aguardando interações na vitrine para gerar estatísticas.</p>
             ) : (
               <div className="dashboard-home-popular-list">
                 {popularTires.map((tire, idx) => (
@@ -1503,7 +1503,7 @@ export default function DashboardHome() {
             </h3>
 
             {commercialMetrics.sellerRanking.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Ainda nÃ£o hÃ¡ leads, vendas ou visitas para montar o ranking.</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Ainda não há leads, vendas ou visitas para montar o ranking.</p>
             ) : (
               <div className="dashboard-home-ranking-list">
                 {commercialMetrics.sellerRanking.slice(0, 5).map((seller, idx) => (
@@ -1540,7 +1540,7 @@ export default function DashboardHome() {
 
           {/* Quick Actions */}
           <div {...metricCardProps} className="card dashboard-home-actions-card dashboard-glow-card" style={{ padding: '24px', '--dashboard-glow-color': '245, 158, 11' }}>
-            <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>AÃ§Ãµes RÃ¡pidas</h3>
+            <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>Ações Rápidas</h3>
             <div className="dashboard-home-actions" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <button 
                 onClick={() => navigate('/dashboard/catalog')} 
