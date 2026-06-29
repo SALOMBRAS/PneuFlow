@@ -31,15 +31,6 @@ create table if not exists public.notification_preferences (
   primary key (user_id, store_id)
 );
 
-create table if not exists public.notification_stock_state (
-  store_id uuid not null references public.stores(id) on delete cascade,
-  product_id uuid primary key references public.pneus(id) on delete cascade,
-  low_stock_alert_active boolean not null default false,
-  out_of_stock_alert_active boolean not null default false,
-  alert_cycle integer not null default 0,
-  updated_at timestamptz not null default now()
-);
-
 create index if not exists idx_notifications_recipient_created_at
   on public.notifications (recipient_user_id, created_at desc);
 
@@ -371,128 +362,6 @@ begin
 end;
 $$;
 
-create or replace function public.handle_pneu_stock_notifications()
-returns trigger
-language plpgsql
-security definer
-set search_path to 'public', 'pg_temp'
-as $$
-declare
-  v_owner_id uuid;
-  v_old_stock integer := coalesce(old.estoque, 0);
-  v_new_stock integer := coalesce(new.estoque, 0);
-  v_product_label text;
-  v_low_stock_alert_active boolean := false;
-  v_out_of_stock_alert_active boolean := false;
-  v_alert_cycle integer := 0;
-begin
-  if tg_op <> 'UPDATE' then
-    return new;
-  end if;
-
-  if v_old_stock = v_new_stock then
-    return new;
-  end if;
-
-  select s.owner_id
-  into v_owner_id
-  from public.stores s
-  where s.id = new.loja_id;
-
-  if v_owner_id is null then
-    return new;
-  end if;
-
-  v_product_label := trim(concat(coalesce(new.marca, ''), ' ', coalesce(new.modelo, ''), ' ', coalesce(new.medida, '')));
-  insert into public.notification_stock_state (
-    store_id,
-    product_id
-  )
-  values (
-    new.loja_id,
-    new.id
-  )
-  on conflict (product_id) do nothing;
-
-  select
-    ns.low_stock_alert_active,
-    ns.out_of_stock_alert_active,
-    ns.alert_cycle
-  into
-    v_low_stock_alert_active,
-    v_out_of_stock_alert_active,
-    v_alert_cycle
-  from public.notification_stock_state ns
-  where ns.product_id = new.id
-  for update;
-
-  if v_new_stock > 3 then
-    if v_old_stock <= 3 or v_low_stock_alert_active or v_out_of_stock_alert_active then
-      update public.notification_stock_state
-      set low_stock_alert_active = false,
-          out_of_stock_alert_active = false,
-          alert_cycle = alert_cycle + 1,
-          updated_at = now()
-      where product_id = new.id
-      returning alert_cycle into v_alert_cycle;
-    end if;
-
-    return new;
-  end if;
-
-  if v_new_stock between 1 and 3 and not v_low_stock_alert_active then
-    perform public.create_notifications_for_users(
-      new.loja_id,
-      array[v_owner_id],
-      'warning',
-      'low_stock',
-      'Estoque baixo',
-      format('%s possui apenas %s unidade(s).', coalesce(nullif(v_product_label, ''), 'Este pneu'), v_new_stock),
-      'pneu',
-      new.id,
-      '/dashboard/catalog',
-      jsonb_build_object('estoque', v_new_stock),
-      concat('stock-low:', new.id::text, ':cycle:', v_alert_cycle::text)
-    );
-
-    update public.notification_stock_state
-    set low_stock_alert_active = true,
-        updated_at = now()
-    where product_id = new.id;
-  end if;
-
-  if v_new_stock = 0 and not v_out_of_stock_alert_active then
-    perform public.create_notifications_for_users(
-      new.loja_id,
-      array[v_owner_id],
-      'error',
-      'out_of_stock',
-      'Pneu esgotado',
-      format('%s ficou sem estoque.', coalesce(nullif(v_product_label, ''), 'Este pneu')),
-      'pneu',
-      new.id,
-      '/dashboard/catalog',
-      jsonb_build_object('estoque', v_new_stock),
-      concat('stock-out:', new.id::text, ':cycle:', v_alert_cycle::text)
-    );
-
-    update public.notification_stock_state
-    set low_stock_alert_active = true,
-        out_of_stock_alert_active = true,
-        updated_at = now()
-    where product_id = new.id;
-  end if;
-
-  return new;
-end;
-$$;
-
-drop trigger if exists pneus_stock_notifications_trigger on public.pneus;
-create trigger pneus_stock_notifications_trigger
-after update of estoque on public.pneus
-for each row
-execute function public.handle_pneu_stock_notifications();
-
 create or replace function public.registrar_lead(
   p_loja_id uuid,
   p_produto_id uuid default null,
@@ -819,35 +688,6 @@ begin
         sold_quantity = v_requested_quantity
     where id = p_lead_id;
 
-    if v_current_status <> 'vendido' then
-      select s.owner_id
-      into v_owner_id
-      from public.stores s
-      where s.id = v_lead.loja_id;
-
-      v_recipients := array_remove(array[v_owner_id, v_lead.seller_id], null);
-      v_product_label := coalesce(nullif(trim(coalesce(v_lead.produto_nome, '')), ''), 'pneu');
-
-      if array_length(v_recipients, 1) is not null then
-        perform public.create_notifications_for_users(
-          v_lead.loja_id,
-          v_recipients,
-          'success',
-          'sales',
-          'Venda finalizada',
-          format('Venda de %s pneu(s) confirmada para %s.', v_requested_quantity, trim(coalesce(v_lead.nome_cliente, 'Cliente'))),
-          'lead',
-          v_lead.id,
-          '/dashboard/leads',
-          jsonb_build_object(
-            'cliente', trim(coalesce(v_lead.nome_cliente, 'Cliente')),
-            'produto', v_product_label,
-            'quantidade', v_requested_quantity
-          ),
-          concat('sale-completed:', v_lead.id::text)
-        );
-      end if;
-    end if;
     return jsonb_build_object(
       'success', true,
       'lead_id', p_lead_id,
@@ -900,7 +740,6 @@ alter function public.create_notifications_for_users(uuid, uuid[], text, text, t
 alter function public.create_notification_for_current_user(uuid, text, text, text, text, text, uuid, text, jsonb) owner to postgres;
 alter function public.mark_all_notifications_read(uuid) owner to postgres;
 alter function public.upsert_notification_preference(uuid, boolean, jsonb) owner to postgres;
-alter function public.handle_pneu_stock_notifications() owner to postgres;
 alter function public.registrar_lead(uuid, uuid, text, text, text, numeric, text, uuid, text, text, integer) owner to postgres;
 alter function public.atualizar_status_atendimento_lead(uuid, text, integer, integer) owner to postgres;
 
@@ -910,7 +749,6 @@ revoke all on function public.create_notifications_for_users(uuid, uuid[], text,
 revoke all on function public.create_notification_for_current_user(uuid, text, text, text, text, text, uuid, text, jsonb) from public;
 revoke all on function public.mark_all_notifications_read(uuid) from public;
 revoke all on function public.upsert_notification_preference(uuid, boolean, jsonb) from public;
-revoke all on function public.handle_pneu_stock_notifications() from public;
 grant select, update on public.notifications to authenticated;
 grant select, insert, update on public.notification_preferences to authenticated;
 grant execute on function public.create_notification_for_current_user(uuid, text, text, text, text, text, uuid, text, jsonb) to authenticated;
