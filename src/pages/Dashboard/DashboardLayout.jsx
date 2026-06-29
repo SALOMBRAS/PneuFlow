@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
+import { NotificationBell } from '../../components/Notifications';
 import {
   BarChart2,
   Layers,
@@ -494,6 +495,20 @@ export default function DashboardLayout({ children }) {
             </Link>
           </section>
         )}
+        <div
+          style={{
+            width: 'min(1120px, calc(100% - 32px))',
+            margin: trialMessage ? '0 auto 18px' : '0 auto 18px',
+            display: 'flex',
+            justifyContent: 'flex-end'
+          }}
+          className="dashboard-topbar"
+        >
+          <NotificationBell />
+        </div>
+        <div className="dashboard-mobile-bell">
+          <NotificationBell mobileFloating />
+        </div>
         {children}
       </main>
 
@@ -599,6 +614,17 @@ export default function DashboardLayout({ children }) {
         }
 
         @media (max-width: 640px) {
+          .dashboard-topbar {
+            display: none !important;
+          }
+
+          .dashboard-mobile-bell {
+            position: fixed;
+            right: 16px;
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            z-index: 45;
+          }
+
           .dashboard-main > section[role="status"] {
             width: calc(100% - 24px) !important;
             padding: 14px !important;
@@ -608,6 +634,12 @@ export default function DashboardLayout({ children }) {
           .dashboard-main > section[role="status"] .btn {
             width: 100% !important;
             justify-content: center !important;
+          }
+        }
+
+        @media (min-width: 641px) {
+          .dashboard-mobile-bell {
+            display: none !important;
           }
         }
       `}</style>
