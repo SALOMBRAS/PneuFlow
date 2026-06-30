@@ -1,5 +1,7 @@
 import React from 'react';
 import { Search, ArrowRight, MapPin, Clock3, MessageSquare, Sparkles } from 'lucide-react';
+import { formatBRLCurrency } from '../../../utils/currency';
+import { getAvailabilityLabel, getAvailableOfferCount, getOfferDescriptor, getOfferTitle, isKitOffer } from '../../../utils/tireOffer';
 
 export default function VehicleSearchBox({
   store,
@@ -30,17 +32,14 @@ export default function VehicleSearchBox({
     store.banner ||
     'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=1400';
 
-  const heroTitle = heroTire?.medida || 'Medida premium';
-  const heroSubtitle = [heroTire?.marca, heroTire?.modelo].filter(Boolean).join(' • ') || 'Marca em destaque';
+  const heroTitle = getOfferTitle(heroTire) || heroTire?.medida || 'Medida premium';
+  const heroSubtitle = [heroTire?.marca, heroTire?.medida, getOfferDescriptor(heroTire)].filter(Boolean).join(' • ') || 'Marca em destaque';
   const heroDescription =
     heroTire?.descricao ||
     heroTire?.description ||
     'Foto do pneu em destaque com compra rápida no WhatsApp.';
-  const heroPrice = Number(heroTire?.preco || 0).toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  const inStock = Number(heroTire?.estoque || 0) > 0;
+  const heroPrice = formatBRLCurrency(heroTire?.preco || 0);
+  const inStock = getAvailableOfferCount(heroTire) > 0;
   const heroContactDisabled = !commercialContactEnabled || (Boolean(heroTire) && !inStock);
 
   return (
@@ -131,12 +130,11 @@ export default function VehicleSearchBox({
                   <div className="featured-hero__info-row">
                     <span className="hero-product-line__tag">{heroTitle}</span>
                     <span className={`hero-product-stock ${inStock ? 'hero-product-stock--success' : 'hero-product-stock--muted'}`}>
-                      {inStock ? 'Pronta entrega' : 'Sob consulta'}
+                      {inStock ? getAvailabilityLabel(heroTire) : 'Sob consulta'}
                     </span>
                   </div>
 
                   <div className="hero-product-price">
-                    <span>R$</span>
                     {heroPrice}
                   </div>
 
@@ -144,12 +142,12 @@ export default function VehicleSearchBox({
                     type="button"
                     className={`button button--primary button--wide button--xl hero-buy-button ${heroContactDisabled ? 'commercial-disabled' : ''}`}
                     onClick={() => (heroTire ? onHeroInterest(heroTire) : onScrollToCatalog())}
-                    aria-label={heroTire ? `Comprar ${heroTire.marca || ''} ${heroTire.modelo || heroTire.medida || 'pneu'} pelo WhatsApp` : 'Comprar pelo WhatsApp'}
+                    aria-label={heroTire ? `Comprar ${getOfferTitle(heroTire) || heroTire.medida || 'pneu'} pelo WhatsApp` : 'Comprar pelo WhatsApp'}
                     disabled={heroContactDisabled}
                     aria-disabled={heroContactDisabled}
                   >
                     <MessageSquare size={18} />
-                    {heroTire && !inStock ? 'Indisponivel' : 'Comprar no WhatsApp'}
+                    {heroTire && !inStock ? 'Indisponivel' : isKitOffer(heroTire) ? 'Comprar kit no WhatsApp' : 'Comprar no WhatsApp'}
                   </button>
                 </div>
               </div>

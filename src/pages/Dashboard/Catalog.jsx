@@ -3,6 +3,18 @@ import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
 import { useNotifications } from '../../hooks/useNotifications';
 import { IMAGE_UPLOAD_ACCEPT } from '../../utils/imageOptimizer';
+import CurrencyInput from '../../components/CurrencyInput';
+import { formatBRLCurrency, parseBRLCurrency } from '../../utils/currency';
+import {
+  getAvailableOfferCount,
+  getOfferBadgeLabel,
+  getOfferDescriptor,
+  getOfferRemainder,
+  getOfferTitle,
+  getQuantityPerOffer,
+  isKitOffer,
+  normalizeOfferQuantity
+} from '../../utils/tireOffer';
 import { 
   Plus, 
   Edit3, 
@@ -44,8 +56,10 @@ export default function Catalog() {
     id: '',
     marca: '',
     modelo: '',
+    titulo_anuncio: '',
     medida: '',
     preco: '',
+    quantidade_por_anuncio: 1,
     estoque: 0,
     descricao: '',
     status: 'ativo',
@@ -79,8 +93,10 @@ export default function Catalog() {
       id: '',
       marca: '',
       modelo: '',
+      titulo_anuncio: '',
       medida: '',
       preco: '',
+      quantidade_por_anuncio: 1,
       estoque: 0,
       descricao: '',
       status: 'ativo',
@@ -99,8 +115,10 @@ export default function Catalog() {
       id: tire.id,
       marca: tire.marca,
       modelo: tire.modelo,
+      titulo_anuncio: tire.titulo_anuncio || '',
       medida: tire.medida,
-      preco: tire.preco.toString(),
+      preco: Number(tire.preco || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      quantidade_por_anuncio: getQuantityPerOffer(tire),
       estoque: tire.estoque,
       descricao: tire.descricao || '',
       status: tire.status || 'ativo',
@@ -118,7 +136,11 @@ export default function Catalog() {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (checked ? 'ativo' : 'inativo') : value
+      [name]: name === 'quantidade_por_anuncio'
+        ? normalizeOfferQuantity(value, 1)
+        : type === 'checkbox'
+          ? (checked ? 'ativo' : 'inativo')
+          : value
     }));
   };
 
@@ -218,6 +240,37 @@ export default function Catalog() {
       return;
     }
 
+    const parsedPrice = parseBRLCurrency(formData.preco);
+    const quantityPerOffer = normalizeOfferQuantity(formData.quantidade_por_anuncio, 1);
+    const trimmedTitle = String(formData.titulo_anuncio || '').trim();
+
+    if (String(formData.titulo_anuncio || '').length > 0 && !trimmedTitle) {
+      notifyTransientWarning({
+        title: 'Titulo invalido',
+        message: 'O titulo do anuncio nao pode conter apenas espacos.',
+        category: 'catalogo'
+      });
+      return;
+    }
+
+    if (trimmedTitle.length > 100) {
+      notifyTransientWarning({
+        title: 'Titulo muito longo',
+        message: 'Use no maximo 100 caracteres no titulo do anuncio.',
+        category: 'catalogo'
+      });
+      return;
+    }
+
+    if (parsedPrice == null) {
+      notifyTransientWarning({
+        title: 'Preco invalido',
+        message: 'Informe um preco valido no formato brasileiro.',
+        category: 'catalogo'
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
       if (!store?.id) {
@@ -228,8 +281,10 @@ export default function Catalog() {
         loja_id: store.id,
         marca: formData.marca,
         modelo: formData.modelo,
+        titulo_anuncio: trimmedTitle || null,
         medida: formData.medida,
-        preco: parseFloat(formData.preco),
+        preco: parsedPrice,
+        quantidade_por_anuncio: quantityPerOffer,
         estoque: parseInt(formData.estoque) || 0,
         descricao: formData.descricao,
         status: formData.status,
@@ -312,6 +367,14 @@ export default function Catalog() {
   const uniqueBrands = [...new Set(tires.map(t => t.marca))];
   const activeTiresCount = tires.filter((tire) => tire.status === 'ativo').length;
   const totalStockCount = tires.reduce((sum, tire) => sum + Number(tire.estoque || 0), 0);
+  const parsedFormPrice = parseBRLCurrency(formData.preco);
+  const formQuantityPerOffer = normalizeOfferQuantity(formData.quantidade_por_anuncio, 1);
+  const formStock = Math.max(0, Number.parseInt(formData.estoque, 10) || 0);
+  const formAvailableOffers = Math.floor(formStock / formQuantityPerOffer);
+  const formRemainder = formStock % formQuantityPerOffer;
+  const formOfferDescriptor = getOfferDescriptor({ quantidade_por_anuncio: formQuantityPerOffer });
+  const formPreviewTitle = String(formData.titulo_anuncio || '').trim() || String(formData.modelo || '').trim();
+
   const getStockState = (stock) => {
     const qty = Number(stock || 0);
 
@@ -466,8 +529,11 @@ export default function Catalog() {
                     {tire.tipo_veiculo === 'moto' ? '🏍️ Moto' : '🚗 Carro'}
                   </span>
                 </div>
-                <h3 style={{ fontSize: '18px', margin: '2px 0 6px', fontWeight: 600 }}>{tire.modelo}</h3>
+                <h3 style={{ fontSize: '18px', margin: '2px 0 6px', fontWeight: 600 }}>{getOfferTitle(tire)}</h3>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  {isKitOffer(tire) && (
+                    <span className="badge badge-warning" style={{ fontSize: '11px' }}>{getOfferBadgeLabel(tire)}</span>
+                  )}
                   <span className="badge badge-warning" style={{ fontSize: '11px' }}>{tire.medida}</span>
                 </div>
                 <div className="catalog-stock-inline" aria-label={`Estoque atual: ${tire.estoque || 0}`}>
@@ -478,14 +544,21 @@ export default function Catalog() {
                     return (
                       <>
                         <StockIcon size={13} />
-                        <span>Estoque: {Number(tire.estoque || 0)}</span>
+                        <span>
+                          {isKitOffer(tire)
+                            ? `${getAvailableOfferCount(tire)} kits completos (${Number(tire.estoque || 0)} pneus fisicos)`
+                            : `Estoque: ${Number(tire.estoque || 0)}`}
+                        </span>
                       </>
                     );
                   })()}
                 </div>
                 
                 <div style={{ marginTop: 'auto' }}>
-                  <p style={{ fontSize: '20px', fontWeight: 800, color: 'var(--primary)', margin: 0 }}>R$ {tire.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                  <p style={{ fontSize: '20px', fontWeight: 800, color: 'var(--primary)', margin: 0 }}>{formatBRLCurrency(tire.preco)}</p>
+                  <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '12px' }}>
+                    {getOfferDescriptor(tire)}
+                  </p>
                 </div>
               </div>
 
@@ -556,6 +629,21 @@ export default function Catalog() {
 
               <div className="grid-cols-2" style={{ gap: '16px' }}>
                 <div className="form-group">
+                  <label className="form-label">Título do anúncio</label>
+                  <input
+                    type="text"
+                    name="titulo_anuncio"
+                    maxLength="100"
+                    placeholder="Ex: Kit com 2 Pneus Continental PremiumContact 6"
+                    className="form-input"
+                    value={formData.titulo_anuncio}
+                    onChange={handleInputChange}
+                  />
+                  <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
+                    Nome exibido na vitrine. Se ficar vazio, o modelo do pneu será usado.
+                  </small>
+                </div>
+                <div className="form-group">
                   <label className="form-label">Medida *</label>
                   <input 
                     type="text" 
@@ -567,24 +655,58 @@ export default function Catalog() {
                     onChange={handleInputChange} 
                   />
                 </div>
+              </div>
+
+              <div className="grid-cols-2" style={{ gap: '16px' }}>
                 <div className="form-group">
-                  <label className="form-label">Preço (R$) *</label>
-                  <input 
-                    type="number" 
+                  <label className="form-label">Preço do anúncio (R$) *</label>
+                  <CurrencyInput
                     name="preco"
-                    step="0.01" 
                     required 
-                    placeholder="Ex: 689.90" 
-                    className="form-input" 
+                    placeholder="Ex: 1.478,46"
                     value={formData.preco} 
                     onChange={handleInputChange} 
                   />
+                  <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
+                    {formQuantityPerOffer > 1
+                      ? `Valor total do kit com ${formQuantityPerOffer} pneus.`
+                      : 'Valor de um pneu.'}
+                  </small>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Pneus incluídos no anúncio</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    step="1"
+                    name="quantidade_por_anuncio"
+                    className="form-input"
+                    value={formData.quantidade_por_anuncio}
+                    onChange={handleInputChange}
+                  />
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+                    {[1, 2, 4].map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        className="btn btn-outline"
+                        style={{ padding: '8px 10px', fontSize: '12px' }}
+                        onClick={() => setFormData((prev) => ({ ...prev, quantidade_por_anuncio: option }))}
+                      >
+                        {option} pneu{option === 1 ? '' : 's'}
+                      </button>
+                    ))}
+                  </div>
+                  <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
+                    Informe 1 para venda unitária, 2 para kit com dois pneus e assim por diante.
+                  </small>
                 </div>
               </div>
 
               <div className="grid-cols-2" style={{ gap: '16px' }}>
                 <div className="form-group">
-                  <label className="form-label">Estoque (Qtd)</label>
+                  <label className="form-label">Estoque físico</label>
                   <input 
                     type="number" 
                     name="estoque"
@@ -606,6 +728,39 @@ export default function Catalog() {
                   </select>
                 </div>
               </div>
+
+              {(parsedFormPrice != null || formStock > 0 || formPreviewTitle) && (
+                <div
+                  style={{
+                    marginTop: '4px',
+                    marginBottom: '8px',
+                    padding: '14px 16px',
+                    borderRadius: '16px',
+                    border: '1px solid rgba(245, 158, 11, 0.18)',
+                    background: 'rgba(245, 158, 11, 0.08)'
+                  }}
+                >
+                  {parsedFormPrice != null && formPreviewTitle && (
+                    <p style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {formQuantityPerOffer > 1
+                        ? `${formOfferDescriptor} por ${formatBRLCurrency(parsedFormPrice)}.`
+                        : `${formPreviewTitle} por ${formatBRLCurrency(parsedFormPrice)}.`}
+                    </p>
+                  )}
+                  {formStock > 0 && (
+                    <p style={{ margin: '6px 0 0', color: 'var(--text-secondary)' }}>
+                      {formQuantityPerOffer > 1
+                        ? `Estoque atual permite ${formAvailableOffers} kit${formAvailableOffers === 1 ? '' : 's'} completo${formAvailableOffers === 1 ? '' : 's'}.`
+                        : `Estoque atual: ${formStock} pneu${formStock === 1 ? '' : 's'}.`}
+                    </p>
+                  )}
+                  {formQuantityPerOffer > 1 && formRemainder > 0 && (
+                    <p style={{ margin: '6px 0 0', color: 'var(--warning)' }}>
+                      O estoque possui {formRemainder} pneu(s) que não completam outro kit.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="grid-cols-2" style={{ gap: '16px' }}>
                 <div className="form-group">
