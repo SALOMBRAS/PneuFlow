@@ -1349,6 +1349,13 @@ a {
   gap: 12px;
 }
 
+.pf-notification-center__notifications-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .pf-notification-center__tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1405,6 +1412,17 @@ a {
   min-height: 38px;
   padding: 8px 12px;
   font-size: 13px;
+}
+
+.pf-notification-center__list-shell {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
+    rgba(10, 14, 21, 0.8);
 }
 
 .pf-notification-center__preferences {
@@ -1477,11 +1495,13 @@ a {
 }
 
 .pf-notification-center__list {
+  max-height: min(56dvh, 520px);
   display: grid;
   gap: 10px;
   overflow: auto;
   min-height: 0;
-  padding-right: 2px;
+  padding: 14px;
+  scrollbar-gutter: stable;
 }
 
 .pf-notification-center__settings {
@@ -1811,6 +1831,11 @@ a {
     padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
   }
 
+  .pf-notification-center__notifications-panel {
+    gap: 12px;
+    min-height: 0;
+  }
+
   .pf-notification-center__toolbar,
   .pf-notification-center__preferences {
     flex-direction: column;
@@ -1827,6 +1852,15 @@ a {
 
   .pf-notification-center__footer .btn {
     width: 100%;
+  }
+
+  .pf-notification-center__list-shell {
+    border-radius: 20px;
+  }
+
+  .pf-notification-center__list {
+    max-height: none;
+    padding: 12px;
   }
 
   .pf-notification-center__header,
