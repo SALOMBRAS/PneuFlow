@@ -12,6 +12,20 @@ const CATEGORY_ITEMS = [
   { id: 'operation_errors', label: 'Erros importantes' }
 ];
 
+function NotificationSwitch({ checked, label, onToggle }) {
+  return (
+    <button
+      type="button"
+      className={`pf-notification-switch ${checked ? 'is-enabled' : ''}`}
+      aria-pressed={checked}
+      aria-label={label}
+      onClick={onToggle}
+    >
+      <span />
+    </button>
+  );
+}
+
 export default function NotificationCenter() {
   const navigate = useNavigate();
   const {
@@ -79,7 +93,7 @@ export default function NotificationCenter() {
             aria-label="Fechar central"
             onClick={closeCenter}
           >
-            <X size={18} />
+            <X size={20} strokeWidth={2.4} />
           </button>
         </header>
 
@@ -175,15 +189,11 @@ export default function NotificationCenter() {
                 <span><SlidersHorizontal size={14} /> Mostrar avisos na tela do computador</span>
                 <small>Exibe notificacoes rapidas enquanto voce usa o PneuFlow no computador.</small>
               </div>
-              <button
-                type="button"
-                className={`pf-notification-switch ${popupEnabled ? 'is-enabled' : ''}`}
-                aria-pressed={popupEnabled}
-                aria-label="Mostrar avisos na tela do computador"
-                onClick={() => setPopupEnabled(!popupEnabled)}
-              >
-                <span />
-              </button>
+              <NotificationSwitch
+                checked={popupEnabled}
+                label="Mostrar avisos na tela do computador"
+                onToggle={() => setPopupEnabled(!popupEnabled)}
+              />
             </section>
 
             <section className="pf-notification-center__category-panel">
@@ -197,15 +207,11 @@ export default function NotificationCenter() {
                     <div>
                       <strong>{item.label}</strong>
                     </div>
-                    <button
-                      type="button"
-                      className={`pf-notification-switch ${categoryPreferences[item.id] ? 'is-enabled' : ''}`}
-                      aria-pressed={categoryPreferences[item.id]}
-                      aria-label={item.label}
-                      onClick={() => setCategoryEnabled(item.id, !categoryPreferences[item.id])}
-                    >
-                      <span />
-                    </button>
+                    <NotificationSwitch
+                      checked={categoryPreferences[item.id]}
+                      label={item.label}
+                      onToggle={() => setCategoryEnabled(item.id, !categoryPreferences[item.id])}
+                    />
                   </label>
                 ))}
               </div>
