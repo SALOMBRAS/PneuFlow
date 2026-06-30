@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
 import { MessageSquare, Car, Bike, Info, ShieldCheck, Zap, Gauge } from 'lucide-react';
 import QuantitySelector from './QuantitySelector';
-
-const formatPrice = (value) =>
-  Number(value || 0).toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+import { formatBRLCurrency } from '../../../utils/currency';
+import {
+  getAvailabilityLabel,
+  getAvailableOfferCount,
+  getOfferBadgeLabel,
+  getOfferDescriptor,
+  getOfferQuantityLabel,
+  getPhysicalTireTotal,
+  getQuantityPerOffer,
+  getQuantitySelectorLabel,
+  isKitOffer
+} from '../../../utils/tireOffer';
 
 export default function ProductCard({ tire, primaryColor, onInterest, onDetail, commercialContactEnabled = true }) {
-  const stockCount = Math.max(0, Number(tire.estoque || 0));
+  const stockCount = getAvailableOfferCount(tire);
   const isStock = stockCount > 0;
   const [desiredQuantity, setDesiredQuantity] = useState(1);
   const image = tire.foto_principal_url || tire.image || 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=800';
   const vehicleLabel = tire.tipo_veiculo === 'moto' ? 'Moto' : 'Carro';
   const compatibility = tire.compatibilidade || tire.compatibility || tire.version || tire.descricao || 'Compatibilidade sob consulta';
   const contactDisabled = !commercialContactEnabled || !isStock;
+  const quantityPerOffer = getQuantityPerOffer(tire);
+  const physicalTotal = getPhysicalTireTotal(desiredQuantity, quantityPerOffer);
+  const helperText = isKitOffer(tire)
+    ? `${getOfferQuantityLabel(desiredQuantity, tire)} = ${physicalTotal} pneus.`
+    : '';
 
   return (
     <article className="product-card">
@@ -42,11 +53,14 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
             {tire.tipo_veiculo === 'moto' ? <Bike size={12} /> : <Car size={12} />}
             {vehicleLabel}
           </span>
+          {isKitOffer(tire) ? (
+            <span className="product-badge product-badge--accent">{getOfferBadgeLabel(tire)}</span>
+          ) : null}
           <span className="product-badge product-badge--spec">{tire.medida}</span>
         </div>
 
         <span className={`stock-pill ${isStock ? 'stock-pill--success' : 'stock-pill--warning'}`}>
-          {isStock ? `${stockCount} disponivel${stockCount === 1 ? '' : 's'}` : 'Indisponivel'}
+          {getAvailabilityLabel(tire)}
         </span>
       </button>
 
@@ -59,7 +73,7 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
           </span>
         </div>
 
-        <h3 className="product-title">{tire.modelo}</h3>
+        <h3 className="product-title">{tire.titulo_anuncio || tire.modelo}</h3>
 
         <div className="product-compatibility">
           <ShieldCheck size={14} />
@@ -80,17 +94,18 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
           value={desiredQuantity}
           max={stockCount}
           onChange={setDesiredQuantity}
+          label={getQuantitySelectorLabel(tire)}
+          availabilityText={getAvailabilityLabel(tire)}
+          helperText={helperText}
           compact
           disabled={!commercialContactEnabled}
         />
 
         <div className="product-price-row">
           <div>
-            <span className="product-price-label">A partir de</span>
-            <div className="product-price">
-              <span style={{ color: primaryColor }}>R$</span>
-              {formatPrice(tire.preco)}
-            </div>
+            <span className="product-price-label">{isKitOffer(tire) ? 'Preço do kit' : 'A partir de'}</span>
+            <div className="product-price" style={{ color: primaryColor }}>{formatBRLCurrency(tire.preco)}</div>
+            <small style={{ color: 'var(--text-muted)' }}>{getOfferDescriptor(tire)}</small>
           </div>
           <button
             onClick={() => onDetail(tire)}

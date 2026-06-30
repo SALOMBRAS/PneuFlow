@@ -12,6 +12,7 @@ import {
   formatDate,
   validateReportConfig
 } from './components/dashboardReportUtils';
+import { getLeadTotalValue } from '../../utils/tireOffer';
 import { 
   Layers, 
   MessageSquare, 
@@ -58,9 +59,6 @@ const formatPercent = (value) => {
     maximumFractionDigits: 1
   });
 };
-
-const normalizeRevenueQuantity = (value, fallback = 1) =>
-  Math.max(1, Number.parseInt(value ?? fallback, 10) || 1);
 
 const createMetricTheme = (accent, accentRgb, iconBackground) => ({
   accent,
@@ -142,13 +140,12 @@ const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits =
 
   leads.forEach((lead) => {
     const entry = ensureRankingEntry(resolveSeller(lead));
-    const price = Number(lead.produto_preco || 0);
     const isSold = lead.venda_confirmada === true;
 
     entry.leads += 1;
     if (isSold) {
       entry.sales += 1;
-      entry.revenue += price;
+      entry.revenue += getLeadTotalValue(lead, 'sold');
     }
   });
 
@@ -175,7 +172,7 @@ const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits =
   return {
     totalLeads: leads.length,
     totalSales: confirmedSales.length,
-    confirmedRevenue: confirmedSales.reduce((sum, lead) => sum + Number(lead.produto_preco || 0), 0),
+    confirmedRevenue: confirmedSales.reduce((sum, lead) => sum + getLeadTotalValue(lead, 'sold'), 0),
     totalTires: pneus.length,
     activeTires: pneus.filter((pneu) => pneu.status === 'ativo').length,
     totalStock: pneus.reduce((sum, pneu) => sum + Number(pneu.estoque || 0), 0),
@@ -427,25 +424,19 @@ export default function DashboardHome() {
 
   const revenueOpportunity = useMemo(() => {
     return leads.reduce((acc, lead) => {
-      const price = Number(lead?.produto_preco || 0);
-      if (!Number.isFinite(price) || price <= 0) {
+      const leadValue = getLeadTotalValue(lead, lead?.status_atendimento === 'vendido' ? 'sold' : 'desired');
+      if (!Number.isFinite(leadValue) || leadValue <= 0) {
         return acc;
       }
 
       const status = lead?.status_atendimento || (lead?.venda_confirmada ? 'vendido' : 'em_atendimento');
-      const quantity = normalizeRevenueQuantity(
-        status === 'vendido'
-          ? lead?.sold_quantity ?? lead?.desired_quantity
-          : lead?.desired_quantity ?? lead?.sold_quantity,
-        1
-      );
 
       if (status === 'em_atendimento') {
         acc.pendingCount += 1;
-        acc.pendingValue += price * quantity;
+        acc.pendingValue += leadValue;
       } else if (status === 'desistencia') {
         acc.withdrawalCount += 1;
-        acc.withdrawalValue += price * quantity;
+        acc.withdrawalValue += leadValue;
       }
 
       return acc;

@@ -4,7 +4,7 @@ import { optimizeImageToWebp } from '../utils/imageOptimizer';
 const STORE_COLUMNS = 'id, owner_id, nome, whatsapp, telefone, endereco, cidade, estado, logo, banner, foto_capa, cor_principal, cor_secundaria, seo_titulo, seo_descricao, plano, plan_due_date, subscription_status, trial_started_at, trial_ends_at, subscription_started_at, current_period_end, payment_provider, payment_subscription_id, created_at, slug, tipo_vitrine, template_vitrine';
 const PUBLIC_STORE_COLUMNS = 'id, nome, whatsapp, telefone, endereco, cidade, estado, logo, banner, foto_capa, cor_principal, cor_secundaria, seo_titulo, seo_descricao, plano, subscription_status, trial_ends_at, current_period_end, created_at, slug, tipo_vitrine, template_vitrine';
 const STORE_MEMBER_COLUMNS = 'id, store_id, user_id, email, nome, role, status, invited_by, invited_at, accepted_at, created_at, updated_at, ref_code, disabled_at, removed_at, auth_deleted_at, removed_by, senha_inicial, whatsapp';
-const PNEU_COLUMNS = 'id, loja_id, marca, modelo, medida, preco, estoque, descricao, status, compatibilidade, foto_principal_url, fotos, created_at, updated_at, tipo_veiculo, created_by, updated_by';
+const PNEU_COLUMNS = 'id, loja_id, marca, modelo, titulo_anuncio, medida, preco, quantidade_por_anuncio, estoque, descricao, status, compatibilidade, foto_principal_url, fotos, created_at, updated_at, tipo_veiculo, created_by, updated_by';
 
 const normalizeLeadQuantity = (value, fallback = 1) =>
   Math.max(1, Number.parseInt(value ?? fallback, 10) || 1);
@@ -589,8 +589,14 @@ export const storageService = {
       p_produto_id: payload.produto_id || null,
       p_nome_cliente: payload.nome_cliente,
       p_produto_nome: payload.produto_nome || '',
+      p_titulo_anuncio: payload.titulo_anuncio || null,
       p_produto_medida: payload.produto_medida || '',
       p_produto_preco: Number(payload.produto_preco || 0),
+      p_preco_anuncio: Number(payload.preco_anuncio ?? payload.produto_preco ?? 0),
+      p_quantidade_anuncios: Math.max(1, Number.parseInt(payload.quantidade_anuncios ?? payload.desired_quantity, 10) || 1),
+      p_quantidade_por_anuncio: Math.max(1, Number.parseInt(payload.quantidade_por_anuncio, 10) || 1),
+      p_quantidade_total_pneus: Math.max(1, Number.parseInt(payload.quantidade_total_pneus, 10) || 1),
+      p_valor_total: Number(payload.valor_total ?? 0),
       p_desired_quantity: Math.max(1, Number.parseInt(payload.desired_quantity, 10) || 1),
       p_origem: payload.origem || 'whatsapp',
       p_seller_id: payload.seller_id || null,
@@ -639,7 +645,7 @@ export const storageService = {
     return data;
   },
 
-  updateLeadAttendanceStatus: async (leadId, status, soldQuantity = 1, desiredQuantity = null) => {
+  updateLeadAttendanceStatus: async (leadId, status, soldQuantity = 1, desiredQuantity = null, snapshot = {}) => {
     const normalizedDesiredQuantity =
       desiredQuantity == null
         ? null
@@ -653,7 +659,11 @@ export const storageService = {
       p_lead_id: leadId,
       p_status_atendimento: status,
       p_sold_quantity: normalizedSoldQuantity,
-      p_desired_quantity: normalizedDesiredQuantity
+      p_desired_quantity: normalizedDesiredQuantity,
+      p_titulo_anuncio: snapshot.titulo_anuncio || null,
+      p_preco_anuncio: snapshot.preco_anuncio == null ? null : Number(snapshot.preco_anuncio),
+      p_quantidade_por_anuncio: snapshot.quantidade_por_anuncio == null ? null : normalizeLeadQuantity(snapshot.quantidade_por_anuncio),
+      p_valor_total: snapshot.valor_total == null ? null : Number(snapshot.valor_total)
     });
 
     if (error) {
@@ -681,11 +691,11 @@ export const storageService = {
     const requests = {
       leads: supabase
         .from('leads')
-        .select('id, loja_id, produto_id, seller_id, ref_code, attribution_source, nome_cliente, produto_nome, produto_medida, produto_preco, origem, created_at, desired_quantity, sold_quantity, status_atendimento, venda_confirmada, venda_confirmada_em, venda_confirmada_por')
+        .select('id, loja_id, produto_id, seller_id, ref_code, attribution_source, nome_cliente, produto_nome, titulo_anuncio, produto_medida, produto_preco, preco_anuncio, origem, created_at, desired_quantity, sold_quantity, quantidade_anuncios, quantidade_por_anuncio, quantidade_total_pneus, valor_total, status_atendimento, venda_confirmada, venda_confirmada_em, venda_confirmada_por')
         .eq('loja_id', storeId),
       pneus: supabase
         .from('pneus')
-        .select('id, loja_id, status, estoque, created_by')
+        .select('id, loja_id, marca, modelo, titulo_anuncio, medida, preco, quantidade_por_anuncio, status, estoque, created_by')
         .eq('loja_id', storeId),
       sellers: supabase
         .from('store_members')
@@ -771,11 +781,17 @@ export const storageService = {
       'ref_code',
       'nome_cliente',
       'produto_nome',
+      'titulo_anuncio',
       'produto_medida',
       'produto_preco',
+      'preco_anuncio',
       'created_at',
       'desired_quantity',
       'sold_quantity',
+      'quantidade_anuncios',
+      'quantidade_por_anuncio',
+      'quantidade_total_pneus',
+      'valor_total',
       'status_atendimento',
       'venda_confirmada',
       'venda_confirmada_em',
@@ -852,7 +868,7 @@ export const storageService = {
           'estoque',
           supabase
             .from('pneus')
-            .select('id, marca, modelo, medida, estoque, status')
+            .select('id, marca, modelo, titulo_anuncio, medida, preco, quantidade_por_anuncio, estoque, status')
             .eq('loja_id', storeId)
             .order('estoque', { ascending: true })
         )
@@ -882,6 +898,7 @@ export const storageService = {
         ...lead,
         marca: product?.marca || '',
         modelo: product?.modelo || '',
+        titulo_anuncio: lead.titulo_anuncio || product?.titulo_anuncio || null,
         medida: product?.medida || lead.produto_medida || ''
       };
     };

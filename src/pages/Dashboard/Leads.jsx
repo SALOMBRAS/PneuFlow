@@ -3,6 +3,15 @@ import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
 import { useNotifications } from '../../hooks/useNotifications';
 import { CalendarDays, CheckCircle, Clock3, MessageSquare, Minus, Plus, Search, Trash2, XCircle } from 'lucide-react';
+import { formatBRLCurrency } from '../../utils/currency';
+import {
+  getLeadOfferPrice,
+  getLeadOfferQuantity,
+  getLeadPhysicalQuantity,
+  getLeadQuantityPerOffer,
+  getLeadSummaryLabel,
+  getLeadTotalValue
+} from '../../utils/tireOffer';
 
 const PAGE_SIZE_OPTIONS = [10, 50, 100, 'all'];
 
@@ -38,7 +47,11 @@ const normalizeQuantity = (value, fallback = 1) =>
 
 const getLeadAvailableStock = (lead) => {
   const stock = Number(lead?.estoque_disponivel);
-  return Number.isFinite(stock) ? Math.max(0, stock) : null;
+  if (!Number.isFinite(stock)) {
+    return null;
+  }
+
+  return Math.max(0, Math.floor(stock / getLeadQuantityPerOffer(lead)));
 };
 
 const clampQuantityForLead = (value, lead, fallback = 1) => {
@@ -52,11 +65,9 @@ const clampQuantityForLead = (value, lead, fallback = 1) => {
   return Math.min(normalized, availableStock);
 };
 
-const getLeadFinalQuantity = (lead) =>
-  normalizeQuantity(lead.sold_quantity ?? lead.desired_quantity, 1);
+const getLeadFinalQuantity = (lead) => getLeadOfferQuantity(lead, 'sold');
 
-const getLeadEditableQuantity = (lead) =>
-  normalizeQuantity(lead.desired_quantity ?? lead.sold_quantity, 1);
+const getLeadEditableQuantity = (lead) => getLeadOfferQuantity(lead, 'desired');
 
 const getLeadAttendanceStatus = (lead) => {
   if (lead.status_atendimento && LEAD_STATUS[lead.status_atendimento]) {
@@ -470,6 +481,14 @@ export default function Leads() {
       currentStatus === 'vendido' ? getLeadFinalQuantity(currentLead) : getLeadEditableQuantity(currentLead)
     );
     const availableStock = getLeadAvailableStock(currentLead);
+    const quantityPerOffer = getLeadQuantityPerOffer(currentLead);
+    const physicalQuantity = quantity * quantityPerOffer;
+    const summaryLabel = getLeadSummaryLabel({
+      ...currentLead,
+      quantidade_anuncios: quantity,
+      quantidade_total_pneus: physicalQuantity
+    });
+    const totalValue = getLeadOfferPrice(currentLead) * quantity;
 
     if (nextStatus === 'vendido') {
       if (availableStock !== null && availableStock <= 0) {
@@ -482,7 +501,7 @@ export default function Leads() {
         return;
       }
 
-      const confirmed = window.confirm(`Confirmar a venda de ${quantity} pneu(s)?`);
+      const confirmed = window.confirm(`Confirmar a venda de ${summaryLabel}?`);
       if (!confirmed) return;
     }
 
@@ -502,14 +521,22 @@ export default function Leads() {
     try {
       const soldQuantity = nextStatus === 'vendido' ? quantity : null;
       const desiredQuantity = quantity;
-      await storageService.updateLeadAttendanceStatus(lead.id, nextStatus, soldQuantity, desiredQuantity);
-      notifyTransientSuccess({
+      await storageService.updateLeadAttendanceStatus(lead.id, nextStatus, soldQuantity, desiredQuantity, {
+        titulo_anuncio: lead.titulo_anuncio || null,
+        preco_anuncio: getLeadOfferPrice(lead),
+        quantidade_por_anuncio: quantityPerOffer,
+        valor_total: totalValue
+      });
+      await createPersistentNotification({
+        type: 'success',
         title: nextStatus === 'vendido' ? 'Venda finalizada' : 'Lead atualizado',
         message: nextStatus === 'vendido'
-          ? `Venda confirmada para ${lead.nome_cliente}.`
+          ? `Venda de ${summaryLabel} confirmada para ${lead.nome_cliente}.`
           : 'O status do lead foi atualizado com sucesso.',
         category: nextStatus === 'vendido' ? 'sales' : 'general',
-        actionPath: '/dashboard/leads'
+        actionPath: '/dashboard/leads',
+        entityType: 'lead',
+        entityId: lead.id
       });
       setFeedbackMessage({
         type: 'success',
@@ -823,7 +850,7 @@ export default function Leads() {
                             {status === 'em_atendimento' ? (
                               <div className="lead-sale-quantity-control">
                                 <label htmlFor={`quantity-${lead.id}`}>
-                                  Quantidade de pneus
+                                  {getLeadQuantityPerOffer(lead) > 1 ? 'Quantidade de kits' : 'Quantidade desejada'}
                                 </label>
                                 <div className="lead-sale-quantity-field">
                                   <button
@@ -845,7 +872,7 @@ export default function Leads() {
                                     onChange={(event) => handleQuantityChange(lead.id, event.target.value)}
                                     onBlur={() => handleQuantityBlur(lead.id)}
                                     disabled={isUpdating || !canEditQuantity}
-                                    aria-label="Quantidade de pneus"
+                                    aria-label={getLeadQuantityPerOffer(lead) > 1 ? 'Quantidade de kits' : 'Quantidade desejada'}
                                   />
                                   <button
                                     type="button"
@@ -877,15 +904,17 @@ export default function Leads() {
                                         ? quantitySaveState.message
                                         : availableStock !== null && availableStock <= 0
                                           ? 'Estoque indisponível.'
-                                          : `Limite atual: ${availableStock ?? quantityValue} pneu(s).`}
+                                          : getLeadQuantityPerOffer(lead) > 1
+                                            ? `Limite atual: ${availableStock ?? quantityValue} kit(s).`
+                                            : `Limite atual: ${availableStock ?? quantityValue} pneu(s).`}
                                 </span>
                               </div>
                             ) : (
                               <div className="lead-sale-quantity-summary">
                                 <span className="lead-sale-quantity-summary__label">
-                                  {isSold ? 'Quantidade final' : 'Quantidade registrada'}
+                                  {isSold ? 'Resumo final' : 'Resumo registrado'}
                                 </span>
-                                <strong>{finalSoldQuantity} pneu(s)</strong>
+                                <strong>{getLeadSummaryLabel(lead, isSold ? 'sold' : 'desired')}</strong>
                                 <span>
                                   {isSold
                                     ? (isOwner
@@ -902,7 +931,7 @@ export default function Leads() {
 
                         <td style={{ padding: '16px 24px' }}>
                           <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)' }}>
-                            {lead.produto_preco ? Number(lead.produto_preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '---'}
+                            {lead.produto_preco ? formatBRLCurrency(getLeadTotalValue(lead, isSold ? 'sold' : 'desired')) : '---'}
                           </span>
                         </td>
 

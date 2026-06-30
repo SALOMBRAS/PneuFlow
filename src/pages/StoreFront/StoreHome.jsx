@@ -3,8 +3,22 @@ import { useParams, Link, useLocation } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { getSubscriptionAccess } from '../../utils/subscriptionAccess';
 import { getOrCreateVisitorId } from '../../utils/visitorId';
+import { formatBRLCurrency } from '../../utils/currency';
 import { VEHICLE_MODELS } from '../../data/vehicleModels';
 import { MOTORCYCLE_MODELS } from '../../data/motorcycleModels';
+import {
+  getAvailabilityLabel,
+  getAvailableOfferCount,
+  getLeadSummaryLabel,
+  getOfferDescriptor,
+  getOfferQuantityLabel,
+  getOfferTitle,
+  getOfferTotalPrice,
+  getPhysicalTireTotal,
+  getQuantityPerOffer,
+  getQuantitySelectorLabel,
+  isKitOffer
+} from '../../utils/tireOffer';
 import {
   MessageSquare,
   X,
@@ -46,17 +60,11 @@ const hexToRgba = (hex, alpha = 1) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-const formatMoney = (value) =>
-  Number(value || 0).toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
 const stripPhone = (value) => String(value || '').replace(/\D/g, '');
 
 const hasValidWhatsapp = (value) => stripPhone(value).length >= 10;
 
-const getAvailableStock = (tire) => Math.max(0, Number(tire?.estoque || 0));
+const getAvailableStock = (tire) => getAvailableOfferCount(tire);
 
 const clampQuantity = (value, tire) => {
   const max = getAvailableStock(tire);
@@ -313,7 +321,7 @@ export default function StoreHome() {
     return [...tires]
       .filter((t) => Boolean(t.foto_principal_url || t.image))
       .sort((a, b) => {
-        const stockScore = Number(Boolean(b.estoque || b.stock)) - Number(Boolean(a.estoque || a.stock));
+        const stockScore = Number(Boolean(getAvailableStock(b))) - Number(Boolean(getAvailableStock(a)));
         if (stockScore !== 0) return stockScore;
         return Number(a.preco || 0) - Number(b.preco || 0);
       })
@@ -341,11 +349,12 @@ export default function StoreHome() {
     } else {
       result = result.filter((t) => {
         const matchesSearch =
+          normalizeText(getOfferTitle(t) || '').includes(normalizeText(searchQuery || '')) ||
           normalizeText(t.modelo || '').includes(normalizeText(searchQuery || '')) ||
           normalizeText(t.marca || '').includes(normalizeText(searchQuery || '')) ||
           normalizeText(t.medida || '').includes(normalizeText(searchQuery || ''));
         const matchesBrand = !filterBrand || t.marca === filterBrand;
-        const matchesStock = !filterStockOnly || Number(t.estoque || 0) > 0;
+        const matchesStock = !filterStockOnly || getAvailableStock(t) > 0;
         
         // Filtro por tipo de veículo do catálogo (Todos/Carro/Moto)
         let matchesCatalogType = true;
@@ -502,8 +511,11 @@ export default function StoreHome() {
     setSavingLead(true);
     setLeadError('');
 
-    const produtoNome = `${targetTire.marca || ''} ${targetTire.modelo || ''}`.trim();
+    const produtoNome = getOfferTitle(targetTire) || `${targetTire.marca || ''} ${targetTire.modelo || ''}`.trim();
     const requestedQuantity = clampQuantity(leadQuantity, targetTire);
+    const quantityPerOffer = getQuantityPerOffer(targetTire);
+    const totalPhysicalTires = getPhysicalTireTotal(requestedQuantity, quantityPerOffer);
+    const totalValue = getOfferTotalPrice(requestedQuantity, Number(targetTire.preco || 0));
 
     if (requestedQuantity < 1) {
       setLeadError('Este pneu esta indisponivel no momento.');
@@ -518,8 +530,14 @@ export default function StoreHome() {
       produto_id: targetTire.id,
       nome_cliente: customerName.trim(),
       produto_nome: produtoNome,
+      titulo_anuncio: targetTire.titulo_anuncio || null,
       produto_medida: targetTire.medida || '',
       produto_preco: Number(targetTire.preco || 0),
+      preco_anuncio: Number(targetTire.preco || 0),
+      quantidade_anuncios: requestedQuantity,
+      quantidade_por_anuncio: quantityPerOffer,
+      quantidade_total_pneus: totalPhysicalTires,
+      valor_total: totalValue,
       desired_quantity: requestedQuantity,
       origem: 'whatsapp',
       ref_code: hasReferralSeller ? currentRefCode : null,
@@ -529,10 +547,17 @@ export default function StoreHome() {
     try {
       await storageService.createLead(leadPayload);
 
-      const formattedPrice = `R$ ${formatMoney(targetTire.preco)}`;
-      let text = `Olá!\n\nMeu nome é ${customerName.trim()}.\n\nTenho interesse no seguinte produto:\n\nProduto: ${produtoNome}\nMedida: ${targetTire.medida || 'N/A'}\nValor: ${formattedPrice}\n\n`;
+      const formattedPrice = formatBRLCurrency(targetTire.preco);
+      let text = `Olá!\n\nMeu nome é ${customerName.trim()}.\n\nTenho interesse no seguinte produto:\n\nProduto: ${produtoNome}\nMedida: ${targetTire.medida || 'N/A'}\nValor do anúncio: ${formattedPrice}\n\n`;
 
-      text += `Quantidade desejada: ${requestedQuantity} unidade${requestedQuantity === 1 ? '' : 's'}\n\n`;
+      if (isKitOffer(targetTire)) {
+        text += `Quantidade desejada: ${requestedQuantity} ${requestedQuantity === 1 ? 'kit' : 'kits'}\n`;
+        text += `Total de pneus: ${totalPhysicalTires}\n`;
+        text += `Valor total: ${formatBRLCurrency(totalValue)}\n\n`;
+      } else {
+        text += `Quantidade desejada: ${requestedQuantity} unidade${requestedQuantity === 1 ? '' : 's'}\n`;
+        text += `Valor total: ${formatBRLCurrency(totalValue)}\n\n`;
+      }
 
       if (vehicleSearchApplied) {
         const carInfo = vehicleBrand ? `${vehicleBrand} ${vehicleModel}` : vehicleModel;
@@ -1137,7 +1162,7 @@ export default function StoreHome() {
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
                 <div>
                   <p className="section-kicker" style={{ marginBottom: '6px' }}>{selectedTire.marca}</p>
-                  <h3 className="modal-title" style={{ fontSize: '2rem' }}>{selectedTire.modelo}</h3>
+                  <h3 className="modal-title" style={{ fontSize: '2rem' }}>{getOfferTitle(selectedTire)}</h3>
                   <p className="info-card__copy" style={{ marginTop: '10px' }}>{getCompatibilitySnippet(selectedTire)}</p>
                 </div>
                 <span className="product-badge product-badge--spec">{selectedTire.medida}</span>
@@ -1146,11 +1171,12 @@ export default function StoreHome() {
               <div className="contact-band" style={{ marginTop: '18px' }}>
                 <div className="contact-band__row">
                   <div>
-                    <p className="section-kicker" style={{ marginBottom: '6px' }}>Preco a vista</p>
-                    <h4 className="contact-band__title">R$ {formatMoney(selectedTire.preco)}</h4>
+                    <p className="section-kicker" style={{ marginBottom: '6px' }}>{isKitOffer(selectedTire) ? 'Preço do kit' : 'Preço à vista'}</p>
+                    <h4 className="contact-band__title">{formatBRLCurrency(selectedTire.preco)}</h4>
+                    <p className="info-card__copy" style={{ marginTop: '8px' }}>{getOfferDescriptor(selectedTire)}</p>
                   </div>
-                  <span className={`status-pill ${Number(selectedTire.estoque || 0) > 0 ? 'status-pill--success' : 'status-pill--muted'}`}>
-                    {Number(selectedTire.estoque || 0) > 0 ? `${Number(selectedTire.estoque || 0)} disponivel${Number(selectedTire.estoque || 0) === 1 ? '' : 's'}` : 'Indisponivel'}
+                  <span className={`status-pill ${getAvailableStock(selectedTire) > 0 ? 'status-pill--success' : 'status-pill--muted'}`}>
+                    {getAvailabilityLabel(selectedTire)}
                   </span>
                 </div>
               </div>
@@ -1159,6 +1185,13 @@ export default function StoreHome() {
                 value={detailQuantity}
                 max={getAvailableStock(selectedTire)}
                 onChange={setDetailQuantity}
+                label={getQuantitySelectorLabel(selectedTire)}
+                availabilityText={getAvailabilityLabel(selectedTire)}
+                helperText={
+                  isKitOffer(selectedTire)
+                    ? `${getOfferQuantityLabel(detailQuantity, selectedTire)} = ${getPhysicalTireTotal(detailQuantity, selectedTire)} pneus.`
+                    : ''
+                }
                 disabled={!commercialContactEnabled}
                 className="quantity-selector--detail"
               />
@@ -1179,7 +1212,7 @@ export default function StoreHome() {
                   }}
                 >
                   <MessageSquare size={16} />
-                  {getAvailableStock(selectedTire) > 0 ? 'Me interessou' : 'Indisponivel'}
+                  {getAvailableStock(selectedTire) > 0 ? (isKitOffer(selectedTire) ? 'Quero este kit' : 'Me interessou') : 'Indisponivel'}
                 </button>
               </div>
             </div>
@@ -1247,7 +1280,7 @@ export default function StoreHome() {
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ margin: 0, fontWeight: 900, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {targetTire?.marca} {targetTire?.modelo}
+                    {getOfferTitle(targetTire)}
                   </p>
                   <p style={{ margin: 0, color: 'rgba(248,250,252,0.66)', fontSize: '0.86rem' }}>{targetTire?.medida}</p>
                 </div>
@@ -1257,7 +1290,13 @@ export default function StoreHome() {
                 value={leadQuantity}
                 max={getAvailableStock(targetTire)}
                 onChange={setLeadQuantity}
-                label="Quantidade desejada"
+                label={getQuantitySelectorLabel(targetTire)}
+                availabilityText={getAvailabilityLabel(targetTire)}
+                helperText={
+                  isKitOffer(targetTire)
+                    ? `${getOfferQuantityLabel(leadQuantity, targetTire)} = ${getPhysicalTireTotal(leadQuantity, targetTire)} pneus. Total: ${formatBRLCurrency(getOfferTotalPrice(leadQuantity, Number(targetTire?.preco || 0)))}.`
+                    : `Total: ${formatBRLCurrency(getOfferTotalPrice(leadQuantity, Number(targetTire?.preco || 0)))}.`
+                }
               />
 
               <button

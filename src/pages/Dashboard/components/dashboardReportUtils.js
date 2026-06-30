@@ -1,4 +1,12 @@
 import { REPORT_PERIOD_PRESETS, REPORT_SECTION_DEFINITIONS, createDefaultReportSelection } from './dashboardReportConfig';
+import {
+  getLeadOfferPrice,
+  getLeadOfferQuantity,
+  getLeadPhysicalQuantity,
+  getLeadSummaryLabel,
+  getLeadTotalValue,
+  getLeadQuantityPerOffer
+} from '../../../utils/tireOffer';
 
 const LOW_STOCK_THRESHOLD = 4;
 
@@ -130,18 +138,6 @@ export const getUnavailableSectionReason = (section) => {
 const getSellerName = (row) =>
   row?.vendedor_nome || row?.seller_name || row?.nome || row?.email || 'Sem vendedor';
 
-const getLeadUnitPrice = (lead) => {
-  const price = Number(lead?.produto_preco || 0);
-  return Number.isFinite(price) ? price : 0;
-};
-
-const getLeadEffectiveQuantity = (lead, mode = 'default') => {
-  if (mode === 'sold') {
-    return normalizeQuantity(lead?.sold_quantity ?? lead?.desired_quantity, 1);
-  }
-  return normalizeQuantity(lead?.desired_quantity ?? lead?.sold_quantity, 1);
-};
-
 export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedSections, rawData }) => {
   const leads = rawData?.leads || [];
   const soldLeads = rawData?.soldLeads || [];
@@ -153,7 +149,7 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
     totalViews: visits.length,
     totalLeads: leads.length,
     confirmedSales: soldLeads.length,
-    confirmedRevenue: soldLeads.reduce((sum, lead) => sum + (getLeadUnitPrice(lead) * getLeadEffectiveQuantity(lead, 'sold')), 0),
+    confirmedRevenue: soldLeads.reduce((sum, lead) => sum + getLeadTotalValue(lead, 'sold'), 0),
     averageTicket: 0,
     conversionRate: 0
   };
@@ -184,18 +180,20 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
       id: 'sales',
       title: 'Vendas realizadas',
       kind: 'table',
-      columns: ['Data da venda', 'Cliente', 'Produto', 'Medida', 'Quantidade', 'Preco unitario', 'Valor total', 'Vendedor'],
+      columns: ['Data da venda', 'Cliente', 'Produto', 'Medida', 'Kits/Anuncios', 'Pneus fisicos', 'Preco do anuncio', 'Valor total', 'Vendedor'],
       rows: soldLeads.map((lead) => {
-        const quantity = getLeadEffectiveQuantity(lead, 'sold');
-        const unitPrice = getLeadUnitPrice(lead);
+        const offerQuantity = getLeadOfferQuantity(lead, 'sold');
+        const physicalQuantity = getLeadPhysicalQuantity(lead, 'sold');
+        const offerPrice = getLeadOfferPrice(lead);
         return [
           formatDate(lead.venda_confirmada_em || lead.created_at),
           lead.nome_cliente || 'Cliente interessado',
           lead.produto_nome || 'Produto nao identificado',
           lead.produto_medida || '--',
-          `${quantity}`,
-          formatCurrency(unitPrice),
-          formatCurrency(unitPrice * quantity),
+          `${offerQuantity}`,
+          `${physicalQuantity}`,
+          formatCurrency(offerPrice),
+          formatCurrency(getLeadTotalValue(lead, 'sold')),
           getSellerName(lead)
         ];
       }),
@@ -212,34 +210,37 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
           brand: lead.marca || '--',
           model: lead.modelo || lead.produto_nome || '--',
           measure: lead.produto_medida || '--',
-          quantity: 0,
+          offerQuantity: 0,
+          physicalQuantity: 0,
           revenue: 0
         });
       }
 
       const target = acc.get(key);
-      const quantity = getLeadEffectiveQuantity(lead, 'sold');
-      const unitPrice = getLeadUnitPrice(lead);
-      target.quantity += quantity;
-      target.revenue += unitPrice * quantity;
+      const offerQuantity = getLeadOfferQuantity(lead, 'sold');
+      const physicalQuantity = getLeadPhysicalQuantity(lead, 'sold');
+      target.offerQuantity += offerQuantity;
+      target.physicalQuantity += physicalQuantity;
+      target.revenue += getLeadTotalValue(lead, 'sold');
       return acc;
     }, new Map());
 
-    const rows = Array.from(groupedProducts.values()).sort((a, b) => b.quantity - a.quantity);
+    const rows = Array.from(groupedProducts.values()).sort((a, b) => b.physicalQuantity - a.physicalQuantity);
     sections.push({
       id: 'sold_products',
       title: 'Pneus vendidos',
       kind: 'table',
-      columns: ['Marca', 'Modelo', 'Medida', 'Quantidade total vendida', 'Faturamento por produto'],
+      columns: ['Marca', 'Modelo', 'Medida', 'Kits/Anuncios', 'Pneus fisicos', 'Faturamento por produto'],
       rows: rows.map((item) => [
         item.brand,
         item.model,
         item.measure,
-        `${item.quantity}`,
+        `${item.offerQuantity}`,
+        `${item.physicalQuantity}`,
         formatCurrency(item.revenue)
       ]),
       totalLabel: 'Itens vendidos',
-      totalValue: `${rows.reduce((sum, item) => sum + item.quantity, 0)} pneu(s)`
+      totalValue: `${rows.reduce((sum, item) => sum + item.physicalQuantity, 0)} pneu(s)`
     });
   }
 
@@ -248,11 +249,11 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
       id: 'leads',
       title: 'Clientes interessados',
       kind: 'table',
-      columns: ['Nome do cliente', 'Produto de interesse', 'Quantidade', 'Data do contato', 'Status', 'Vendedor responsavel'],
+      columns: ['Nome do cliente', 'Produto de interesse', 'Resumo', 'Data do contato', 'Status', 'Vendedor responsavel'],
       rows: leads.map((lead) => [
         lead.nome_cliente || 'Cliente interessado',
         lead.produto_nome || 'Produto nao identificado',
-        `${getLeadEffectiveQuantity(lead)}`,
+        getLeadSummaryLabel(lead),
         formatDateTime(lead.created_at),
         getLeadStatus(lead) === 'em_atendimento'
           ? 'Oportunidade em aberto'
@@ -269,7 +270,7 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
   if (selectedSections.includes('pending')) {
     const pendingLeads = leads.filter((lead) => getLeadStatus(lead) === 'em_atendimento');
     const totalPendingValue = pendingLeads.reduce(
-      (sum, lead) => sum + (getLeadUnitPrice(lead) * getLeadEffectiveQuantity(lead)),
+      (sum, lead) => sum + getLeadTotalValue(lead),
       0
     );
 
@@ -277,15 +278,14 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
       id: 'pending',
       title: 'Vendas pendentes',
       kind: 'table',
-      columns: ['Cliente', 'Produto', 'Quantidade', 'Data do contato', 'Valor potencial', 'Vendedor'],
+      columns: ['Cliente', 'Produto', 'Resumo', 'Data do contato', 'Valor potencial', 'Vendedor'],
       rows: pendingLeads.map((lead) => {
-        const quantity = getLeadEffectiveQuantity(lead);
         return [
           lead.nome_cliente || 'Cliente interessado',
           lead.produto_nome || 'Produto nao identificado',
-          `${quantity}`,
+          getLeadSummaryLabel(lead),
           formatDate(lead.created_at),
-          formatCurrency(getLeadUnitPrice(lead) * quantity),
+          formatCurrency(getLeadTotalValue(lead)),
           getSellerName(lead)
         ];
       }),
@@ -297,7 +297,7 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
   if (selectedSections.includes('withdrawals')) {
     const withdrawalLeads = leads.filter((lead) => getLeadStatus(lead) === 'desistencia');
     const totalWithdrawalValue = withdrawalLeads.reduce(
-      (sum, lead) => sum + (getLeadUnitPrice(lead) * getLeadEffectiveQuantity(lead)),
+      (sum, lead) => sum + getLeadTotalValue(lead),
       0
     );
 
@@ -305,15 +305,14 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
       id: 'withdrawals',
       title: 'Desistencias',
       kind: 'table',
-      columns: ['Cliente', 'Produto', 'Quantidade', 'Data', 'Receita potencial perdida', 'Vendedor'],
+      columns: ['Cliente', 'Produto', 'Resumo', 'Data', 'Receita potencial perdida', 'Vendedor'],
       rows: withdrawalLeads.map((lead) => {
-        const quantity = getLeadEffectiveQuantity(lead);
         return [
           lead.nome_cliente || 'Cliente interessado',
           lead.produto_nome || 'Produto nao identificado',
-          `${quantity}`,
+          getLeadSummaryLabel(lead),
           formatDate(lead.created_at),
-          formatCurrency(getLeadUnitPrice(lead) * quantity),
+          formatCurrency(getLeadTotalValue(lead)),
           getSellerName(lead)
         ];
       }),
@@ -359,9 +358,8 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
         });
       }
       const target = sellerMap.get(key);
-      const quantity = getLeadEffectiveQuantity(lead, 'sold');
       target.sales += 1;
-      target.revenue += getLeadUnitPrice(lead) * quantity;
+      target.revenue += getLeadTotalValue(lead, 'sold');
     });
 
     const rows = Array.from(sellerMap.values())
@@ -389,10 +387,12 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
     const rows = stock
       .map((item) => {
         const quantity = Math.max(0, Number(item.estoque || 0));
+        const quantityPerOffer = getLeadQuantityPerOffer(item);
         return {
-          product: [item.marca, item.modelo].filter(Boolean).join(' ') || 'Produto sem nome',
+          product: item.titulo_anuncio || [item.marca, item.modelo].filter(Boolean).join(' ') || 'Produto sem nome',
           measure: item.medida || '--',
           quantity,
+          offerQuantity: quantityPerOffer > 0 ? Math.floor(quantity / quantityPerOffer) : quantity,
           lowStock: quantity <= LOW_STOCK_THRESHOLD ? 'Estoque baixo' : 'Ok'
         };
       })
@@ -402,8 +402,8 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
       id: 'stock',
       title: 'Estoque atual',
       kind: 'table',
-      columns: ['Produto', 'Medida', 'Quantidade atual', 'Indicacao'],
-      rows: rows.map((item) => [item.product, item.measure, `${item.quantity}`, item.lowStock]),
+      columns: ['Produto', 'Medida', 'Pneus fisicos', 'Kits completos', 'Indicacao'],
+      rows: rows.map((item) => [item.product, item.measure, `${item.quantity}`, `${item.offerQuantity}`, item.lowStock]),
       totalLabel: 'Observacao',
       totalValue: 'Fotografia atual do estoque, nao um historico do periodo.'
     });
