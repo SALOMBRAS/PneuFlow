@@ -56,9 +56,7 @@ wait-test.txt
 serve-dist.mjs
 res.end('ok')).listen(5566)
 
-cofre/.obsidian/
 .obsidian/
-cofrezip.zip
 
 # Supabase local backups
 backups/supabase/

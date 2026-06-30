@@ -109,9 +109,15 @@ Executar apenas verificações proporcionais à alteração e somente quando os 
 
 Não executar automaticamente lint, typecheck e toda a suíte de testes para tarefas pequenas.
 
-### Cofre de Contexto
+### Cofre externo
+
+O Cofre do projeto está em um repositório privado separado:
+
+<https://github.com/SALOMBRAS/PneuFlow-Cofre>
 
 O Cofre é uma fonte sob demanda, não contexto obrigatório.
+
+Não acessar, clonar, consultar ou atualizar o PneuFlow-Cofre por iniciativa própria.
 
 Não abrir nem atualizar o Cofre para:
 
@@ -142,11 +148,15 @@ Consultar o Cofre somente para:
 - arquitetura compartilhada;
 - fluxo permanente entre várias telas.
 
-Para tarefas amplas:
+Somente consultar quando o usuário solicitar expressamente.
 
-1. Ler `cofre/00 - Contexto/_INDICE.md`;
+Quando autorizado, para tarefas amplas:
+
+1. Ler `INDEX.md`;
 2. Escolher somente a nota diretamente relacionada;
-3. Abrir outras notas apenas quando houver dependência comprovada.
+3. Abrir no máximo dois documentos diretamente relacionados;
+4. Não pesquisar o repositório inteiro;
+5. Não atualizar o Cofre sem solicitação expressa.
 
 Não ler o Cofre inteiro.
 
@@ -166,9 +176,7 @@ dist/
 backups/
 package-lock.json
 supabase/migrations/20260618171439_remote_schema.sql
-cofre/01 - Arquitetura/mapa-de-impacto-geral.md
-cofre/01 - Arquitetura/dependencias-compartilhadas.md
-cofre/10 - Meta/protocolo-cofre-contexto.md
+CONTEXT_REFERENCE.md
 ```
 
 Esses arquivos continuam disponíveis quando a tarefa exigir diretamente.
