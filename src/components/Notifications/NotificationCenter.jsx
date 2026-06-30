@@ -119,7 +119,7 @@ export default function NotificationCenter() {
         </div>
 
         {activeTab === 'notifications' ? (
-          <>
+          <section className="pf-notification-center__notifications-panel">
             <section className="pf-notification-center__toolbar">
               <div className="pf-notification-center__filters">
                 <button
@@ -142,35 +142,37 @@ export default function NotificationCenter() {
               </button>
             </section>
 
-            <div className="pf-notification-center__list">
-              {historyError ? (
-                <div className="pf-notification-center__empty">
-                  <Bell size={28} />
-                  <strong>Falha ao carregar</strong>
-                  <p>{historyError}</p>
-                </div>
-              ) : filteredNotifications.length === 0 ? (
-                <div className="pf-notification-center__empty">
-                  <Bell size={28} />
-                  <strong>Nenhuma notificacao</strong>
-                  <p>As novidades da sua loja aparecerao aqui.</p>
-                </div>
-              ) : (
-                filteredNotifications.map((notification) => (
-                  <NotificationCard
-                    key={notification.id}
-                    notification={notification}
-                    interactive
-                    onClick={async () => {
-                      await markAsRead(notification.id);
-                      if (notification.actionPath) {
-                        closeCenter();
-                        navigate(notification.actionPath);
-                      }
-                    }}
-                  />
-                ))
-              )}
+            <div className="pf-notification-center__list-shell">
+              <div className="pf-notification-center__list">
+                {historyError ? (
+                  <div className="pf-notification-center__empty">
+                    <Bell size={28} />
+                    <strong>Falha ao carregar</strong>
+                    <p>{historyError}</p>
+                  </div>
+                ) : filteredNotifications.length === 0 ? (
+                  <div className="pf-notification-center__empty">
+                    <Bell size={28} />
+                    <strong>Nenhuma notificacao</strong>
+                    <p>As novidades da sua loja aparecerao aqui.</p>
+                  </div>
+                ) : (
+                  filteredNotifications.map((notification) => (
+                    <NotificationCard
+                      key={notification.id}
+                      notification={notification}
+                      interactive
+                      onClick={async () => {
+                        await markAsRead(notification.id);
+                        if (notification.actionPath) {
+                          closeCenter();
+                          navigate(notification.actionPath);
+                        }
+                      }}
+                    />
+                  ))
+                )}
+              </div>
             </div>
 
             {(hasMore || loadingMore) && (
@@ -181,7 +183,7 @@ export default function NotificationCenter() {
                 </button>
               </footer>
             )}
-          </>
+          </section>
         ) : (
           <div className="pf-notification-center__settings">
             <section className="pf-notification-center__preferences">
