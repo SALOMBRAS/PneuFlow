@@ -30,7 +30,7 @@ Nao foram alterados:
 Fontes consultadas:
 
 - `AGENTS.md`;
-- Cofre de Contexto em `cofre/`;
+- Cofre de Contexto em repositório privado externo (`PneuFlow-Cofre`);
 - arquivos de frontend em `src/`;
 - migrations em `supabase/migrations/`;
 - Edge Functions em `supabase/functions/`;
