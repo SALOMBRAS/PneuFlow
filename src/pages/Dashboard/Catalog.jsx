@@ -71,6 +71,96 @@ export default function Catalog() {
   });
 
   const [tempPhotos, setTempPhotos] = useState([]);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const focusField = useCallback((fieldName) => {
+    if (typeof document === 'undefined' || !fieldName) return;
+    const field = document.querySelector(`[name="${fieldName}"]`);
+    if (!field) return;
+    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    field.focus();
+  }, []);
+
+  const updateFieldValue = useCallback((name, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === 'quantidade_por_anuncio'
+        ? normalizeOfferQuantity(value, 1)
+        : value
+    }));
+
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
+  }, []);
+
+  const getFieldError = useCallback((fieldName) => fieldErrors[fieldName] || '', [fieldErrors]);
+
+  const getFieldProps = useCallback((fieldName) => (
+    fieldErrors[fieldName]
+      ? {
+          'aria-invalid': true,
+          'aria-describedby': `${fieldName}-error`,
+          style: {
+            borderColor: 'var(--error)',
+            boxShadow: '0 0 0 1px rgba(239, 68, 68, 0.22)'
+          }
+        }
+      : {}
+  ), [fieldErrors]);
+
+  const validateTireForm = useCallback(() => {
+    const errors = {};
+    const trimmedTitle = String(formData.titulo_anuncio || '').trim();
+    const parsedPrice = parseBRLCurrency(formData.preco);
+    const quantityPerOffer = normalizeOfferQuantity(formData.quantidade_por_anuncio, 1);
+    const stockValue = String(formData.estoque ?? '').trim() === ''
+      ? 0
+      : Number.parseInt(formData.estoque, 10);
+
+    if (!String(formData.marca || '').trim()) {
+      errors.marca = 'Informe a marca.';
+    }
+
+    if (!String(formData.modelo || '').trim()) {
+      errors.modelo = 'Informe o modelo.';
+    }
+
+    if (!String(formData.medida || '').trim()) {
+      errors.medida = 'Informe a medida.';
+    }
+
+    if (!String(formData.preco || '').trim()) {
+      errors.preco = 'Informe o preco do anuncio.';
+    } else if (parsedPrice == null) {
+      errors.preco = 'Use um preco valido no formato brasileiro, como 355,55.';
+    }
+
+    if (String(formData.titulo_anuncio || '').length > 0 && !trimmedTitle) {
+      errors.titulo_anuncio = 'O titulo nao pode conter apenas espacos.';
+    } else if (trimmedTitle.length > 100) {
+      errors.titulo_anuncio = 'Use no maximo 100 caracteres no titulo do anuncio.';
+    }
+
+    if (!Number.isFinite(quantityPerOffer) || quantityPerOffer < 1) {
+      errors.quantidade_por_anuncio = 'Informe pelo menos 1 pneu por anuncio.';
+    }
+
+    if (!Number.isFinite(stockValue) || stockValue < 0) {
+      errors.estoque = 'Informe um estoque igual ou maior que 0.';
+    }
+
+    return {
+      errors,
+      parsedPrice,
+      quantityPerOffer,
+      trimmedTitle,
+      stockValue: Math.max(0, stockValue || 0)
+    };
+  }, [formData]);
 
   const loadData = useCallback(async () => {
     if (!store) return;
@@ -110,6 +200,7 @@ export default function Catalog() {
       fotos: []
     });
     setTempPhotos([]);
+    setFieldErrors({});
     setSelectedTire(null);
     setTireModalOpen(true);
   };
@@ -132,20 +223,19 @@ export default function Catalog() {
       fotos: tire.fotos || []
     });
     setTempPhotos([]);
+    setFieldErrors({});
     setSelectedTire(tire);
     setTireModalOpen(true);
   };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'quantidade_por_anuncio'
-        ? normalizeOfferQuantity(value, 1)
-        : type === 'checkbox'
-          ? (checked ? 'ativo' : 'inativo')
-          : value
-    }));
+    updateFieldValue(
+      name,
+      type === 'checkbox'
+        ? (checked ? 'ativo' : 'inativo')
+        : value
+    );
   };
 
   const handlePhotoUpload = async (e) => {
@@ -235,41 +325,20 @@ export default function Catalog() {
     e.preventDefault();
     if (submitting) return;
 
-    if (!formData.marca || !formData.modelo || !formData.medida || !formData.preco) {
+    const {
+      errors,
+      parsedPrice,
+      quantityPerOffer,
+      trimmedTitle,
+      stockValue
+    } = validateTireForm();
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      focusField(Object.keys(errors)[0]);
       notifyTransientWarning({
         title: 'Campos obrigatorios',
-        message: 'Preencha os campos obrigatorios antes de salvar.',
-        category: 'catalogo'
-      });
-      return;
-    }
-
-    const parsedPrice = parseBRLCurrency(formData.preco);
-    const quantityPerOffer = normalizeOfferQuantity(formData.quantidade_por_anuncio, 1);
-    const trimmedTitle = String(formData.titulo_anuncio || '').trim();
-
-    if (String(formData.titulo_anuncio || '').length > 0 && !trimmedTitle) {
-      notifyTransientWarning({
-        title: 'Titulo invalido',
-        message: 'O titulo do anuncio nao pode conter apenas espacos.',
-        category: 'catalogo'
-      });
-      return;
-    }
-
-    if (trimmedTitle.length > 100) {
-      notifyTransientWarning({
-        title: 'Titulo muito longo',
-        message: 'Use no maximo 100 caracteres no titulo do anuncio.',
-        category: 'catalogo'
-      });
-      return;
-    }
-
-    if (parsedPrice == null) {
-      notifyTransientWarning({
-        title: 'Preco invalido',
-        message: 'Informe um preco valido no formato brasileiro.',
+        message: errors[Object.keys(errors)[0]],
         category: 'catalogo'
       });
       return;
@@ -289,7 +358,7 @@ export default function Catalog() {
         medida: formData.medida,
         preco: parsedPrice,
         quantidade_por_anuncio: quantityPerOffer,
-        estoque: parseInt(formData.estoque) || 0,
+        estoque: stockValue,
         descricao: formData.descricao,
         status: formData.status,
         compatibilidade: formData.compatibilidade,
@@ -616,7 +685,22 @@ export default function Catalog() {
             <h3 style={{ fontSize: '20px', marginBottom: '24px' }}>
               {formData.id ? 'Editar Pneu' : 'Cadastrar Novo Pneu'}
             </h3>
-            
+
+            {Object.keys(fieldErrors).length > 0 && (
+              <div
+                style={{
+                  marginBottom: '20px',
+                  padding: '12px 14px',
+                  borderRadius: '14px',
+                  border: '1px solid rgba(239, 68, 68, 0.22)',
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  color: '#fecaca'
+                }}
+              >
+                Revise os campos destacados antes de salvar.
+              </div>
+            )}
+
             <form onSubmit={handleSaveTire}>
               <div className="grid-cols-2" style={{ gap: '16px' }}>
                 <div className="form-group">
@@ -628,8 +712,14 @@ export default function Catalog() {
                     placeholder="Ex: Michelin" 
                     className="form-input" 
                     value={formData.marca} 
-                    onChange={handleInputChange} 
+                    onChange={handleInputChange}
+                    {...getFieldProps('marca')}
                   />
+                  {getFieldError('marca') && (
+                    <small id="marca-error" style={{ color: 'var(--error)', display: 'block', marginTop: '6px' }}>
+                      {getFieldError('marca')}
+                    </small>
+                  )}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Modelo *</label>
@@ -640,8 +730,14 @@ export default function Catalog() {
                     placeholder="Ex: Primacy 4" 
                     className="form-input" 
                     value={formData.modelo} 
-                    onChange={handleInputChange} 
+                    onChange={handleInputChange}
+                    {...getFieldProps('modelo')}
                   />
+                  {getFieldError('modelo') && (
+                    <small id="modelo-error" style={{ color: 'var(--error)', display: 'block', marginTop: '6px' }}>
+                      {getFieldError('modelo')}
+                    </small>
+                  )}
                 </div>
               </div>
 
@@ -656,7 +752,13 @@ export default function Catalog() {
                     className="form-input"
                     value={formData.titulo_anuncio}
                     onChange={handleInputChange}
+                    {...getFieldProps('titulo_anuncio')}
                   />
+                  {getFieldError('titulo_anuncio') && (
+                    <small id="titulo_anuncio-error" style={{ color: 'var(--error)', display: 'block', marginTop: '6px' }}>
+                      {getFieldError('titulo_anuncio')}
+                    </small>
+                  )}
                   <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
                     Nome exibido na vitrine. Se ficar vazio, o modelo do pneu será usado.
                   </small>
@@ -670,8 +772,14 @@ export default function Catalog() {
                     placeholder="Ex: 195/55 R16" 
                     className="form-input" 
                     value={formData.medida} 
-                    onChange={handleInputChange} 
+                    onChange={handleInputChange}
+                    {...getFieldProps('medida')}
                   />
+                  {getFieldError('medida') && (
+                    <small id="medida-error" style={{ color: 'var(--error)', display: 'block', marginTop: '6px' }}>
+                      {getFieldError('medida')}
+                    </small>
+                  )}
                 </div>
               </div>
 
@@ -683,8 +791,14 @@ export default function Catalog() {
                     required 
                     placeholder="Ex: 1.478,46"
                     value={formData.preco} 
-                    onChange={handleInputChange} 
+                    onChange={(value) => updateFieldValue('preco', value)}
+                    {...getFieldProps('preco')}
                   />
+                  {getFieldError('preco') && (
+                    <small id="preco-error" style={{ color: 'var(--error)', display: 'block', marginTop: '6px' }}>
+                      {getFieldError('preco')}
+                    </small>
+                  )}
                   <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
                     {formQuantityPerOffer > 1
                       ? `Valor total do kit com ${formQuantityPerOffer} pneus.`
@@ -702,7 +816,13 @@ export default function Catalog() {
                     className="form-input"
                     value={formData.quantidade_por_anuncio}
                     onChange={handleInputChange}
+                    {...getFieldProps('quantidade_por_anuncio')}
                   />
+                  {getFieldError('quantidade_por_anuncio') && (
+                    <small id="quantidade_por_anuncio-error" style={{ color: 'var(--error)', display: 'block', marginTop: '6px' }}>
+                      {getFieldError('quantidade_por_anuncio')}
+                    </small>
+                  )}
                   <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
                     {[1, 2, 4].map((option) => (
                       <button
@@ -730,8 +850,14 @@ export default function Catalog() {
                     name="estoque"
                     className="form-input" 
                     value={formData.estoque} 
-                    onChange={handleInputChange} 
+                    onChange={handleInputChange}
+                    {...getFieldProps('estoque')}
                   />
+                  {getFieldError('estoque') && (
+                    <small id="estoque-error" style={{ color: 'var(--error)', display: 'block', marginTop: '6px' }}>
+                      {getFieldError('estoque')}
+                    </small>
+                  )}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Tipo do Pneu</label>
