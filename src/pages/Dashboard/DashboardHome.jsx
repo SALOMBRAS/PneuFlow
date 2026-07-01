@@ -5,10 +5,13 @@ import { useStore } from '../../contexts/StoreContext';
 import '../../components/MagicBento/MagicBento.css';
 import MetricDetailsPanel from './components/MetricDetailsPanel';
 import DashboardReportModal from './components/DashboardReportModal';
+import DashboardPeriodControl from './components/DashboardPeriodControl';
 import {
+  buildPresetDateWindow,
   buildDashboardReport,
   buildPresetRange,
   createInitialReportConfig,
+  DASHBOARD_PERIOD_PRESETS,
   formatDate,
   validateReportConfig
 } from './components/dashboardReportUtils';
@@ -44,6 +47,23 @@ const emptyCommercialMetrics = {
   overallConversionRate: 0,
   sellerRanking: [],
   partialErrors: []
+};
+
+const DASHBOARD_PERIOD_STORAGE_PREFIX = 'pneuflow_dashboard_period';
+
+const getDashboardPeriodStorageKey = (userId, storeId) => {
+  if (!userId || !storeId) return null;
+  return `${DASHBOARD_PERIOD_STORAGE_PREFIX}_${userId}_${storeId}`;
+};
+
+const isValidDashboardPeriod = (value) =>
+  DASHBOARD_PERIOD_PRESETS.some((option) => option.id === value);
+
+const readStoredDashboardPeriod = (storageKey) => {
+  if (!storageKey || typeof window === 'undefined') return 'current_month';
+
+  const storedValue = window.localStorage.getItem(storageKey);
+  return isValidDashboardPeriod(storedValue) ? storedValue : 'current_month';
 };
 
 const formatCurrency = (value) =>
@@ -84,7 +104,7 @@ const isSameCalendarDay = (dateValueA, dateValueB = new Date()) => {
   );
 };
 
-const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits = [], partialErrors = [] }) => {
+const buildCommercialMetrics = ({ leads = [], soldLeads = [], pneus = [], sellers = [], visits = [], partialErrors = [] }) => {
   const sellerByUserId = new Map();
   const sellerByRefCode = new Map();
   const ranking = new Map();
@@ -140,13 +160,13 @@ const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits =
 
   leads.forEach((lead) => {
     const entry = ensureRankingEntry(resolveSeller(lead));
-    const isSold = lead.venda_confirmada === true;
-
     entry.leads += 1;
-    if (isSold) {
-      entry.sales += 1;
-      entry.revenue += getLeadTotalValue(lead, 'sold');
-    }
+  });
+
+  soldLeads.forEach((lead) => {
+    const entry = ensureRankingEntry(resolveSeller(lead));
+    entry.sales += 1;
+    entry.revenue += getLeadTotalValue(lead, 'sold');
   });
 
   visits.forEach((visit) => {
@@ -165,14 +185,13 @@ const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits =
       return b.leads - a.leads;
     });
 
-  const confirmedSales = leads.filter((lead) => lead.venda_confirmada === true);
   const totalVisits = visits.length;
   const totalVisitsToday = visits.filter((visit) => isSameCalendarDay(visit.created_at)).length;
 
   return {
     totalLeads: leads.length,
-    totalSales: confirmedSales.length,
-    confirmedRevenue: confirmedSales.reduce((sum, lead) => sum + getLeadTotalValue(lead, 'sold'), 0),
+    totalSales: soldLeads.length,
+    confirmedRevenue: soldLeads.reduce((sum, lead) => sum + getLeadTotalValue(lead, 'sold'), 0),
     totalTires: pneus.length,
     activeTires: pneus.filter((pneu) => pneu.status === 'ativo').length,
     totalStock: pneus.reduce((sum, pneu) => sum + Number(pneu.estoque || 0), 0),
@@ -230,6 +249,12 @@ export default function DashboardHome() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState('');
   const [reportPreview, setReportPreview] = useState(null);
+  const [dashboardPeriod, setDashboardPeriod] = useState('current_month');
+  const [dashboardPeriodHydrated, setDashboardPeriodHydrated] = useState(false);
+  const dashboardPeriodStorageKey = useMemo(
+    () => getDashboardPeriodStorageKey(user?.id, store?.id),
+    [store?.id, user?.id]
+  );
 
   const handleMouseEnter = () => {
     if (tooltipTimeout) {
@@ -251,7 +276,11 @@ export default function DashboardHome() {
     setMetricsLoading(true);
     setMetricsError('');
     try {
-      const data = await storageService.getDashboardCommercialMetrics(store.id);
+      const selectedPeriod = buildPresetDateWindow(dashboardPeriod);
+      const data = await storageService.getDashboardCommercialMetrics(store.id, {
+        startAt: selectedPeriod.startAt,
+        endAt: selectedPeriod.endAt
+      });
       const metrics = buildCommercialMetrics(data);
       setCommercialMetrics(metrics);
       setLeads(data.leads || []);
@@ -270,11 +299,25 @@ export default function DashboardHome() {
     } finally {
       setMetricsLoading(false);
     }
-  }, [store]);
+  }, [dashboardPeriod, store]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    setDashboardPeriodHydrated(false);
+    setDashboardPeriod(readStoredDashboardPeriod(dashboardPeriodStorageKey));
+    setDashboardPeriodHydrated(true);
+  }, [dashboardPeriodStorageKey]);
+
+  useEffect(() => {
+    if (!dashboardPeriodStorageKey || typeof window === 'undefined') return;
+    if (!dashboardPeriodHydrated) return;
+    if (!isValidDashboardPeriod(dashboardPeriod)) return;
+
+    window.localStorage.setItem(dashboardPeriodStorageKey, dashboardPeriod);
+  }, [dashboardPeriod, dashboardPeriodHydrated, dashboardPeriodStorageKey]);
 
   useEffect(() => {
     if (!selectedMetric) return undefined;
@@ -304,6 +347,7 @@ export default function DashboardHome() {
   if (!store) return null;
 
   const publicLink = `${window.location.origin}/store/${store.slug}`;
+  const selectedDashboardPeriod = DASHBOARD_PERIOD_PRESETS.find((option) => option.id === dashboardPeriod) || DASHBOARD_PERIOD_PRESETS[0];
   const normalizeSlugPreview = (value) =>
     String(value || '')
       .normalize('NFD')
@@ -1017,6 +1061,12 @@ export default function DashboardHome() {
               </button>
             </div>
           </div>
+          <DashboardPeriodControl
+            value={dashboardPeriod}
+            options={DASHBOARD_PERIOD_PRESETS}
+            selectedLabel={selectedDashboardPeriod.label}
+            onChange={setDashboardPeriod}
+          />
         </div>
 
         <div className="dashboard-side-stack">

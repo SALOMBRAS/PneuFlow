@@ -477,31 +477,10 @@ export default function StoreHome() {
   }, [selectedTire]);
 
   const placeholderImage = 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=800';
-
-  if (loading) {
-    return (
-      <div className="flex-center" style={{ height: '100vh', background: '#05070c', color: '#fff' }}>
-        Carregando vitrine...
-      </div>
-    );
-  }
-
-  if (!store) {
-    return (
-      <div className="flex-center" style={{ height: '100vh', background: '#05070c', flexDirection: 'column', gap: '16px', color: '#fff' }}>
-        <h2>Loja não encontrada</h2>
-        <Link to="/" className="button button--primary button--xl" style={{ textDecoration: 'none' }}>
-          Ir para o site principal
-        </Link>
-      </div>
-    );
-  }
-
-  // Cores fixas da vitrine (Tarefa 8)
   const primaryColor = '#f59e0b';
   const secondaryColor = '#121214';
-  const status = getStoreStatus(store.hours);
-  const locationText = [store.endereco, store.cidade, store.estado].filter(Boolean).join(', ') || 'Endereço não informado';
+  const status = getStoreStatus(store?.hours);
+  const locationText = [store?.endereco, store?.cidade, store?.estado].filter(Boolean).join(', ') || 'Endereco nao informado';
   const primarySoft = hexToRgba(primaryColor, 0.12);
   const primaryMedium = hexToRgba(primaryColor, 0.22);
   const secondarySoft = hexToRgba(secondaryColor, 0.16);
@@ -523,16 +502,48 @@ export default function StoreHome() {
   };
 
   const heroTire = featuredTires[activeHeroIndex % (featuredTires.length || 1)] || displayedTires[0] || tires[0] || null;
-  const subscriptionAccess = getSubscriptionAccess(store);
+  const subscriptionAccess = getSubscriptionAccess(store || {});
   const commercialContactEnabled = subscriptionAccess.hasStoreAccess;
   const whatsappDestination = hasValidWhatsapp(referralSeller?.whatsapp)
     ? referralSeller.whatsapp
-    : store.whatsapp;
+    : store?.whatsapp;
   debugReferral('whatsappDestino render:', {
     whatsappDestino: whatsappDestination,
     vendedor: referralSeller?.ref_code || null,
-    loja: store.whatsapp || null
+    loja: store?.whatsapp || null
   });
+  const cartSummary = useMemo(() => {
+    const distinctItems = cartItems.length;
+    const totalOffers = cartItems.reduce((sum, item) => sum + (Number.parseInt(item.quantidade, 10) || 0), 0);
+    const totalPhysicalTires = cartItems.reduce((sum, item) => sum + (Number.parseInt(item.quantidade_total_pneus, 10) || 0), 0);
+    const totalValue = cartItems.reduce((sum, item) => sum + Number(item.valor_total || 0), 0);
+
+    return {
+      distinctItems,
+      totalOffers,
+      totalPhysicalTires,
+      totalValue
+    };
+  }, [cartItems]);
+
+  if (loading) {
+    return (
+      <div className="flex-center" style={{ height: '100vh', background: '#05070c', color: '#fff' }}>
+        Carregando vitrine...
+      </div>
+    );
+  }
+
+  if (!store) {
+    return (
+      <div className="flex-center" style={{ height: '100vh', background: '#05070c', flexDirection: 'column', gap: '16px', color: '#fff' }}>
+        <h2>Loja não encontrada</h2>
+        <Link to="/" className="button button--primary button--xl" style={{ textDecoration: 'none' }}>
+          Ir para o site principal
+        </Link>
+      </div>
+    );
+  }
 
   const scrollToCatalog = () => {
     document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -570,20 +581,6 @@ export default function StoreHome() {
     setSelectedTire(tire);
     setDetailQuantity(clampQuantity(1, tire) || 1);
   };
-
-  const cartSummary = useMemo(() => {
-    const distinctItems = cartItems.length;
-    const totalOffers = cartItems.reduce((sum, item) => sum + (Number.parseInt(item.quantidade, 10) || 0), 0);
-    const totalPhysicalTires = cartItems.reduce((sum, item) => sum + (Number.parseInt(item.quantidade_total_pneus, 10) || 0), 0);
-    const totalValue = cartItems.reduce((sum, item) => sum + Number(item.valor_total || 0), 0);
-
-    return {
-      distinctItems,
-      totalOffers,
-      totalPhysicalTires,
-      totalValue
-    };
-  }, [cartItems]);
 
   const handleInterest = (tire, quantity = 1) => {
     if (!commercialContactEnabled) return;
@@ -1053,17 +1050,19 @@ export default function StoreHome() {
         <MessageSquare size={24} />
       </button>
 
-      {cartItems.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setCartOpen(true)}
-          className="store-cart-fab"
-          aria-label={`Abrir carrinho com ${cartSummary.totalOffers} anuncio(s)`}
-        >
-          <ShoppingCart size={22} />
-          <span>{cartSummary.totalOffers > 9 ? '9+' : cartSummary.totalOffers}</span>
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => setCartOpen(true)}
+        className={`store-cart-fab ${cartItems.length === 0 ? 'store-cart-fab--empty' : ''}`}
+        aria-label={
+          cartSummary.totalOffers > 0
+            ? `Abrir carrinho com ${cartSummary.totalOffers} anuncio(s)`
+            : 'Abrir carrinho de orcamento'
+        }
+      >
+        <ShoppingCart size={22} />
+        <span>{cartSummary.totalOffers > 9 ? '9+' : cartSummary.totalOffers}</span>
+      </button>
 
       {mobileFiltersOpen && (
         <div className="storefront-drawer-backdrop" onClick={() => setMobileFiltersOpen(false)}>
