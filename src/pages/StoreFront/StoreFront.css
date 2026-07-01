@@ -198,6 +198,12 @@
   font-weight: 800;
 }
 
+.store-cart-fab--empty {
+  background: rgba(15, 23, 42, 0.9);
+  color: rgba(248, 250, 252, 0.92);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+}
+
 .button,
 .text-button,
 .icon-button {
