@@ -512,6 +512,19 @@ export default function StoreHome() {
     vendedor: referralSeller?.ref_code || null,
     loja: store?.whatsapp || null
   });
+  const cartSummary = useMemo(() => {
+    const distinctItems = cartItems.length;
+    const totalOffers = cartItems.reduce((sum, item) => sum + (Number.parseInt(item.quantidade, 10) || 0), 0);
+    const totalPhysicalTires = cartItems.reduce((sum, item) => sum + (Number.parseInt(item.quantidade_total_pneus, 10) || 0), 0);
+    const totalValue = cartItems.reduce((sum, item) => sum + Number(item.valor_total || 0), 0);
+
+    return {
+      distinctItems,
+      totalOffers,
+      totalPhysicalTires,
+      totalValue
+    };
+  }, [cartItems]);
 
   if (loading) {
     return (
@@ -568,20 +581,6 @@ export default function StoreHome() {
     setSelectedTire(tire);
     setDetailQuantity(clampQuantity(1, tire) || 1);
   };
-
-  const cartSummary = useMemo(() => {
-    const distinctItems = cartItems.length;
-    const totalOffers = cartItems.reduce((sum, item) => sum + (Number.parseInt(item.quantidade, 10) || 0), 0);
-    const totalPhysicalTires = cartItems.reduce((sum, item) => sum + (Number.parseInt(item.quantidade_total_pneus, 10) || 0), 0);
-    const totalValue = cartItems.reduce((sum, item) => sum + Number(item.valor_total || 0), 0);
-
-    return {
-      distinctItems,
-      totalOffers,
-      totalPhysicalTires,
-      totalValue
-    };
-  }, [cartItems]);
 
   const handleInterest = (tire, quantity = 1) => {
     if (!commercialContactEnabled) return;
