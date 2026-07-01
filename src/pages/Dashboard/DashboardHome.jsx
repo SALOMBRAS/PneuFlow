@@ -84,7 +84,7 @@ const isSameCalendarDay = (dateValueA, dateValueB = new Date()) => {
   );
 };
 
-const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits = [] }) => {
+const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits = [], partialErrors = [] }) => {
   const sellerByUserId = new Map();
   const sellerByRefCode = new Map();
   const ranking = new Map();
@@ -180,7 +180,7 @@ const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits =
     totalVisitsToday,
     overallConversionRate: totalVisits > 0 ? (leads.length / totalVisits) * 100 : 0,
     sellerRanking,
-    partialErrors: []
+    partialErrors
   };
 };
 
@@ -255,11 +255,18 @@ export default function DashboardHome() {
       const metrics = buildCommercialMetrics(data);
       setCommercialMetrics(metrics);
       setLeads(data.leads || []);
+
+      if (Array.isArray(data.partialErrors) && data.partialErrors.length > 0) {
+        const labels = data.partialErrors.map((item) => item.label).join(', ');
+        setMetricsError(`Algumas metricas nao puderam ser carregadas agora (${labels}).`);
+      } else {
+        setMetricsError('');
+      }
     } catch (err) {
       console.error('Erro ao carregar dados do dashboard:', err);
       setCommercialMetrics(emptyCommercialMetrics);
       setLeads([]);
-      setMetricsError('Algumas métricas não puderam ser carregadas agora.');
+      setMetricsError('Algumas metricas nao puderam ser carregadas agora.');
     } finally {
       setMetricsLoading(false);
     }
@@ -449,13 +456,22 @@ export default function DashboardHome() {
   }, [leads]);
 
   const totalNotConverted = revenueOpportunity.pendingValue + revenueOpportunity.withdrawalValue;
+  const partialErrorLabels = new Set(commercialMetrics.partialErrors?.map((item) => item.label) || []);
+  const tireMetricsUnavailable = partialErrorLabels.has('pneus');
+  const leadMetricsUnavailable = partialErrorLabels.has('leads');
+  const revenueMetricsUnavailable = leadMetricsUnavailable;
+
+  const renderMetricValue = (value, unavailable) => (unavailable ? '--' : value);
+  const renderMetricHelper = (fallback, unavailable) => (
+    unavailable ? 'Falha ao carregar dados agora' : fallback
+  );
 
   const metricCards = [
     {
       id: 'tires',
       label: isSeller ? 'Meus Pneus' : 'Total de Pneus',
-      value: commercialMetrics.totalTires,
-      helper: `${commercialMetrics.activeTires} ativos • ${commercialMetrics.totalStock} em estoque`,
+      value: renderMetricValue(commercialMetrics.totalTires, tireMetricsUnavailable),
+      helper: renderMetricHelper(`${commercialMetrics.activeTires} ativos • ${commercialMetrics.totalStock} em estoque`, tireMetricsUnavailable),
       icon: <Layers size={20} />,
       tone: 'amber',
       theme: createMetricTheme('#f59e0b', '245, 158, 11', 'rgba(245, 158, 11, 0.12)'),
@@ -479,8 +495,8 @@ export default function DashboardHome() {
     {
       id: 'leads',
       label: isSeller ? 'Meus Leads' : 'Leads no WhatsApp',
-      value: commercialMetrics.totalLeads,
-      helper: 'Cliques em "Tenho Interesse"',
+      value: renderMetricValue(commercialMetrics.totalLeads, leadMetricsUnavailable),
+      helper: renderMetricHelper('Cliques em "Tenho Interesse"', leadMetricsUnavailable),
       icon: <MessageSquare size={20} />,
       tone: 'green',
       theme: createMetricTheme('#22c55e', '34, 197, 94', 'rgba(34, 197, 94, 0.12)'),
@@ -504,8 +520,8 @@ export default function DashboardHome() {
     {
       id: 'revenue',
       label: 'Faturamento',
-      value: formatCurrency(commercialMetrics.confirmedRevenue),
-      helper: 'Somente vendas confirmadas',
+      value: renderMetricValue(formatCurrency(commercialMetrics.confirmedRevenue), revenueMetricsUnavailable),
+      helper: renderMetricHelper('Somente vendas confirmadas', revenueMetricsUnavailable),
       icon: <DollarSign size={20} />,
       tone: 'yellow',
       theme: createMetricTheme('#eab308', '234, 179, 8', 'rgba(234, 179, 8, 0.14)'),

@@ -5,9 +5,97 @@ const STORE_COLUMNS = 'id, owner_id, nome, whatsapp, telefone, endereco, cidade,
 const PUBLIC_STORE_COLUMNS = 'id, nome, whatsapp, telefone, endereco, cidade, estado, logo, banner, foto_capa, cor_principal, cor_secundaria, seo_titulo, seo_descricao, plano, subscription_status, trial_ends_at, current_period_end, created_at, slug, tipo_vitrine, template_vitrine';
 const STORE_MEMBER_COLUMNS = 'id, store_id, user_id, email, nome, role, status, invited_by, invited_at, accepted_at, created_at, updated_at, ref_code, disabled_at, removed_at, auth_deleted_at, removed_by, senha_inicial, whatsapp';
 const PNEU_COLUMNS = 'id, loja_id, marca, modelo, titulo_anuncio, medida, preco, quantidade_por_anuncio, estoque, descricao, status, compatibilidade, foto_principal_url, fotos, created_at, updated_at, tipo_veiculo, created_by, updated_by';
+const PNEU_COLUMNS_LEGACY = 'id, loja_id, marca, modelo, medida, preco, estoque, descricao, status, compatibilidade, foto_principal_url, fotos, created_at, updated_at, tipo_veiculo, created_by, updated_by';
+const DASHBOARD_LEAD_COLUMNS = 'id, loja_id, produto_id, seller_id, ref_code, attribution_source, nome_cliente, produto_nome, titulo_anuncio, produto_medida, produto_preco, preco_anuncio, origem, created_at, desired_quantity, sold_quantity, quantidade_anuncios, quantidade_por_anuncio, quantidade_total_pneus, valor_total, status_atendimento, venda_confirmada, venda_confirmada_em, venda_confirmada_por';
+const DASHBOARD_LEAD_COLUMNS_LEGACY = 'id, loja_id, produto_id, seller_id, ref_code, attribution_source, nome_cliente, produto_nome, produto_medida, produto_preco, origem, created_at, desired_quantity, sold_quantity, status_atendimento, venda_confirmada, venda_confirmada_em, venda_confirmada_por';
 
 const normalizeLeadQuantity = (value, fallback = 1) =>
   Math.max(1, Number.parseInt(value ?? fallback, 10) || 1);
+
+const isMissingSchemaColumnError = (error) =>
+  error?.code === '42703' && String(error?.message || '').includes('does not exist');
+
+const mapLegacyPneuRow = (row) => ({
+  ...row,
+  titulo_anuncio: null,
+  quantidade_por_anuncio: 1
+});
+
+const mapLegacyLeadRow = (row) => {
+  const desiredQuantity = normalizeLeadQuantity(row?.desired_quantity, 1);
+  const soldQuantity = normalizeLeadQuantity(row?.sold_quantity, desiredQuantity);
+  const isSold = row?.venda_confirmada === true || row?.status_atendimento === 'vendido';
+  const quantity = isSold ? soldQuantity : desiredQuantity;
+  const price = Number(row?.produto_preco || 0);
+
+  return {
+    ...row,
+    titulo_anuncio: null,
+    preco_anuncio: price,
+    quantidade_anuncios: quantity,
+    quantidade_por_anuncio: 1,
+    quantidade_total_pneus: quantity,
+    valor_total: Number((price * quantity).toFixed(2))
+  };
+};
+
+const loadPneusWithSchemaCompatibility = async (queryFactory) => {
+  const { data, error } = await queryFactory(PNEU_COLUMNS);
+  if (!error) {
+    return { data: data || [], usedLegacySchema: false };
+  }
+
+  if (!isMissingSchemaColumnError(error)) {
+    throw error;
+  }
+
+  console.warn('[SchemaCompatibility] Colunas novas de pneus ainda nao existem no remoto. Aplicando fallback legado.', {
+    code: error.code,
+    message: error.message
+  });
+
+  const legacyResult = await queryFactory(PNEU_COLUMNS_LEGACY);
+  if (legacyResult.error) {
+    throw legacyResult.error;
+  }
+
+  return {
+    data: (legacyResult.data || []).map(mapLegacyPneuRow),
+    usedLegacySchema: true
+  };
+};
+
+const loadDashboardLeadsWithSchemaCompatibility = async (storeId) => {
+  const query = (columns) =>
+    supabase
+      .from('leads')
+      .select(columns)
+      .eq('loja_id', storeId);
+
+  const { data, error } = await query(DASHBOARD_LEAD_COLUMNS);
+  if (!error) {
+    return { data: data || [], usedLegacySchema: false };
+  }
+
+  if (!isMissingSchemaColumnError(error)) {
+    throw error;
+  }
+
+  console.warn('[SchemaCompatibility] Colunas novas de leads ainda nao existem no remoto. Aplicando fallback legado.', {
+    code: error.code,
+    message: error.message
+  });
+
+  const legacyResult = await query(DASHBOARD_LEAD_COLUMNS_LEGACY);
+  if (legacyResult.error) {
+    throw legacyResult.error;
+  }
+
+  return {
+    data: (legacyResult.data || []).map(mapLegacyLeadRow),
+    usedLegacySchema: true
+  };
+};
 
 const loadLeadStockMap = async (storeId) => {
   const { data: leadRelations, error: leadRelationsError } = await supabase
@@ -467,28 +555,27 @@ export const storageService = {
   },
 
   getPneus: async (storeId) => {
-    const { data, error } = await supabase
-      .from('pneus')
-      .select(PNEU_COLUMNS)
-      .eq('loja_id', storeId)
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Erro ao buscar pneus:', error);
-      return [];
-    }
-    return data;
+    const result = await loadPneusWithSchemaCompatibility((columns) =>
+      supabase
+        .from('pneus')
+        .select(columns)
+        .eq('loja_id', storeId)
+        .order('created_at', { ascending: false })
+    );
+
+    return result.data;
   },
 
   getPneuById: async (id) => {
-    const { data, error } = await supabase
-      .from('pneus')
-      .select(PNEU_COLUMNS)
-      .eq('id', id)
-      .maybeSingle();
-    
-    if (error) throw error;
-    return data;
+    const result = await loadPneusWithSchemaCompatibility((columns) =>
+      supabase
+        .from('pneus')
+        .select(columns)
+        .eq('id', id)
+        .maybeSingle()
+    );
+
+    return Array.isArray(result.data) ? result.data[0] || null : result.data;
   },
 
   createPneu: async (pneuData) => {
@@ -674,37 +761,53 @@ export const storageService = {
   },
 
   getDashboardCommercialMetrics: async (storeId) => {
-    const safeSelect = async (label, queryBuilder) => {
+    const partialErrors = [];
+    const schemaFallbacks = [];
+
+    const safeSelect = async (label, queryFactory) => {
       try {
-        const { data, error } = await queryBuilder;
-        if (error) {
-          console.error(`[DashboardMetrics] Erro ao buscar ${label}:`, error);
-          return [];
+        const result = await queryFactory();
+        if (result?.usedLegacySchema) {
+          schemaFallbacks.push(label);
         }
-        return data || [];
+        return Array.isArray(result?.data) ? result.data : [];
       } catch (error) {
-        console.error(`[DashboardMetrics] Falha inesperada ao buscar ${label}:`, error);
+        console.error(`[DashboardMetrics] Falha ao buscar ${label}:`, error);
+        partialErrors.push({
+          label,
+          message: error?.message || `Nao foi possivel carregar ${label}.`
+        });
         return [];
       }
     };
 
     const requests = {
-      leads: supabase
-        .from('leads')
-        .select('id, loja_id, produto_id, seller_id, ref_code, attribution_source, nome_cliente, produto_nome, titulo_anuncio, produto_medida, produto_preco, preco_anuncio, origem, created_at, desired_quantity, sold_quantity, quantidade_anuncios, quantidade_por_anuncio, quantidade_total_pneus, valor_total, status_atendimento, venda_confirmada, venda_confirmada_em, venda_confirmada_por')
-        .eq('loja_id', storeId),
-      pneus: supabase
-        .from('pneus')
-        .select('id, loja_id, marca, modelo, titulo_anuncio, medida, preco, quantidade_por_anuncio, status, estoque, created_by')
-        .eq('loja_id', storeId),
-      sellers: supabase
-        .from('store_members')
-        .select('id, store_id, user_id, nome, role, status, ref_code')
-        .eq('store_id', storeId),
-      visits: supabase
-        .from('store_referral_visits')
-        .select('id, store_id, seller_id, ref_code, created_at')
-        .eq('store_id', storeId)
+      leads: () => loadDashboardLeadsWithSchemaCompatibility(storeId),
+      pneus: () =>
+        loadPneusWithSchemaCompatibility((columns) =>
+          supabase
+            .from('pneus')
+            .select(columns)
+            .eq('loja_id', storeId)
+        ),
+      sellers: async () => {
+        const { data, error } = await supabase
+          .from('store_members')
+          .select('id, store_id, user_id, nome, role, status, ref_code')
+          .eq('store_id', storeId);
+
+        if (error) throw error;
+        return { data: data || [], usedLegacySchema: false };
+      },
+      visits: async () => {
+        const { data, error } = await supabase
+          .from('store_referral_visits')
+          .select('id, store_id, seller_id, ref_code, created_at')
+          .eq('store_id', storeId);
+
+        if (error) throw error;
+        return { data: data || [], usedLegacySchema: false };
+      }
     };
 
     const entries = Object.entries(requests);
@@ -725,7 +828,9 @@ export const storageService = {
       leads: [],
       pneus: [],
       sellers: [],
-      visits: []
+      visits: [],
+      partialErrors,
+      schemaFallbacks
     });
   },
 
