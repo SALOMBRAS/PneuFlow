@@ -5,6 +5,7 @@ import { useStore } from '../../contexts/StoreContext';
 import '../../components/MagicBento/MagicBento.css';
 import MetricDetailsPanel from './components/MetricDetailsPanel';
 import DashboardReportModal from './components/DashboardReportModal';
+import DashboardPeriodControl from './components/DashboardPeriodControl';
 import {
   buildPresetDateWindow,
   buildDashboardReport,
@@ -46,6 +47,23 @@ const emptyCommercialMetrics = {
   overallConversionRate: 0,
   sellerRanking: [],
   partialErrors: []
+};
+
+const DASHBOARD_PERIOD_STORAGE_PREFIX = 'pneuflow_dashboard_period';
+
+const getDashboardPeriodStorageKey = (userId, storeId) => {
+  if (!userId || !storeId) return null;
+  return `${DASHBOARD_PERIOD_STORAGE_PREFIX}_${userId}_${storeId}`;
+};
+
+const isValidDashboardPeriod = (value) =>
+  DASHBOARD_PERIOD_PRESETS.some((option) => option.id === value);
+
+const readStoredDashboardPeriod = (storageKey) => {
+  if (!storageKey || typeof window === 'undefined') return 'current_month';
+
+  const storedValue = window.localStorage.getItem(storageKey);
+  return isValidDashboardPeriod(storedValue) ? storedValue : 'current_month';
 };
 
 const formatCurrency = (value) =>
@@ -232,6 +250,11 @@ export default function DashboardHome() {
   const [reportError, setReportError] = useState('');
   const [reportPreview, setReportPreview] = useState(null);
   const [dashboardPeriod, setDashboardPeriod] = useState('current_month');
+  const [dashboardPeriodHydrated, setDashboardPeriodHydrated] = useState(false);
+  const dashboardPeriodStorageKey = useMemo(
+    () => getDashboardPeriodStorageKey(user?.id, store?.id),
+    [store?.id, user?.id]
+  );
 
   const handleMouseEnter = () => {
     if (tooltipTimeout) {
@@ -281,6 +304,20 @@ export default function DashboardHome() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    setDashboardPeriodHydrated(false);
+    setDashboardPeriod(readStoredDashboardPeriod(dashboardPeriodStorageKey));
+    setDashboardPeriodHydrated(true);
+  }, [dashboardPeriodStorageKey]);
+
+  useEffect(() => {
+    if (!dashboardPeriodStorageKey || typeof window === 'undefined') return;
+    if (!dashboardPeriodHydrated) return;
+    if (!isValidDashboardPeriod(dashboardPeriod)) return;
+
+    window.localStorage.setItem(dashboardPeriodStorageKey, dashboardPeriod);
+  }, [dashboardPeriod, dashboardPeriodHydrated, dashboardPeriodStorageKey]);
 
   useEffect(() => {
     if (!selectedMetric) return undefined;
@@ -907,39 +944,6 @@ export default function DashboardHome() {
         )}
       </div>
 
-      <div
-        className="card"
-        style={{
-          marginBottom: '20px',
-          padding: '16px 18px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '16px',
-          flexWrap: 'wrap'
-        }}
-      >
-        <div>
-          <strong style={{ display: 'block', fontSize: '15px', color: 'var(--text-primary)' }}>Periodo das metricas</strong>
-          <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-            Leads, vendas, faturamento e visualizacoes seguem {selectedDashboardPeriod.label.toLowerCase()}. Produtos ativos e estoque continuam mostrando o estado atual.
-          </span>
-        </div>
-        <select
-          className="form-input"
-          value={dashboardPeriod}
-          onChange={(event) => setDashboardPeriod(event.target.value)}
-          style={{ width: 'min(280px, 100%)' }}
-          aria-label="Selecionar periodo das metricas"
-        >
-          {DASHBOARD_PERIOD_PRESETS.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {(metricsLoading || metricsError) && (
         <div
           style={{
@@ -1057,6 +1061,12 @@ export default function DashboardHome() {
               </button>
             </div>
           </div>
+          <DashboardPeriodControl
+            value={dashboardPeriod}
+            options={DASHBOARD_PERIOD_PRESETS}
+            selectedLabel={selectedDashboardPeriod.label}
+            onChange={setDashboardPeriod}
+          />
         </div>
 
         <div className="dashboard-side-stack">
