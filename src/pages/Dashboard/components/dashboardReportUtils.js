@@ -9,6 +9,11 @@ import {
 } from '../../../utils/tireOffer';
 
 const LOW_STOCK_THRESHOLD = 4;
+export const DASHBOARD_PERIOD_PRESETS = [
+  { id: 'current_month', label: 'Este mês' },
+  { id: 'current_semester', label: 'Semestre atual' },
+  { id: 'all_time', label: 'Todo o período' }
+];
 
 const padDateValue = (value) => String(value).padStart(2, '0');
 
@@ -53,7 +58,10 @@ export const getTodayInputValue = () => {
   return `${now.getFullYear()}-${padDateValue(now.getMonth() + 1)}-${padDateValue(now.getDate())}`;
 };
 
-export const buildPresetRange = (presetId, now = new Date()) => {
+export const toInputDate = (date) =>
+  `${date.getFullYear()}-${padDateValue(date.getMonth() + 1)}-${padDateValue(date.getDate())}`;
+
+export const buildPresetDateWindow = (presetId, now = new Date()) => {
   const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   let start = new Date(end);
 
@@ -61,23 +69,36 @@ export const buildPresetRange = (presetId, now = new Date()) => {
     const day = end.getDay();
     const diffToMonday = day === 0 ? 6 : day - 1;
     start.setDate(end.getDate() - diffToMonday);
-  } else if (presetId === 'month') {
+  } else if (presetId === 'month' || presetId === 'current_month') {
     start = new Date(end.getFullYear(), end.getMonth(), 1);
   } else if (presetId === 'quarter') {
     const quarterStartMonth = Math.floor(end.getMonth() / 3) * 3;
     start = new Date(end.getFullYear(), quarterStartMonth, 1);
+  } else if (presetId === 'current_semester') {
+    start = new Date(end.getFullYear(), end.getMonth() < 6 ? 0 : 6, 1);
+  } else if (presetId === 'all_time') {
+    return {
+      startDate: null,
+      endDate: toInputDate(end),
+      startAt: null,
+      endAt: null
+    };
   } else {
     start = new Date(end.getFullYear(), 0, 1);
   }
 
   return {
     startDate: toInputDate(start),
-    endDate: toInputDate(end)
+    endDate: toInputDate(end),
+    startAt: `${toInputDate(start)}T00:00:00`,
+    endAt: `${toInputDate(end)}T23:59:59.999`
   };
 };
 
-export const toInputDate = (date) =>
-  `${date.getFullYear()}-${padDateValue(date.getMonth() + 1)}-${padDateValue(date.getDate())}`;
+export const buildPresetRange = (presetId, now = new Date()) => {
+  const { startDate, endDate } = buildPresetDateWindow(presetId, now);
+  return { startDate, endDate };
+};
 
 export const createInitialReportConfig = () => {
   const defaultPreset = REPORT_PERIOD_PRESETS[1]?.id || 'month';

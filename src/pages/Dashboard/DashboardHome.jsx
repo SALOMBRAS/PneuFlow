@@ -6,9 +6,11 @@ import '../../components/MagicBento/MagicBento.css';
 import MetricDetailsPanel from './components/MetricDetailsPanel';
 import DashboardReportModal from './components/DashboardReportModal';
 import {
+  buildPresetDateWindow,
   buildDashboardReport,
   buildPresetRange,
   createInitialReportConfig,
+  DASHBOARD_PERIOD_PRESETS,
   formatDate,
   validateReportConfig
 } from './components/dashboardReportUtils';
@@ -84,7 +86,7 @@ const isSameCalendarDay = (dateValueA, dateValueB = new Date()) => {
   );
 };
 
-const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits = [], partialErrors = [] }) => {
+const buildCommercialMetrics = ({ leads = [], soldLeads = [], pneus = [], sellers = [], visits = [], partialErrors = [] }) => {
   const sellerByUserId = new Map();
   const sellerByRefCode = new Map();
   const ranking = new Map();
@@ -140,13 +142,13 @@ const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits =
 
   leads.forEach((lead) => {
     const entry = ensureRankingEntry(resolveSeller(lead));
-    const isSold = lead.venda_confirmada === true;
-
     entry.leads += 1;
-    if (isSold) {
-      entry.sales += 1;
-      entry.revenue += getLeadTotalValue(lead, 'sold');
-    }
+  });
+
+  soldLeads.forEach((lead) => {
+    const entry = ensureRankingEntry(resolveSeller(lead));
+    entry.sales += 1;
+    entry.revenue += getLeadTotalValue(lead, 'sold');
   });
 
   visits.forEach((visit) => {
@@ -165,14 +167,13 @@ const buildCommercialMetrics = ({ leads = [], pneus = [], sellers = [], visits =
       return b.leads - a.leads;
     });
 
-  const confirmedSales = leads.filter((lead) => lead.venda_confirmada === true);
   const totalVisits = visits.length;
   const totalVisitsToday = visits.filter((visit) => isSameCalendarDay(visit.created_at)).length;
 
   return {
     totalLeads: leads.length,
-    totalSales: confirmedSales.length,
-    confirmedRevenue: confirmedSales.reduce((sum, lead) => sum + getLeadTotalValue(lead, 'sold'), 0),
+    totalSales: soldLeads.length,
+    confirmedRevenue: soldLeads.reduce((sum, lead) => sum + getLeadTotalValue(lead, 'sold'), 0),
     totalTires: pneus.length,
     activeTires: pneus.filter((pneu) => pneu.status === 'ativo').length,
     totalStock: pneus.reduce((sum, pneu) => sum + Number(pneu.estoque || 0), 0),
@@ -230,6 +231,7 @@ export default function DashboardHome() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState('');
   const [reportPreview, setReportPreview] = useState(null);
+  const [dashboardPeriod, setDashboardPeriod] = useState('current_month');
 
   const handleMouseEnter = () => {
     if (tooltipTimeout) {
@@ -251,7 +253,11 @@ export default function DashboardHome() {
     setMetricsLoading(true);
     setMetricsError('');
     try {
-      const data = await storageService.getDashboardCommercialMetrics(store.id);
+      const selectedPeriod = buildPresetDateWindow(dashboardPeriod);
+      const data = await storageService.getDashboardCommercialMetrics(store.id, {
+        startAt: selectedPeriod.startAt,
+        endAt: selectedPeriod.endAt
+      });
       const metrics = buildCommercialMetrics(data);
       setCommercialMetrics(metrics);
       setLeads(data.leads || []);
@@ -270,7 +276,7 @@ export default function DashboardHome() {
     } finally {
       setMetricsLoading(false);
     }
-  }, [store]);
+  }, [dashboardPeriod, store]);
 
   useEffect(() => {
     loadData();
@@ -304,6 +310,7 @@ export default function DashboardHome() {
   if (!store) return null;
 
   const publicLink = `${window.location.origin}/store/${store.slug}`;
+  const selectedDashboardPeriod = DASHBOARD_PERIOD_PRESETS.find((option) => option.id === dashboardPeriod) || DASHBOARD_PERIOD_PRESETS[0];
   const normalizeSlugPreview = (value) =>
     String(value || '')
       .normalize('NFD')
@@ -898,6 +905,39 @@ export default function DashboardHome() {
             Gerar relatorio
           </button>
         )}
+      </div>
+
+      <div
+        className="card"
+        style={{
+          marginBottom: '20px',
+          padding: '16px 18px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '16px',
+          flexWrap: 'wrap'
+        }}
+      >
+        <div>
+          <strong style={{ display: 'block', fontSize: '15px', color: 'var(--text-primary)' }}>Periodo das metricas</strong>
+          <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+            Leads, vendas, faturamento e visualizacoes seguem {selectedDashboardPeriod.label.toLowerCase()}. Produtos ativos e estoque continuam mostrando o estado atual.
+          </span>
+        </div>
+        <select
+          className="form-input"
+          value={dashboardPeriod}
+          onChange={(event) => setDashboardPeriod(event.target.value)}
+          style={{ width: 'min(280px, 100%)' }}
+          aria-label="Selecionar periodo das metricas"
+        >
+          {DASHBOARD_PERIOD_PRESETS.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {(metricsLoading || metricsError) && (
