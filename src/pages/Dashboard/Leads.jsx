@@ -7,6 +7,7 @@ import { formatBRLCurrency } from '../../utils/currency';
 import {
   getLeadOfferPrice,
   getLeadOfferQuantity,
+  getLeadHistoricalValue,
   getLeadPhysicalQuantity,
   getLeadItems,
   getLeadDistinctItemCount,
@@ -744,6 +745,7 @@ export default function Leads() {
                     const isManagedByCurrentSeller = isLeadManagedByCurrentSeller(lead);
                     const multiItemLead = isMultiItemLead(lead);
                     const leadItems = getLeadItems(lead);
+                    const leadValue = getLeadHistoricalValue(lead, isSold ? 'sold' : 'desired');
                     const isExpanded = Boolean(expandedLeadIds[lead.id]);
                     const availableStock = getLeadAvailableStock(lead);
                     const canEditQuantity =
@@ -961,9 +963,15 @@ export default function Leads() {
                         </td>
 
                         <td style={{ padding: '16px 24px' }}>
-                          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)' }}>
-                            {lead.produto_preco ? formatBRLCurrency(getLeadTotalValue(lead, isSold ? 'sold' : 'desired')) : '---'}
-                          </span>
+                          {leadValue == null ? (
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>
+                              Valor indisponível
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)' }}>
+                              {formatBRLCurrency(leadValue)}
+                            </span>
+                          )}
                         </td>
 
                         <td style={{ padding: '16px 24px', fontSize: '13px', color: 'var(--text-secondary)' }}>
