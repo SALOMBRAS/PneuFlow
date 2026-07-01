@@ -26,18 +26,21 @@ const mapLegacyLeadRow = (row) => {
   const soldQuantity = normalizeLeadQuantity(row?.sold_quantity, desiredQuantity);
   const isSold = row?.venda_confirmada === true || row?.status_atendimento === 'vendido';
   const quantity = isSold ? soldQuantity : desiredQuantity;
-  const price = Number(row?.produto_preco || 0);
+  const rawPrice = row?.produto_preco;
+  const price = Number(rawPrice);
+  const hasReliablePrice = rawPrice != null && Number.isFinite(price) && price >= 0;
+  const totalValue = hasReliablePrice ? Number((price * quantity).toFixed(2)) : null;
 
   return {
     ...row,
     telefone_cliente: null,
     observacao_cliente: null,
     titulo_anuncio: null,
-    preco_anuncio: price,
+    preco_anuncio: hasReliablePrice ? price : null,
     quantidade_anuncios: quantity,
     quantidade_por_anuncio: 1,
     quantidade_total_pneus: quantity,
-    valor_total: Number((price * quantity).toFixed(2)),
+    valor_total: totalValue,
     item_count: 1,
     items: [
       {
@@ -48,8 +51,8 @@ const mapLegacyLeadRow = (row) => {
         quantidade: quantity,
         quantidade_por_anuncio: 1,
         quantidade_total_pneus: quantity,
-        preco_unitario_anuncio: price,
-        valor_total: Number((price * quantity).toFixed(2))
+        preco_unitario_anuncio: hasReliablePrice ? price : null,
+        valor_total: totalValue
       }
     ]
   };
@@ -81,12 +84,41 @@ const loadPneusWithSchemaCompatibility = async (queryFactory) => {
   };
 };
 
-const loadDashboardLeadsWithSchemaCompatibility = async (storeId) => {
-  const query = (columns) =>
-    supabase
+const applyDateRange = (query, column, startAt, endAt) => {
+  let nextQuery = query;
+
+  if (startAt) {
+    nextQuery = nextQuery.gte(column, startAt);
+  }
+
+  if (endAt) {
+    nextQuery = nextQuery.lte(column, endAt);
+  }
+
+  return nextQuery;
+};
+
+const loadDashboardLeadsWithSchemaCompatibility = async (storeId, options = {}) => {
+  const {
+    startAt = null,
+    endAt = null,
+    dateColumn = 'created_at',
+    soldOnly = false
+  } = options;
+
+  const query = (columns) => {
+    let builder = supabase
       .from('leads')
       .select(columns)
       .eq('loja_id', storeId);
+
+    if (soldOnly) {
+      builder = builder.eq('venda_confirmada', true);
+    }
+
+    builder = applyDateRange(builder, dateColumn, startAt, endAt);
+    return builder.order(dateColumn, { ascending: false });
+  };
 
   const { data, error } = await query(DASHBOARD_LEAD_COLUMNS);
   if (!error) {
@@ -811,7 +843,11 @@ export const storageService = {
     return data;
   },
 
-  getDashboardCommercialMetrics: async (storeId) => {
+  getDashboardCommercialMetrics: async (storeId, options = {}) => {
+    const {
+      startAt = null,
+      endAt = null
+    } = options;
     const partialErrors = [];
     const schemaFallbacks = [];
 
@@ -833,7 +869,17 @@ export const storageService = {
     };
 
     const requests = {
-      leads: () => loadDashboardLeadsWithSchemaCompatibility(storeId),
+      leads: () => loadDashboardLeadsWithSchemaCompatibility(storeId, {
+        startAt,
+        endAt,
+        dateColumn: 'created_at'
+      }),
+      soldLeads: () => loadDashboardLeadsWithSchemaCompatibility(storeId, {
+        startAt,
+        endAt,
+        dateColumn: 'venda_confirmada_em',
+        soldOnly: true
+      }),
       pneus: () =>
         loadPneusWithSchemaCompatibility((columns) =>
           supabase
@@ -851,10 +897,14 @@ export const storageService = {
         return { data: data || [], usedLegacySchema: false };
       },
       visits: async () => {
-        const { data, error } = await supabase
+        let query = supabase
           .from('store_referral_visits')
           .select('id, store_id, seller_id, ref_code, created_at')
           .eq('store_id', storeId);
+
+        query = applyDateRange(query, 'created_at', startAt, endAt);
+
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
         return { data: data || [], usedLegacySchema: false };
@@ -877,6 +927,7 @@ export const storageService = {
       return acc;
     }, {
       leads: [],
+      soldLeads: [],
       pneus: [],
       sellers: [],
       visits: [],

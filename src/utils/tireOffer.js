@@ -1,5 +1,7 @@
 export const MAX_TIRES_PER_OFFER = 20;
 
+const isReliableAmount = (value) => Number.isFinite(value) && value >= 0;
+
 export const normalizeOfferQuantity = (value, fallback = 1) => {
   const parsed = Number.parseInt(value ?? fallback, 10);
   if (!Number.isFinite(parsed)) {
@@ -186,34 +188,55 @@ export const getLeadOfferPrice = (lead) => {
   return Number.isFinite(price) ? price : 0;
 };
 
-export const getLeadTotalValue = (lead, mode = 'desired') => {
+export const getLeadHistoricalValue = (lead, mode = 'desired') => {
   if (isMultiItemLead(lead)) {
     const explicitValue = Number(lead?.valor_total);
-    if (Number.isFinite(explicitValue) && explicitValue >= 0) {
+    if (lead?.valor_total != null && isReliableAmount(explicitValue)) {
       return explicitValue;
     }
 
-    return getLeadItems(lead).reduce((sum, item) => {
+    let hasReliableSnapshot = false;
+    const total = getLeadItems(lead).reduce((sum, item) => {
       const itemValue = Number(item?.valor_total);
-      if (Number.isFinite(itemValue) && itemValue >= 0) {
+      if (item?.valor_total != null && isReliableAmount(itemValue)) {
+        hasReliableSnapshot = true;
         return sum + itemValue;
       }
 
       const quantity = Math.max(1, Number.parseInt(item?.quantidade, 10) || 1);
-      const price = Number(item?.preco_unitario_anuncio || 0);
-      return sum + (Number.isFinite(price) ? price * quantity : 0);
+      const price = Number(item?.preco_unitario_anuncio);
+      if (item?.preco_unitario_anuncio != null && isReliableAmount(price)) {
+        hasReliableSnapshot = true;
+        return sum + (price * quantity);
+      }
+
+      return sum;
     }, 0);
+
+    return hasReliableSnapshot ? Number(total.toFixed(2)) : null;
   }
 
   const offerQuantity = getLeadOfferQuantity(lead, mode);
-  const fallback = getLeadOfferPrice(lead) * offerQuantity;
   const explicitValue = Number(lead?.valor_total);
-
-  if (mode === 'desired' && Number.isFinite(explicitValue) && explicitValue >= 0) {
+  if (lead?.valor_total != null && isReliableAmount(explicitValue)) {
     return explicitValue;
   }
 
-  return fallback;
+  const unitPrice = Number(lead?.preco_anuncio ?? lead?.produto_preco);
+  if (lead?.preco_anuncio == null && lead?.produto_preco == null) {
+    return null;
+  }
+
+  if (!isReliableAmount(unitPrice)) {
+    return null;
+  }
+
+  return Number((unitPrice * offerQuantity).toFixed(2));
+};
+
+export const getLeadTotalValue = (lead, mode = 'desired') => {
+  const historicalValue = getLeadHistoricalValue(lead, mode);
+  return historicalValue == null ? 0 : historicalValue;
 };
 
 export const getLeadSummaryLabel = (lead, mode = 'desired') => {

@@ -1,6 +1,6 @@
 export const REPORT_PERIOD_PRESETS = [
   { id: 'week', label: 'Esta semana' },
-  { id: 'month', label: 'Este mes' },
+  { id: 'month', label: 'Este mês' },
   { id: 'quarter', label: 'Este trimestre' },
   { id: 'year', label: 'Este ano' }
 ];
