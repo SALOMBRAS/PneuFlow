@@ -90,7 +90,55 @@ export const getOfferTotalPrice = (offerQuantity, price) => {
   return Number(price || 0) * safeOfferQuantity;
 };
 
+export const getLeadItems = (lead) => {
+  if (Array.isArray(lead?.items)) {
+    return lead.items;
+  }
+
+  if (Array.isArray(lead?.itens)) {
+    return lead.itens;
+  }
+
+  const quantityPerOffer = getLeadQuantityPerOffer(lead);
+  const offerQuantity = getLeadOfferQuantity(lead, lead?.venda_confirmada ? 'sold' : 'desired');
+  const physicalQuantity = getLeadPhysicalQuantity(lead, lead?.venda_confirmada ? 'sold' : 'desired');
+  const offerPrice = getLeadOfferPrice(lead);
+  const totalValue = getLeadTotalValue(lead, lead?.venda_confirmada ? 'sold' : 'desired');
+
+  if (!lead?.produto_nome && !lead?.titulo_anuncio) {
+    return [];
+  }
+
+  return [{
+    lead_id: lead?.id || null,
+    product_id: lead?.produto_id || lead?.pneu_id || null,
+    titulo_anuncio: lead?.titulo_anuncio || lead?.produto_nome || 'Produto nao identificado',
+    marca: lead?.marca || '',
+    modelo: lead?.modelo || '',
+    medida: lead?.produto_medida || lead?.medida || '',
+    quantidade: offerQuantity,
+    quantidade_por_anuncio: quantityPerOffer,
+    quantidade_total_pneus: physicalQuantity,
+    preco_unitario_anuncio: offerPrice,
+    valor_total: totalValue
+  }];
+};
+
+export const isMultiItemLead = (lead) => getLeadItems(lead).length > 1;
+
+export const getLeadDistinctItemCount = (lead) => getLeadItems(lead).length;
+
+export const getLeadOfferUnitCount = (lead) =>
+  getLeadItems(lead).reduce(
+    (sum, item) => sum + Math.max(1, Number.parseInt(item?.quantidade, 10) || 1),
+    0
+  );
+
 export const getLeadOfferQuantity = (lead, mode = 'desired') => {
+  if (isMultiItemLead(lead)) {
+    return getLeadOfferUnitCount(lead);
+  }
+
   if (lead?.quantidade_anuncios != null) {
     return Math.max(1, Number.parseInt(lead.quantidade_anuncios, 10) || 1);
   }
@@ -110,6 +158,13 @@ export const getLeadQuantityPerOffer = (lead) =>
   normalizeOfferQuantity(lead?.quantidade_por_anuncio, 1);
 
 export const getLeadPhysicalQuantity = (lead, mode = 'desired') => {
+  if (isMultiItemLead(lead)) {
+    return getLeadItems(lead).reduce(
+      (sum, item) => sum + Math.max(1, Number.parseInt(item?.quantidade_total_pneus, 10) || 1),
+      0
+    );
+  }
+
   if (mode === 'sold') {
     if (lead?.sold_quantity != null) {
       return Math.max(1, Number.parseInt(lead.sold_quantity, 10) || 1);
@@ -123,11 +178,33 @@ export const getLeadPhysicalQuantity = (lead, mode = 'desired') => {
 };
 
 export const getLeadOfferPrice = (lead) => {
+  if (isMultiItemLead(lead)) {
+    return getLeadTotalValue(lead);
+  }
+
   const price = Number(lead?.preco_anuncio ?? lead?.produto_preco ?? 0);
   return Number.isFinite(price) ? price : 0;
 };
 
 export const getLeadTotalValue = (lead, mode = 'desired') => {
+  if (isMultiItemLead(lead)) {
+    const explicitValue = Number(lead?.valor_total);
+    if (Number.isFinite(explicitValue) && explicitValue >= 0) {
+      return explicitValue;
+    }
+
+    return getLeadItems(lead).reduce((sum, item) => {
+      const itemValue = Number(item?.valor_total);
+      if (Number.isFinite(itemValue) && itemValue >= 0) {
+        return sum + itemValue;
+      }
+
+      const quantity = Math.max(1, Number.parseInt(item?.quantidade, 10) || 1);
+      const price = Number(item?.preco_unitario_anuncio || 0);
+      return sum + (Number.isFinite(price) ? price * quantity : 0);
+    }, 0);
+  }
+
   const offerQuantity = getLeadOfferQuantity(lead, mode);
   const fallback = getLeadOfferPrice(lead) * offerQuantity;
   const explicitValue = Number(lead?.valor_total);
@@ -140,6 +217,13 @@ export const getLeadTotalValue = (lead, mode = 'desired') => {
 };
 
 export const getLeadSummaryLabel = (lead, mode = 'desired') => {
+  if (isMultiItemLead(lead)) {
+    const distinctItems = getLeadDistinctItemCount(lead);
+    const offerUnits = getLeadOfferUnitCount(lead);
+    const physicalTotal = getLeadPhysicalQuantity(lead, mode);
+    return `${distinctItems} item(ns) - ${offerUnits} anuncio(s) - ${physicalTotal} pneus`;
+  }
+
   const offerQuantity = getLeadOfferQuantity(lead, mode);
   const physicalTotal = getLeadPhysicalQuantity(lead, mode);
 
