@@ -43,6 +43,7 @@ export default function Catalog() {
   } = useNotifications();
   const [tires, setTires] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBrand, setFilterBrand] = useState('');
@@ -74,11 +75,14 @@ export default function Catalog() {
   const loadData = useCallback(async () => {
     if (!store) return;
     setLoading(true);
+    setLoadError('');
     try {
       const list = await storageService.getPneus(store.id);
       setTires(list);
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
+      setTires([]);
+      setLoadError(err?.message || 'Nao foi possivel carregar os pneus agora.');
     } finally {
       setLoading(false);
     }
@@ -435,17 +439,31 @@ export default function Catalog() {
       <div className="catalog-summary-grid">
         <div className="pf-card catalog-summary-card">
           <span>Pneus cadastrados</span>
-          <strong>{tires.length}</strong>
+          <strong>{loadError ? '--' : tires.length}</strong>
         </div>
         <div className="pf-card catalog-summary-card">
           <span>Anuncios ativos</span>
-          <strong>{activeTiresCount}</strong>
+          <strong>{loadError ? '--' : activeTiresCount}</strong>
         </div>
         <div className="pf-card catalog-summary-card">
           <span>Estoque total</span>
-          <strong>{totalStockCount}</strong>
+          <strong>{loadError ? '--' : totalStockCount}</strong>
         </div>
       </div>
+
+      {loadError && (
+        <div className="card" style={{ marginBottom: '24px', padding: '16px', borderColor: 'rgba(245, 158, 11, 0.28)', background: 'rgba(245, 158, 11, 0.08)', textAlign: 'left' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <AlertCircle size={18} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <strong style={{ display: 'block', marginBottom: '6px' }}>Os pneus nao puderam ser carregados.</strong>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                {loadError}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search and Filters */}
       <div className="card catalog-filter-bar" style={{ padding: '16px', marginBottom: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -473,7 +491,7 @@ export default function Catalog() {
       </div>
 
       {/* Tires Grid */}
-      {filteredTires.length === 0 ? (
+      {!loadError && filteredTires.length === 0 ? (
         <div className="pf-empty-state catalog-empty-state" style={{ color: 'var(--text-secondary)' }}>
           <Layers size={48} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
           <h3>Cadastre seu primeiro pneu e publique sua vitrine.</h3>
@@ -484,7 +502,7 @@ export default function Catalog() {
             Cadastrar primeiro pneu
           </button>
         </div>
-      ) : (
+      ) : !loadError ? (
         <div className="grid-cols-3">
           {filteredTires.map((tire) => (
             <div key={tire.id} className={`card catalog-product-card ${getStockState(tire.estoque).cardClass}`.trim()} style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px', opacity: tire.status === 'ativo' ? 1 : 0.6 }}>
@@ -586,7 +604,7 @@ export default function Catalog() {
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
       {/* MODAL: ADD/EDIT TIRE */}
       {tireModalOpen && (
