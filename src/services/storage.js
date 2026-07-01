@@ -6,7 +6,7 @@ const PUBLIC_STORE_COLUMNS = 'id, nome, whatsapp, telefone, endereco, cidade, es
 const STORE_MEMBER_COLUMNS = 'id, store_id, user_id, email, nome, role, status, invited_by, invited_at, accepted_at, created_at, updated_at, ref_code, disabled_at, removed_at, auth_deleted_at, removed_by, senha_inicial, whatsapp';
 const PNEU_COLUMNS = 'id, loja_id, marca, modelo, titulo_anuncio, medida, preco, quantidade_por_anuncio, estoque, descricao, status, compatibilidade, foto_principal_url, fotos, created_at, updated_at, tipo_veiculo, created_by, updated_by';
 const PNEU_COLUMNS_LEGACY = 'id, loja_id, marca, modelo, medida, preco, estoque, descricao, status, compatibilidade, foto_principal_url, fotos, created_at, updated_at, tipo_veiculo, created_by, updated_by';
-const DASHBOARD_LEAD_COLUMNS = 'id, loja_id, produto_id, seller_id, ref_code, attribution_source, nome_cliente, produto_nome, titulo_anuncio, produto_medida, produto_preco, preco_anuncio, origem, created_at, desired_quantity, sold_quantity, quantidade_anuncios, quantidade_por_anuncio, quantidade_total_pneus, valor_total, status_atendimento, venda_confirmada, venda_confirmada_em, venda_confirmada_por';
+const DASHBOARD_LEAD_COLUMNS = 'id, loja_id, produto_id, seller_id, ref_code, attribution_source, nome_cliente, telefone_cliente, observacao_cliente, produto_nome, titulo_anuncio, produto_medida, produto_preco, preco_anuncio, origem, created_at, desired_quantity, sold_quantity, quantidade_anuncios, quantidade_por_anuncio, quantidade_total_pneus, valor_total, status_atendimento, venda_confirmada, venda_confirmada_em, venda_confirmada_por, item_count, items';
 const DASHBOARD_LEAD_COLUMNS_LEGACY = 'id, loja_id, produto_id, seller_id, ref_code, attribution_source, nome_cliente, produto_nome, produto_medida, produto_preco, origem, created_at, desired_quantity, sold_quantity, status_atendimento, venda_confirmada, venda_confirmada_em, venda_confirmada_por';
 
 const normalizeLeadQuantity = (value, fallback = 1) =>
@@ -30,12 +30,28 @@ const mapLegacyLeadRow = (row) => {
 
   return {
     ...row,
+    telefone_cliente: null,
+    observacao_cliente: null,
     titulo_anuncio: null,
     preco_anuncio: price,
     quantidade_anuncios: quantity,
     quantidade_por_anuncio: 1,
     quantidade_total_pneus: quantity,
-    valor_total: Number((price * quantity).toFixed(2))
+    valor_total: Number((price * quantity).toFixed(2)),
+    item_count: 1,
+    items: [
+      {
+        lead_id: row?.id || null,
+        product_id: row?.produto_id || row?.pneu_id || null,
+        titulo_anuncio: row?.produto_nome || 'Produto nao identificado',
+        medida: row?.produto_medida || '',
+        quantidade: quantity,
+        quantidade_por_anuncio: 1,
+        quantidade_total_pneus: quantity,
+        preco_unitario_anuncio: price,
+        valor_total: Number((price * quantity).toFixed(2))
+      }
+    ]
   };
 };
 
@@ -671,6 +687,10 @@ export const storageService = {
   },
 
   createLead: async (payload) => {
+    if (Array.isArray(payload?.items) && payload.items.length > 0) {
+      return storageService.createLeadCart(payload);
+    }
+
     const { data, error } = await supabase.rpc('registrar_lead', {
       p_loja_id: payload.loja_id,
       p_produto_id: payload.produto_id || null,
@@ -693,6 +713,37 @@ export const storageService = {
 
     if (error) {
       console.error('Supabase registrar_lead RPC error:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details
+      });
+      throw error;
+    }
+
+    return data;
+  },
+
+  createLeadCart: async (payload) => {
+    const normalizedItems = (payload.items || []).map((item) => ({
+      product_id: item.product_id,
+      quantidade: Math.max(1, Number.parseInt(item.quantidade, 10) || 1)
+    }));
+
+    const { data, error } = await supabase.rpc('registrar_lead_com_itens', {
+      p_loja_id: payload.loja_id,
+      p_nome_cliente: payload.nome_cliente,
+      p_telefone_cliente: payload.telefone_cliente || null,
+      p_observacao_cliente: payload.observacao_cliente || null,
+      p_items: normalizedItems,
+      p_origem: payload.origem || 'whatsapp',
+      p_seller_id: payload.seller_id || null,
+      p_ref_code: payload.ref_code || null,
+      p_attribution_source: payload.attribution_source || 'product',
+      p_request_id: payload.request_id || null
+    });
+
+    if (error) {
+      console.error('Supabase registrar_lead_com_itens RPC error:', {
         message: error?.message,
         code: error?.code,
         details: error?.details
@@ -878,45 +929,13 @@ export const storageService = {
     const shouldLoadSellers = selected.has('seller_performance') || selected.has('leads') || selected.has('sales') || selected.has('pending') || selected.has('withdrawals');
     const shouldLoadStock = selected.has('stock') || selected.has('sold_products');
 
-    const leadColumns = [
-      'id',
-      'loja_id',
-      'produto_id',
-      'seller_id',
-      'ref_code',
-      'nome_cliente',
-      'produto_nome',
-      'titulo_anuncio',
-      'produto_medida',
-      'produto_preco',
-      'preco_anuncio',
-      'created_at',
-      'desired_quantity',
-      'sold_quantity',
-      'quantidade_anuncios',
-      'quantidade_por_anuncio',
-      'quantidade_total_pneus',
-      'valor_total',
-      'status_atendimento',
-      'venda_confirmada',
-      'venda_confirmada_em',
-      'origem'
-    ].join(', ');
-
     const requests = [];
 
     if (shouldLoadLeadFlow) {
       requests.push([
         'leads',
-        safeSelect(
-          'clientes interessados',
-          supabase
-            .from('leads')
-            .select(leadColumns)
-            .eq('loja_id', storeId)
-            .gte('created_at', startAt)
-            .lte('created_at', endAt)
-            .order('created_at', { ascending: false })
+        storageService.getLeads(storeId).then((rows) =>
+          rows.filter((lead) => lead.created_at >= startAt && lead.created_at <= endAt)
         )
       ]);
     }
@@ -924,16 +943,12 @@ export const storageService = {
     if (shouldLoadSales) {
       requests.push([
         'soldLeads',
-        safeSelect(
-          'vendas confirmadas',
-          supabase
-            .from('leads')
-            .select(leadColumns)
-            .eq('loja_id', storeId)
-            .eq('status_atendimento', 'vendido')
-            .gte('venda_confirmada_em', startAt)
-            .lte('venda_confirmada_em', endAt)
-            .order('venda_confirmada_em', { ascending: false })
+        storageService.getLeads(storeId).then((rows) =>
+          rows.filter((lead) =>
+            lead.status_atendimento === 'vendido' &&
+            lead.venda_confirmada_em >= startAt &&
+            lead.venda_confirmada_em <= endAt
+          )
         )
       ]);
     }
@@ -999,12 +1014,13 @@ export const storageService = {
 
     const enrichLead = (lead) => {
       const product = stockById.get(lead.produto_id);
+      const firstItem = Array.isArray(lead.items) ? lead.items[0] : null;
       return {
         ...lead,
-        marca: product?.marca || '',
-        modelo: product?.modelo || '',
-        titulo_anuncio: lead.titulo_anuncio || product?.titulo_anuncio || null,
-        medida: product?.medida || lead.produto_medida || ''
+        marca: product?.marca || firstItem?.marca || '',
+        modelo: product?.modelo || firstItem?.modelo || '',
+        titulo_anuncio: lead.titulo_anuncio || product?.titulo_anuncio || firstItem?.titulo_anuncio || null,
+        medida: product?.medida || firstItem?.medida || lead.produto_medida || ''
       };
     };
 

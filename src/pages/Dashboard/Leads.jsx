@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { Fragment, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
 import { useNotifications } from '../../hooks/useNotifications';
@@ -8,9 +8,12 @@ import {
   getLeadOfferPrice,
   getLeadOfferQuantity,
   getLeadPhysicalQuantity,
+  getLeadItems,
+  getLeadDistinctItemCount,
   getLeadQuantityPerOffer,
   getLeadSummaryLabel,
-  getLeadTotalValue
+  getLeadTotalValue,
+  isMultiItemLead
 } from '../../utils/tireOffer';
 
 const PAGE_SIZE_OPTIONS = [10, 50, 100, 'all'];
@@ -119,6 +122,7 @@ export default function Leads() {
   const [feedbackMessage, setFeedbackMessage] = useState(null);
   const [quantityDrafts, setQuantityDrafts] = useState({});
   const [quantitySaveStates, setQuantitySaveStates] = useState({});
+  const [expandedLeadIds, setExpandedLeadIds] = useState({});
 
   const leadsRef = useRef([]);
   const quantityDraftsRef = useRef({});
@@ -461,6 +465,13 @@ export default function Leads() {
     return [currentStatus];
   }, [isLeadManagedByCurrentSeller, isOwner]);
 
+  const toggleLeadExpanded = useCallback((leadId) => {
+    setExpandedLeadIds((current) => ({
+      ...current,
+      [leadId]: !current[leadId]
+    }));
+  }, []);
+
   const handleUpdateLeadStatus = async (lead, nextStatus) => {
     const hasPendingQuantitySave =
       dirtyQuantityIdsRef.current.has(lead.id) ||
@@ -480,18 +491,25 @@ export default function Leads() {
       quantityDraftsRef.current[lead.id],
       currentStatus === 'vendido' ? getLeadFinalQuantity(currentLead) : getLeadEditableQuantity(currentLead)
     );
+    const multiItemLead = isMultiItemLead(currentLead);
     const availableStock = getLeadAvailableStock(currentLead);
     const quantityPerOffer = getLeadQuantityPerOffer(currentLead);
-    const physicalQuantity = quantity * quantityPerOffer;
-    const summaryLabel = getLeadSummaryLabel({
-      ...currentLead,
-      quantidade_anuncios: quantity,
-      quantidade_total_pneus: physicalQuantity
-    });
-    const totalValue = getLeadOfferPrice(currentLead) * quantity;
+    const physicalQuantity = multiItemLead
+      ? getLeadPhysicalQuantity(currentLead, currentStatus === 'vendido' ? 'sold' : 'desired')
+      : quantity * quantityPerOffer;
+    const summaryLabel = multiItemLead
+      ? getLeadSummaryLabel(currentLead, currentStatus === 'vendido' ? 'sold' : 'desired')
+      : getLeadSummaryLabel({
+          ...currentLead,
+          quantidade_anuncios: quantity,
+          quantidade_total_pneus: physicalQuantity
+        });
+    const totalValue = multiItemLead
+      ? getLeadTotalValue(currentLead, currentStatus === 'vendido' ? 'sold' : 'desired')
+      : getLeadOfferPrice(currentLead) * quantity;
 
     if (nextStatus === 'vendido') {
-      if (availableStock !== null && availableStock <= 0) {
+      if (!multiItemLead && availableStock !== null && availableStock <= 0) {
         notifyTransientWarning({
           title: 'Estoque indisponivel',
           message: 'Nao ha estoque suficiente para confirmar esta venda.',
@@ -724,8 +742,12 @@ export default function Leads() {
                     const canEditStatus = allowedStatuses.length > 1;
                     const isLost = status === 'desistencia';
                     const isManagedByCurrentSeller = isLeadManagedByCurrentSeller(lead);
+                    const multiItemLead = isMultiItemLead(lead);
+                    const leadItems = getLeadItems(lead);
+                    const isExpanded = Boolean(expandedLeadIds[lead.id]);
                     const availableStock = getLeadAvailableStock(lead);
                     const canEditQuantity =
+                      !multiItemLead &&
                       status === 'em_atendimento' &&
                       (isOwner || isManagedByCurrentSeller) &&
                       (availableStock === null || availableStock > 0);
@@ -736,11 +758,10 @@ export default function Leads() {
                       isSold ? getLeadFinalQuantity(lead) : getLeadEditableQuantity(lead)
                     );
                     const quantitySaveState = quantitySaveStates[lead.id];
-                    const finalSoldQuantity = getLeadFinalQuantity(lead);
 
                     return (
+                      <Fragment key={lead.id}>
                       <tr
-                        key={lead.id}
                         style={{ borderBottom: '1px solid var(--border)' }}
                         className={`lead-row ${statusMeta.rowClass}`}
                       >
@@ -756,6 +777,16 @@ export default function Leads() {
                         <td style={{ padding: '16px 24px' }}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{lead.produto_nome}</span>
+                            {multiItemLead && (
+                              <button
+                                type="button"
+                                className="btn btn-outline"
+                                style={{ marginTop: '8px', alignSelf: 'flex-start' }}
+                                onClick={() => toggleLeadExpanded(lead.id)}
+                              >
+                                {isExpanded ? 'Ocultar itens' : 'Ver itens'}
+                              </button>
+                            )}
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lead.produto_medida || 'Medida não inf.'}</span>
                           </div>
                         </td>
@@ -961,6 +992,54 @@ export default function Leads() {
                           </div>
                         </td>
                       </tr>
+                      {isExpanded && (
+                        <tr className={`lead-row-details ${statusMeta.rowClass}`}>
+                          <td colSpan={7} style={{ padding: '0 24px 20px' }}>
+                            <div className="filter-panel" style={{ margin: 0, display: 'grid', gap: '14px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                                <div>
+                                  <strong style={{ display: 'block', marginBottom: '4px' }}>Resumo do orcamento</strong>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                                    {getLeadSummaryLabel(lead, isSold ? 'sold' : 'desired')}
+                                  </span>
+                                </div>
+                                {lead.telefone_cliente && (
+                                  <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                                    Telefone: <strong style={{ color: 'var(--text-primary)' }}>{lead.telefone_cliente}</strong>
+                                  </div>
+                                )}
+                              </div>
+
+                              {lead.observacao_cliente && (
+                                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                                  <strong style={{ color: 'var(--text-primary)' }}>Observacao:</strong> {lead.observacao_cliente}
+                                </div>
+                              )}
+
+                              <div style={{ display: 'grid', gap: '10px' }}>
+                                {leadItems.map((item, index) => (
+                                  <div key={item.id || `${lead.id}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', borderRadius: '14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                    <div style={{ minWidth: 0 }}>
+                                      <strong style={{ display: 'block', color: 'var(--text-primary)' }}>{item.titulo_anuncio}</strong>
+                                      <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '12px' }}>
+                                        {[item.marca, item.modelo, item.medida].filter(Boolean).join(' • ') || 'Produto sem detalhes adicionais'}
+                                      </span>
+                                      <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>
+                                        {item.quantidade} anuncio(s){Number(item.quantidade_por_anuncio) > 1 ? ` • ${item.quantidade_por_anuncio} pneus por anuncio` : ''} • {item.quantidade_total_pneus} pneus fisicos
+                                      </span>
+                                    </div>
+                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                      <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '12px' }}>{formatBRLCurrency(item.preco_unitario_anuncio)}</span>
+                                      <strong style={{ color: 'var(--primary)' }}>{formatBRLCurrency(item.valor_total)}</strong>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      </Fragment>
                     );
                   })}
                 </tbody>
