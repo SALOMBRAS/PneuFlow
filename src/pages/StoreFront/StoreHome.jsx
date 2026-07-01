@@ -34,6 +34,10 @@ import {
   Filter,
   Sparkles,
   Search,
+  ShoppingCart,
+  Trash2,
+  Plus,
+  Minus
 } from 'lucide-react';
 import './StoreFront.css';
 
@@ -58,6 +62,45 @@ const hexToRgba = (hex, alpha = 1) => {
   const g = parseInt(cleanHex.slice(2, 4), 16);
   const b = parseInt(cleanHex.slice(4, 6), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const CART_STORAGE_PREFIX = 'pneuflow_cart';
+
+const getCartStorageKey = (storeValue) => {
+  if (!storeValue?.id && !storeValue?.slug) return null;
+  return `${CART_STORAGE_PREFIX}_${storeValue?.slug || storeValue?.id}`;
+};
+
+const readStoredCart = (storageKey) => {
+  if (!storageKey || typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const buildCartItem = (tire, quantity = 1) => {
+  const normalizedQuantity = Math.max(1, Number.parseInt(quantity, 10) || 1);
+  const quantityPerOffer = getQuantityPerOffer(tire);
+
+  return {
+    product_id: tire.id,
+    titulo_anuncio: getOfferTitle(tire) || `${tire.marca || ''} ${tire.modelo || ''}`.trim(),
+    marca: tire.marca || '',
+    modelo: tire.modelo || '',
+    medida: tire.medida || '',
+    image: tire.foto_principal_url || tire.image || '',
+    quantidade: normalizedQuantity,
+    quantidade_por_anuncio: quantityPerOffer,
+    quantidade_total_pneus: getPhysicalTireTotal(normalizedQuantity, quantityPerOffer),
+    preco_unitario_anuncio: Number(tire.preco || 0),
+    valor_total: getOfferTotalPrice(normalizedQuantity, Number(tire.preco || 0))
+  };
 };
 
 const stripPhone = (value) => String(value || '').replace(/\D/g, '');
@@ -144,9 +187,13 @@ export default function StoreHome() {
   const [leadQuantity, setLeadQuantity] = useState(1);
   const [detailQuantity, setDetailQuantity] = useState(1);
   const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerNote, setCustomerNote] = useState('');
   const [savingLead, setSavingLead] = useState(false);
   const [leadError, setLeadError] = useState('');
   const [activeHeroIndex, setActiveHeroIndex] = useState(0);
+  const [cartItems, setCartItems] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
 
   const filteredSuggestions = useMemo(() => {
     if (!vehicleModel || vehicleModel.length < 1) return [];
@@ -169,6 +216,42 @@ export default function StoreHome() {
       .sort()
       .slice(0, 8);
   }, [vehicleModel, vehicleBrand, vehicleType]);
+
+  const cartStorageKey = useMemo(() => getCartStorageKey(store), [store]);
+
+  useEffect(() => {
+    if (!cartStorageKey) return;
+    setCartItems(readStoredCart(cartStorageKey));
+  }, [cartStorageKey]);
+
+  useEffect(() => {
+    if (!cartStorageKey || typeof window === 'undefined') return;
+
+    try {
+      window.localStorage.setItem(cartStorageKey, JSON.stringify(cartItems));
+    } catch (error) {
+      console.warn('Nao foi possivel persistir o carrinho:', error);
+    }
+  }, [cartItems, cartStorageKey]);
+
+  useEffect(() => {
+    if (!tires.length) return;
+
+    setCartItems((current) =>
+      current
+        .map((item) => {
+          const tire = tires.find((entry) => entry.id === item.product_id);
+          if (!tire) return null;
+
+          const max = getAvailableStock(tire);
+          if (max <= 0) return null;
+
+          const nextQuantity = Math.min(Math.max(1, Number.parseInt(item.quantidade, 10) || 1), max);
+          return buildCartItem(tire, nextQuantity);
+        })
+        .filter(Boolean)
+    );
+  }, [tires]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -488,6 +571,20 @@ export default function StoreHome() {
     setDetailQuantity(clampQuantity(1, tire) || 1);
   };
 
+  const cartSummary = useMemo(() => {
+    const distinctItems = cartItems.length;
+    const totalOffers = cartItems.reduce((sum, item) => sum + (Number.parseInt(item.quantidade, 10) || 0), 0);
+    const totalPhysicalTires = cartItems.reduce((sum, item) => sum + (Number.parseInt(item.quantidade_total_pneus, 10) || 0), 0);
+    const totalValue = cartItems.reduce((sum, item) => sum + Number(item.valor_total || 0), 0);
+
+    return {
+      distinctItems,
+      totalOffers,
+      totalPhysicalTires,
+      totalValue
+    };
+  }, [cartItems]);
+
   const handleInterest = (tire, quantity = 1) => {
     if (!commercialContactEnabled) return;
     const availableStock = getAvailableStock(tire);
@@ -497,13 +594,28 @@ export default function StoreHome() {
       return;
     }
 
-    setTargetTire(tire);
-    setLeadQuantity(clampQuantity(quantity, tire));
+    const normalizedQuantity = clampQuantity(quantity, tire);
+    setCartItems((current) => {
+      const existingIndex = current.findIndex((item) => item.product_id === tire.id);
+
+      if (existingIndex === -1) {
+        return [...current, buildCartItem(tire, normalizedQuantity)];
+      }
+
+      const nextItems = [...current];
+      const mergedQuantity = clampQuantity(
+        (Number.parseInt(nextItems[existingIndex].quantidade, 10) || 0) + normalizedQuantity,
+        tire
+      );
+      nextItems[existingIndex] = buildCartItem(tire, mergedQuantity);
+      return nextItems;
+    });
+
     setLeadError('');
-    setLeadModalOpen(true);
+    setCartOpen(true);
   };
 
-  const handleConfirmLead = async (e) => {
+  const handleConfirmSingleLeadLegacy = async (e) => {
     e.preventDefault();
     if (!commercialContactEnabled) return;
     if (!customerName.trim() || !targetTire) return;
@@ -579,6 +691,84 @@ export default function StoreHome() {
     } catch (error) {
       console.error('Erro ao registrar lead:', error);
       setLeadError('Não foi possível registrar seu interesse. Tente novamente.');
+    } finally {
+      setSavingLead(false);
+    }
+  };
+
+  const handleConfirmLead = async (e) => {
+    e.preventDefault();
+    if (!commercialContactEnabled) return;
+    if (!customerName.trim() || cartItems.length === 0) return;
+
+    setSavingLead(true);
+    setLeadError('');
+
+    const currentRefCode = referralSeller?.ref_code || activeRefCode || null;
+    const hasReferralSeller = Boolean(referralSeller?.ref_code && hasValidWhatsapp(referralSeller?.whatsapp));
+    const leadPayload = {
+      loja_id: store.id,
+      nome_cliente: customerName.trim(),
+      telefone_cliente: customerPhone.trim(),
+      observacao_cliente: customerNote.trim(),
+      items: cartItems.map((item) => ({
+        product_id: item.product_id,
+        quantidade: item.quantidade
+      })),
+      origem: 'whatsapp',
+      ref_code: hasReferralSeller ? currentRefCode : null,
+      attribution_source: hasReferralSeller ? 'referral' : 'product',
+      request_id: `${store.id}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`
+    };
+
+    try {
+      await storageService.createLeadCart(leadPayload);
+
+      let text = `OlÃ¡!\n\nMeu nome Ã© ${customerName.trim()}.\n`;
+      if (customerPhone.trim()) {
+        text += `Meu telefone/WhatsApp Ã© ${customerPhone.trim()}.\n`;
+      }
+      text += '\nGostaria de solicitar o seguinte orcamento:\n\n';
+
+      cartItems.forEach((item, index) => {
+        text += `${index + 1}. ${item.titulo_anuncio}\n`;
+        text += `Medida: ${item.medida || 'N/A'}\n`;
+        text += `Quantidade: ${item.quantidade} ${item.quantidade === 1 ? 'anuncio' : 'anuncios'}\n`;
+        text += `Pneus fisicos: ${item.quantidade_total_pneus}\n`;
+        text += `Subtotal: ${formatBRLCurrency(item.valor_total)}\n\n`;
+      });
+
+      text += `Resumo do carrinho:\n`;
+      text += `Itens distintos: ${cartSummary.distinctItems}\n`;
+      text += `Total de anuncios/kits: ${cartSummary.totalOffers}\n`;
+      text += `Total de pneus: ${cartSummary.totalPhysicalTires}\n`;
+      text += `Valor total estimado: ${formatBRLCurrency(cartSummary.totalValue)}\n\n`;
+
+      if (vehicleSearchApplied) {
+        const carInfo = vehicleBrand ? `${vehicleBrand} ${vehicleModel}` : vehicleModel;
+        text += `Meu carro Ã© um ${carInfo}. `;
+      }
+
+      if (hasReferralSeller) {
+        text += `Fui atendido por: ${referralSeller.nome || 'vendedor'}\n\n`;
+      }
+
+      if (customerNote.trim()) {
+        text += `Observacao: ${customerNote.trim()}\n\n`;
+      }
+
+      text += 'Poderia me passar mais informacoes?';
+
+      window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+
+      setCartItems([]);
+      setCartOpen(false);
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerNote('');
+    } catch (error) {
+      console.error('Erro ao registrar lead:', error);
+      setLeadError('Nao foi possivel enviar seu orcamento. Tente novamente.');
     } finally {
       setSavingLead(false);
     }
@@ -862,6 +1052,18 @@ export default function StoreHome() {
       >
         <MessageSquare size={24} />
       </button>
+
+      {cartItems.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setCartOpen(true)}
+          className="store-cart-fab"
+          aria-label={`Abrir carrinho com ${cartSummary.totalOffers} anuncio(s)`}
+        >
+          <ShoppingCart size={22} />
+          <span>{cartSummary.totalOffers > 9 ? '9+' : cartSummary.totalOffers}</span>
+        </button>
+      )}
 
       {mobileFiltersOpen && (
         <div className="storefront-drawer-backdrop" onClick={() => setMobileFiltersOpen(false)}>
@@ -1211,10 +1413,145 @@ export default function StoreHome() {
                     setSelectedTire(null);
                   }}
                 >
-                  <MessageSquare size={16} />
-                  {getAvailableStock(selectedTire) > 0 ? (isKitOffer(selectedTire) ? 'Quero este kit' : 'Me interessou') : 'Indisponivel'}
+                  <ShoppingCart size={16} />
+                  {getAvailableStock(selectedTire) > 0 ? 'Adicionar ao orcamento' : 'Indisponivel'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cartOpen && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-content-new animate-slide" style={{ padding: '26px', maxWidth: '480px', maxHeight: '90vh', overflow: 'hidden', display: 'grid', gridTemplateRows: 'auto minmax(0, 1fr)' }}>
+            <button className="modal-close" onClick={() => setCartOpen(false)} type="button" aria-label="Fechar">
+              <X size={18} />
+            </button>
+
+            <div style={{ marginBottom: '16px' }}>
+              <p className="section-kicker">Seu orcamento</p>
+              <h3 className="modal-title" style={{ marginTop: '6px' }}>Carrinho de pneus</h3>
+              <p className="info-card__copy">Revise os itens antes de enviar sua solicitacao.</p>
+            </div>
+
+            <div style={{ overflowY: 'auto', paddingRight: '4px' }}>
+              {leadError && (
+                <div className="contact-band" style={{ marginBottom: '16px', borderColor: 'rgba(239, 68, 68, 0.25)' }}>
+                  <p className="contact-band__text" style={{ margin: 0, color: '#fecaca' }}>{leadError}</p>
+                </div>
+              )}
+
+              {cartItems.length === 0 ? (
+                <div className="empty-state" style={{ margin: 0 }}>
+                  <div className="empty-state__icon">
+                    <ShoppingCart size={28} />
+                  </div>
+                  <h3>Seu orcamento esta vazio</h3>
+                  <p>Adicione pneus da vitrine para enviar sua solicitacao.</p>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'grid', gap: '12px', marginBottom: '18px' }}>
+                    {cartItems.map((item) => {
+                      const tire = tires.find((entry) => entry.id === item.product_id);
+                      const maxStock = tire ? getAvailableStock(tire) : item.quantidade;
+
+                      return (
+                        <div key={item.product_id} className="filter-panel" style={{ margin: 0, display: 'grid', gap: '12px' }}>
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <div style={{ width: '56px', height: '56px', borderRadius: '16px', overflow: 'hidden', flexShrink: 0 }}>
+                              <img src={item.image || 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=100'} alt="" width="56" height="56" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <p style={{ margin: 0, fontWeight: 900, color: '#fff' }}>{item.titulo_anuncio}</p>
+                              <p style={{ margin: '4px 0 0', color: 'rgba(248,250,252,0.66)', fontSize: '0.86rem' }}>
+                                {item.medida || 'Medida nao informada'} {item.quantidade_por_anuncio > 1 ? `- 1 kit = ${item.quantidade_por_anuncio} pneus` : ''}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              className="button button--ghost"
+                              onClick={() => setCartItems((current) => current.filter((cartItem) => cartItem.product_id !== item.product_id))}
+                              aria-label={`Remover ${item.titulo_anuncio}`}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                              <button
+                                type="button"
+                                className="button button--ghost"
+                                disabled={item.quantidade <= 1}
+                                onClick={() => setCartItems((current) => current.map((cartItem) => (
+                                  cartItem.product_id === item.product_id
+                                    ? buildCartItem(tire || cartItem, Math.max(1, cartItem.quantidade - 1))
+                                    : cartItem
+                                )))}
+                              >
+                                <Minus size={14} />
+                              </button>
+                              <strong>{item.quantidade}</strong>
+                              <button
+                                type="button"
+                                className="button button--ghost"
+                                disabled={item.quantidade >= maxStock}
+                                onClick={() => setCartItems((current) => current.map((cartItem) => (
+                                  cartItem.product_id === item.product_id
+                                    ? buildCartItem(tire || cartItem, Math.min(maxStock, cartItem.quantidade + 1))
+                                    : cartItem
+                                )))}
+                              >
+                                <Plus size={14} />
+                              </button>
+                            </div>
+
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ color: 'rgba(248,250,252,0.66)', fontSize: '0.84rem' }}>{item.quantidade_total_pneus} pneus fisicos</div>
+                              <strong style={{ color: 'var(--store-primary)' }}>{formatBRLCurrency(item.valor_total)}</strong>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="contact-band" style={{ marginBottom: '16px' }}>
+                    <div className="contact-band__row" style={{ alignItems: 'flex-start' }}>
+                      <div>
+                        <h4 className="contact-band__title">Resumo</h4>
+                        <p className="contact-band__text">{cartSummary.distinctItems} item(ns) distintos, {cartSummary.totalOffers} anuncio(s), {cartSummary.totalPhysicalTires} pneus</p>
+                      </div>
+                      <strong style={{ color: '#fff', fontSize: '1.05rem' }}>{formatBRLCurrency(cartSummary.totalValue)}</strong>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleConfirmLead} style={{ display: 'grid', gap: '14px' }}>
+                    <div>
+                      <label className="filter-label" htmlFor="cart-customer-name">Seu nome *</label>
+                      <input id="cart-customer-name" type="text" required className="search-card__input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="filter-label" htmlFor="cart-customer-phone">Telefone ou WhatsApp *</label>
+                      <input id="cart-customer-phone" type="tel" required className="search-card__input" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="filter-label" htmlFor="cart-customer-note">Observacao (opcional)</label>
+                      <textarea id="cart-customer-note" className="search-card__input" rows="3" value={customerNote} onChange={(e) => setCustomerNote(e.target.value)} style={{ resize: 'vertical', minHeight: '96px' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between' }}>
+                      <button type="button" className="button button--ghost button--xl" onClick={() => setCartItems([])}>
+                        Limpar carrinho
+                      </button>
+                      <button type="submit" className="button button--primary button--xl" disabled={savingLead || !customerName.trim() || !customerPhone.trim() || cartItems.length === 0}>
+                        {savingLead ? 'Enviando...' : 'Enviar orcamento'}
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         </div>

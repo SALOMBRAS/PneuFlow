@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Car, Bike, Info, ShieldCheck, Zap, Gauge } from 'lucide-react';
+import { ShoppingCart, Car, Bike, Info, ShieldCheck, Zap, Gauge } from 'lucide-react';
 import QuantitySelector from './QuantitySelector';
 import { formatBRLCurrency } from '../../../utils/currency';
 import {
@@ -122,12 +122,12 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
           onClick={() => onInterest(tire, desiredQuantity)}
           type="button"
           className={`btn-whatsapp-card ${contactDisabled ? 'commercial-disabled' : ''}`}
-          aria-label={`Falar no WhatsApp sobre o pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
+          aria-label={`Adicionar ao orcamento o pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
           disabled={contactDisabled}
           aria-disabled={contactDisabled}
         >
-          <MessageSquare size={16} />
-          {isStock ? 'Falar no WhatsApp' : 'Indisponivel'}
+          <ShoppingCart size={16} />
+          {isStock ? 'Adicionar ao orcamento' : 'Indisponivel'}
         </button>
       </div>
     </article>
