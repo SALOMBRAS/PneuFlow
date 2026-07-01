@@ -117,6 +117,8 @@ where coalesce(l.loja_id, l.store_id) is not null
     where li.lead_id = l.id
   );
 
+drop function if exists public.get_leads_com_vendedor(uuid);
+
 create or replace function public.get_leads_com_vendedor(p_store_id uuid)
 returns table(
   id uuid,
