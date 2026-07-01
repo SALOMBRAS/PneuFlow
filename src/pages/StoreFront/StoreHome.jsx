@@ -1053,17 +1053,19 @@ export default function StoreHome() {
         <MessageSquare size={24} />
       </button>
 
-      {cartItems.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setCartOpen(true)}
-          className="store-cart-fab"
-          aria-label={`Abrir carrinho com ${cartSummary.totalOffers} anuncio(s)`}
-        >
-          <ShoppingCart size={22} />
-          <span>{cartSummary.totalOffers > 9 ? '9+' : cartSummary.totalOffers}</span>
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => setCartOpen(true)}
+        className={`store-cart-fab ${cartItems.length === 0 ? 'store-cart-fab--empty' : ''}`}
+        aria-label={
+          cartSummary.totalOffers > 0
+            ? `Abrir carrinho com ${cartSummary.totalOffers} anuncio(s)`
+            : 'Abrir carrinho de orcamento'
+        }
+      >
+        <ShoppingCart size={22} />
+        <span>{cartSummary.totalOffers > 9 ? '9+' : cartSummary.totalOffers}</span>
+      </button>
 
       {mobileFiltersOpen && (
         <div className="storefront-drawer-backdrop" onClick={() => setMobileFiltersOpen(false)}>
