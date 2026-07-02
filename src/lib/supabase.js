@@ -7,8 +7,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase URL or Publishable Key is missing. Check your environment variables.');
 }
 
-// Custom storage to handle "Remember Me" session persistence
-const customStorage = {
+export const customStorage = {
   getItem: (key) => {
     return localStorage.getItem(key) || sessionStorage.getItem(key);
   },
@@ -28,10 +27,24 @@ const customStorage = {
   }
 };
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: customStorage,
-    persistSession: true,
-    autoRefreshToken: true
-  }
-});
+export const createSupabaseClient = (options = {}) => {
+  const {
+    storage = customStorage,
+    storageKey,
+    detectSessionInUrl,
+    persistSession = true,
+    autoRefreshToken = true
+  } = options;
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      storage,
+      storageKey,
+      detectSessionInUrl,
+      persistSession,
+      autoRefreshToken
+    }
+  });
+};
+
+export const supabase = createSupabaseClient();

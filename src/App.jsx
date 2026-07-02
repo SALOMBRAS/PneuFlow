@@ -14,6 +14,7 @@ const SubscriptionReturn = lazy(() => import('./pages/SubscriptionReturn'));
 const StoreHome = lazy(() => import('./pages/StoreFront/StoreHome'));
 
 const DashboardShell = lazy(() => import('./pages/Dashboard/DashboardShell'));
+const SellerAccessShell = lazy(() => import('./pages/SellerAccess/SellerAccessShell'));
 const DashboardHome = lazy(() => import('./pages/Dashboard/DashboardHome'));
 const Catalog = lazy(() => import('./pages/Dashboard/Catalog'));
 const Leads = lazy(() => import('./pages/Dashboard/Leads'));
@@ -50,6 +51,14 @@ export default function App() {
 
           {/* Dashboard routes */}
           <Route path="/dashboard" element={<DashboardShell />}>
+            <Route index element={<DashboardHome />} />
+            <Route path="catalog" element={<Catalog />} />
+            <Route path="leads" element={<Leads />} />
+            <Route path="sellers" element={<Sellers />} />
+            <Route path="settings" element={<StoreSettings />} />
+          </Route>
+
+          <Route path="/seller-access" element={<SellerAccessShell />}>
             <Route index element={<DashboardHome />} />
             <Route path="catalog" element={<Catalog />} />
             <Route path="leads" element={<Leads />} />
