@@ -83,6 +83,9 @@ const getLeadAttendanceStatus = (lead) => {
 
 const getStatusMeta = (status) => LEAD_STATUS[status] || LEAD_STATUS.em_atendimento;
 
+const formatHistoricalCurrency = (value, fallback = 'Valor indisponivel') =>
+  value == null ? fallback : formatBRLCurrency(value);
+
 const getPageNumbers = (currentPage, totalPages) => {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -969,7 +972,7 @@ export default function Leads() {
                             </span>
                           ) : (
                             <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)' }}>
-                              {formatBRLCurrency(leadValue)}
+                              {formatHistoricalCurrency(leadValue)}
                             </span>
                           )}
                         </td>
@@ -1037,8 +1040,12 @@ export default function Leads() {
                                       </span>
                                     </div>
                                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                      <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '12px' }}>{formatBRLCurrency(item.preco_unitario_anuncio)}</span>
-                                      <strong style={{ color: 'var(--primary)' }}>{formatBRLCurrency(item.valor_total)}</strong>
+                                      <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '12px' }}>
+                                        {formatHistoricalCurrency(item.preco_unitario_anuncio, '--')}
+                                      </span>
+                                      <strong style={{ color: 'var(--primary)' }}>
+                                        {formatHistoricalCurrency(item.valor_total)}
+                                      </strong>
                                     </div>
                                   </div>
                                 ))}
