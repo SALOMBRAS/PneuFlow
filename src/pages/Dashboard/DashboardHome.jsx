@@ -1834,6 +1834,7 @@ export default function DashboardHome() {
           flex-direction: column;
           gap: 12px;
           min-width: 0;
+          align-items: flex-end;
         }
 
         .dashboard-home-header-right {
@@ -1844,7 +1845,7 @@ export default function DashboardHome() {
         .dashboard-report-action {
           min-height: 44px;
           gap: 8px;
-          align-self: flex-start;
+          align-self: flex-end;
         }
 
         .dashboard-store-link-card {
