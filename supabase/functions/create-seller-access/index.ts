@@ -18,6 +18,7 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 
 const GENERIC_FORBIDDEN_MESSAGE = 'Voce nao possui permissao para acessar esta conta.'
 const GENERIC_SELLER_MESSAGE = 'Este vendedor nao esta disponivel para acesso.'
+const GENERIC_INTERNAL_MESSAGE = 'Nao foi possivel iniciar o acesso temporario.'
 
 const getAdminClient = () => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
@@ -30,30 +31,30 @@ const getAdminClient = () => {
   return createClient(supabaseUrl, serviceRoleKey)
 }
 
-const sha256 = async (value: string) => {
-  const data = new TextEncoder().encode(value)
-  const digest = await crypto.subtle.digest('SHA-256', data)
-  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('')
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let stage = 'request_start'
+
   try {
+    stage = 'parse_payload'
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return jsonResponse({ error: 'Unauthorized' }, 401)
 
     const { member_id } = await req.json()
-    if (!member_id) return jsonResponse({ error: GENERIC_SELLER_MESSAGE }, 400)
+    if (!member_id) return jsonResponse({ error: 'Payload invalido: member_id obrigatorio.' }, 400)
 
+    stage = 'create_admin_client'
     const supabaseAdmin = getAdminClient()
     const token = authHeader.replace('Bearer ', '').trim()
 
+    stage = 'validate_requester'
     const { data: { user: requester }, error: requesterError } = await supabaseAdmin.auth.getUser(token)
     if (requesterError || !requester) return jsonResponse({ error: 'Unauthorized' }, 401)
 
+    stage = 'load_member'
     const { data: member, error: memberError } = await supabaseAdmin
       .from('store_members')
       .select('id, store_id, user_id, email, nome, role, status')
@@ -62,6 +63,7 @@ serve(async (req) => {
 
     if (memberError || !member) return jsonResponse({ error: GENERIC_SELLER_MESSAGE }, 404)
 
+    stage = 'load_store'
     const { data: store, error: storeError } = await supabaseAdmin
       .from('stores')
       .select('id, owner_id')
@@ -82,6 +84,7 @@ serve(async (req) => {
       return jsonResponse({ error: GENERIC_FORBIDDEN_MESSAGE }, 403)
     }
 
+    stage = 'validate_owner_membership'
     const { data: ownerMembership } = await supabaseAdmin
       .from('store_members')
       .select('id, status')
@@ -104,6 +107,7 @@ serve(async (req) => {
       return jsonResponse({ error: GENERIC_FORBIDDEN_MESSAGE }, 403)
     }
 
+    stage = 'validate_seller'
     if (member.role !== 'seller' || member.status !== 'active' || !member.user_id) {
       await supabaseAdmin.from('seller_access_audit').insert({
         store_id: member.store_id,
@@ -118,55 +122,22 @@ serve(async (req) => {
       return jsonResponse({ error: GENERIC_SELLER_MESSAGE }, 403)
     }
 
-    const windowStart = new Date(Date.now() - 10 * 60 * 1000).toISOString()
-    const { count: recentCount, error: rateLimitError } = await supabaseAdmin
-      .from('seller_access_audit')
-      .select('id', { count: 'exact', head: true })
-      .eq('owner_user_id', requester.id)
-      .eq('seller_user_id', member.user_id)
-      .gte('requested_at', windowStart)
-
-    if (rateLimitError) {
-      throw rateLimitError
-    }
-
-    if ((recentCount ?? 0) >= 5) {
-      await supabaseAdmin.from('seller_access_audit').insert({
-        store_id: member.store_id,
-        owner_user_id: requester.id,
-        seller_member_id: member.id,
-        seller_user_id: member.user_id,
-        status: 'failed',
-        expires_at: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
-        failure_reason: 'rate_limit',
-      })
-
-      return jsonResponse({ error: 'Nao foi possivel iniciar o acesso temporario.' }, 429)
-    }
-
-    const ticket = crypto.randomUUID() + crypto.randomUUID()
-    const ticketHash = await sha256(ticket)
     const expiresAt = new Date(Date.now() + 2 * 60 * 1000).toISOString()
 
-    const { data: audit, error: auditError } = await supabaseAdmin
-      .from('seller_access_audit')
-      .insert({
-        store_id: member.store_id,
-        owner_user_id: requester.id,
-        seller_member_id: member.id,
-        seller_user_id: member.user_id,
-        ticket_hash: ticketHash,
-        status: 'requested',
-        expires_at: expiresAt,
-      })
-      .select('id')
-      .single()
+    stage = 'generate_link'
+    const { data: generatedLink, error: generatedLinkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: member.email,
+    })
 
-    if (auditError) throw auditError
+    if (generatedLinkError || !generatedLink?.properties?.hashed_token) {
+      throw generatedLinkError || new Error('Nao foi possivel gerar o acesso do vendedor')
+    }
 
+    stage = 'return_success'
     return jsonResponse({
-      ticket,
-      audit_id: audit.id,
+      hashed_token: generatedLink.properties.hashed_token,
+      verification_type: generatedLink.properties.verification_type,
       expires_at: expiresAt,
       seller: {
         nome: member.nome,
@@ -174,6 +145,14 @@ serve(async (req) => {
       },
     })
   } catch (error) {
-    return jsonResponse({ error: 'Nao foi possivel iniciar o acesso temporario.' }, 400)
+    console.error('[create-seller-access]', {
+      stage,
+      code: error?.code ?? null,
+      message: error?.message ?? 'Unknown error',
+      details: error?.details ?? null,
+      hint: error?.hint ?? null,
+    })
+
+    return jsonResponse({ error: GENERIC_INTERNAL_MESSAGE, stage }, 500)
   }
 })

@@ -111,7 +111,9 @@ export default function Sellers() {
     popup.name = JSON.stringify({
       type: 'pneuflow:seller-access',
       ticket: payload.ticket,
-      ownerAccessToken: payload.ownerAccessToken
+      ownerAccessToken: payload.ownerAccessToken,
+      hashedToken: payload.hashedToken,
+      verificationType: payload.verificationType
     });
     popup.location.replace(`${window.location.origin}/seller-access`);
     return true;
@@ -135,7 +137,9 @@ export default function Sellers() {
       const result = await storageService.createSellerAccess(sellerAccessTarget.id);
       const payload = {
         ticket: result.ticket,
-        ownerAccessToken: session.access_token
+        ownerAccessToken: session.access_token,
+        hashedToken: result.hashed_token,
+        verificationType: result.verification_type
       };
 
       const opened = openSellerAccessWindow(payload);

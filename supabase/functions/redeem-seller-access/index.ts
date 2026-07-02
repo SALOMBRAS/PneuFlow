@@ -18,6 +18,7 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 
 const GENERIC_FORBIDDEN_MESSAGE = 'Voce nao possui permissao para acessar esta conta.'
 const EXPIRED_MESSAGE = 'O acesso temporario expirou. Solicite novamente.'
+const GENERIC_INTERNAL_MESSAGE = 'Nao foi possivel iniciar o acesso temporario.'
 
 const getAdminClient = () => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
@@ -41,20 +42,27 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let stage = 'request_start'
+
   try {
+    stage = 'parse_payload'
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return jsonResponse({ error: 'Unauthorized' }, 401)
 
     const { ticket } = await req.json()
     if (!ticket) return jsonResponse({ error: EXPIRED_MESSAGE }, 400)
 
+    stage = 'create_admin_client'
     const supabaseAdmin = getAdminClient()
     const token = authHeader.replace('Bearer ', '').trim()
+    stage = 'create_ticket_hash'
     const ticketHash = await sha256(String(ticket))
 
+    stage = 'validate_requester'
     const { data: { user: requester }, error: requesterError } = await supabaseAdmin.auth.getUser(token)
     if (requesterError || !requester) return jsonResponse({ error: 'Unauthorized' }, 401)
 
+    stage = 'load_audit'
     const { data: audit, error: auditError } = await supabaseAdmin
       .from('seller_access_audit')
       .select('id, store_id, owner_user_id, seller_member_id, seller_user_id, status, expires_at, consumed_at')
@@ -102,6 +110,7 @@ serve(async (req) => {
       return jsonResponse({ error: EXPIRED_MESSAGE }, 409)
     }
 
+    stage = 'load_store'
     const { data: store, error: storeError } = await supabaseAdmin
       .from('stores')
       .select('id, owner_id')
@@ -112,6 +121,7 @@ serve(async (req) => {
       return jsonResponse({ error: GENERIC_FORBIDDEN_MESSAGE }, 403)
     }
 
+    stage = 'validate_owner_membership'
     const { data: ownerMembership } = await supabaseAdmin
       .from('store_members')
       .select('id, status')
@@ -124,6 +134,7 @@ serve(async (req) => {
       return jsonResponse({ error: GENERIC_FORBIDDEN_MESSAGE }, 403)
     }
 
+    stage = 'load_member'
     const { data: member, error: memberError } = await supabaseAdmin
       .from('store_members')
       .select('id, store_id, user_id, email, role, status')
@@ -143,6 +154,7 @@ serve(async (req) => {
       return jsonResponse({ error: GENERIC_FORBIDDEN_MESSAGE }, 403)
     }
 
+    stage = 'validate_seller'
     if (member.role !== 'seller' || member.status !== 'active' || !member.email) {
       await supabaseAdmin
         .from('seller_access_audit')
@@ -156,6 +168,7 @@ serve(async (req) => {
       return jsonResponse({ error: 'Este vendedor nao esta disponivel para acesso.' }, 403)
     }
 
+    stage = 'generate_link'
     const { data: generatedLink, error: generatedLinkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: member.email,
@@ -165,6 +178,7 @@ serve(async (req) => {
       throw generatedLinkError || new Error('Nao foi possivel gerar o acesso do vendedor')
     }
 
+    stage = 'consume_audit'
     const consumedAt = new Date().toISOString()
     const { error: updateError } = await supabaseAdmin
       .from('seller_access_audit')
@@ -178,12 +192,21 @@ serve(async (req) => {
 
     if (updateError) throw updateError
 
+    stage = 'return_success'
     return jsonResponse({
       audit_id: audit.id,
       hashed_token: generatedLink.properties.hashed_token,
       verification_type: generatedLink.properties.verification_type,
     })
   } catch (error) {
-    return jsonResponse({ error: 'Nao foi possivel iniciar o acesso temporario.' }, 400)
+    console.error('[redeem-seller-access]', {
+      stage,
+      code: error?.code ?? null,
+      message: error?.message ?? 'Unknown error',
+      details: error?.details ?? null,
+      hint: error?.hint ?? null,
+    })
+
+    return jsonResponse({ error: GENERIC_INTERNAL_MESSAGE, stage }, 500)
   }
 })
