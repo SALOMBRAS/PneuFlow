@@ -123,12 +123,12 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
             onClick={() => onInterest(tire, desiredQuantity)}
             type="button"
             className={`btn-whatsapp-card ${contactDisabled ? 'commercial-disabled' : ''}`}
-            aria-label={`Adicionar ao orcamento o pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
+            aria-label={`Adicionar ao carrinho o pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
             disabled={contactDisabled}
             aria-disabled={contactDisabled}
           >
             <ShoppingCart size={16} />
-            {isStock ? 'Adicionar ao orcamento' : 'Indisponivel'}
+            {isStock ? 'Adicionar ao carrinho' : 'Indisponivel'}
           </button>
         </div>
       </div>
