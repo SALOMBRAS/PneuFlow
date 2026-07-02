@@ -19,13 +19,18 @@ import {
 } from 'lucide-react';
 import { formatSubscriptionDate, getSubscriptionAccess, getTrialMessage } from '../../utils/subscriptionAccess';
 
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout({ children, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { store, role, loading, error, session, member } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+      return;
+    }
+
     storageService.logout();
     navigate('/login');
   };

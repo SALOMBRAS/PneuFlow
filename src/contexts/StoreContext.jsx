@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 
 const StoreContext = createContext(null);
 
-export function StoreProvider({ children }) {
+export function StoreProvider({ children, supabaseClient = supabase }) {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [store, setStore] = useState(null);
@@ -23,7 +23,7 @@ export function StoreProvider({ children }) {
     // If no session provided, try to get it
     let activeSession = currentSession;
     if (!activeSession) {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await supabaseClient.auth.getSession();
       activeSession = data.session;
     }
 
@@ -116,14 +116,14 @@ export function StoreProvider({ children }) {
         setLoading(false);
       }
     }
-  }, []);
+  }, [supabaseClient]);
 
   useEffect(() => {
     // Initial load
     loadStoreData();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, newSession) => {
       if (event === 'SIGNED_IN') {
         loadStoreData(newSession, { silent: hasLoadedStoreRef.current });
       } else if (event === 'TOKEN_REFRESHED') {
@@ -147,7 +147,7 @@ export function StoreProvider({ children }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [loadStoreData]);
+  }, [loadStoreData, supabaseClient]);
 
   const value = {
     session,

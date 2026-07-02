@@ -1,5 +1,19 @@
-import { supabase } from '../lib/supabase';
+import { supabase as defaultSupabase } from '../lib/supabase';
 import { optimizeImageToWebp } from '../utils/imageOptimizer';
+
+let activeSupabaseClient = defaultSupabase;
+
+const supabase = new Proxy({}, {
+  get: (_, property) => Reflect.get(activeSupabaseClient, property),
+});
+
+export const setStorageServiceClient = (client) => {
+  activeSupabaseClient = client || defaultSupabase;
+};
+
+export const resetStorageServiceClient = () => {
+  activeSupabaseClient = defaultSupabase;
+};
 
 const STORE_COLUMNS = 'id, owner_id, nome, whatsapp, telefone, endereco, cidade, estado, logo, banner, foto_capa, cor_principal, cor_secundaria, seo_titulo, seo_descricao, plano, plan_due_date, subscription_status, trial_started_at, trial_ends_at, subscription_started_at, current_period_end, payment_provider, payment_subscription_id, created_at, slug, tipo_vitrine, template_vitrine';
 const PUBLIC_STORE_COLUMNS = 'id, nome, whatsapp, telefone, endereco, cidade, estado, logo, banner, foto_capa, cor_principal, cor_secundaria, seo_titulo, seo_descricao, plano, subscription_status, trial_ends_at, current_period_end, created_at, slug, tipo_vitrine, template_vitrine';
@@ -405,6 +419,84 @@ export const storageService = {
       .maybeSingle();
 
     if (error) throw error;
+    return data;
+  },
+
+  createSellerAccess: async (memberId) => {
+    const { data, error } = await supabase.functions.invoke('create-seller-access', {
+      body: {
+        member_id: memberId
+      }
+    });
+
+    if (error) {
+      let message = error.message || 'Erro ao iniciar acesso temporario.';
+
+      try {
+        if (error.context) {
+          const errorBody = await error.context.json();
+          message = errorBody?.error || errorBody?.message || message;
+        }
+      } catch {}
+
+      throw new Error(message);
+    }
+
+    if (data?.error) throw new Error(data.error);
+
+    return data;
+  },
+
+  redeemSellerAccess: async ({ ownerAccessToken, ticket }) => {
+    const { data, error } = await supabase.functions.invoke('redeem-seller-access', {
+      headers: {
+        Authorization: `Bearer ${ownerAccessToken}`
+      },
+      body: {
+        ticket
+      }
+    });
+
+    if (error) {
+      let message = error.message || 'Erro ao resgatar acesso temporario.';
+
+      try {
+        if (error.context) {
+          const errorBody = await error.context.json();
+          message = errorBody?.error || errorBody?.message || message;
+        }
+      } catch {}
+
+      throw new Error(message);
+    }
+
+    if (data?.error) throw new Error(data.error);
+
+    return data;
+  },
+
+  endSellerAccess: async (auditId) => {
+    const { data, error } = await supabase.functions.invoke('end-seller-access', {
+      body: {
+        audit_id: auditId
+      }
+    });
+
+    if (error) {
+      let message = error.message || 'Erro ao encerrar acesso temporario.';
+
+      try {
+        if (error.context) {
+          const errorBody = await error.context.json();
+          message = errorBody?.error || errorBody?.message || message;
+        }
+      } catch {}
+
+      throw new Error(message);
+    }
+
+    if (data?.error) throw new Error(data.error);
+
     return data;
   },
 
