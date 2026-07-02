@@ -564,6 +564,12 @@ export default function DashboardLayout({ children, onLogout }) {
             min-width: 0 !important;
             width: calc(100% - 240px) !important;
           }
+
+          .dashboard-topbar {
+            width: min(1120px, calc(100% - 32px)) !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+          }
         }
 
         @media (max-width: 768px) {
