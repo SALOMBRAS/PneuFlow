@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { hasSupabaseConfig, supabase, supabaseInitError } from '../../lib/supabase';
 import { storageService } from '../../services/storage';
 import { Loader2 } from 'lucide-react';
 
@@ -10,6 +10,10 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
+        if (!hasSupabaseConfig) {
+          throw supabaseInitError;
+        }
+
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) throw error;

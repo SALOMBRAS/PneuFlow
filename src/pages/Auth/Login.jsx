@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { hasSupabaseConfig, supabaseInitError } from '../../lib/supabase';
 import { storageService } from '../../services/storage';
 import { Zap, Lock, Mail, AlertTriangle, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import BorderBeam from '../../components/BorderBeam/BorderBeam';
@@ -17,27 +18,32 @@ export default function Login() {
   // Load remembered preference and check for auto-redirect
   useEffect(() => {
     const checkSession = async () => {
-      const session = await storageService.getSession();
-      const rememberSession = localStorage.getItem('pneuflow_remember_session') === 'true';
-      
-      if (session && rememberSession) {
-        try {
+      try {
+        if (!hasSupabaseConfig) {
+          setError(supabaseInitError.message);
+          return;
+        }
+
+        const session = await storageService.getSession();
+        const rememberSession = localStorage.getItem('pneuflow_remember_session') === 'true';
+
+        if (session && rememberSession) {
           await storageService.completeRegistration();
           navigate('/dashboard');
-        } catch (err) {
-          console.error('Provisioning error:', err);
-          setError('Não foi possível finalizar a configuração da sua loja. Tente entrar novamente em alguns instantes.');
+          return;
         }
-        return;
-      }
 
-      // Load remembered email for autofill
-      const savedEmail = localStorage.getItem('pneuflow_remember_email');
-      const isRemembered = localStorage.getItem('pneuflow_remember_me') === 'true';
-      
-      if (isRemembered && savedEmail) {
-        setEmail(savedEmail);
-        setRememberMe(true);
+        // Load remembered email for autofill
+        const savedEmail = localStorage.getItem('pneuflow_remember_email');
+        const isRemembered = localStorage.getItem('pneuflow_remember_me') === 'true';
+
+        if (isRemembered && savedEmail) {
+          setEmail(savedEmail);
+          setRememberMe(true);
+        }
+      } catch (err) {
+        console.error('Login bootstrap error:', err);
+        setError('NÃ£o foi possÃ­vel preparar a tela de acesso. Tente novamente em alguns instantes.');
       }
     };
 
@@ -51,6 +57,10 @@ export default function Login() {
     let authenticated = false;
 
     try {
+      if (!hasSupabaseConfig) {
+        throw supabaseInitError;
+      }
+
       // Set the session persistence flag BEFORE login so the custom storage knows where to save
       localStorage.setItem('pneuflow_remember_session', rememberMe ? 'true' : 'false');
 
@@ -70,12 +80,14 @@ export default function Login() {
       }
     } catch (err) {
       console.error('Login error:', err);
-      if (err.message === 'Email not confirmed') {
-        setError('E-mail ainda não confirmado. Verifique sua caixa de entrada.');
+      if (err?.message === supabaseInitError?.message) {
+        setError(err.message);
+      } else if (err.message === 'Email not confirmed') {
+        setError('E-mail ainda nÃ£o confirmado. Verifique sua caixa de entrada.');
       } else if (authenticated) {
-        setError('Não foi possível finalizar a configuração da sua loja. Tente entrar novamente em alguns instantes.');
+        setError('NÃ£o foi possÃ­vel finalizar a configuraÃ§Ã£o da sua loja. Tente entrar novamente em alguns instantes.');
       } else {
-        setError('Credenciais inválidas. Verifique seu e-mail e senha.');
+        setError('Credenciais invÃ¡lidas. Verifique seu e-mail e senha.');
       }
     } finally {
       setLoading(false);
@@ -105,7 +117,7 @@ export default function Login() {
             textDecoration: 'none'
           }}
         >
-          <ArrowLeft size={16} /> Voltar para início
+          <ArrowLeft size={16} /> Voltar para inÃ­cio
         </Link>
 
       <div className="card animate-slide auth-beam-card" style={{ width: '100%' }}>
@@ -229,7 +241,7 @@ export default function Login() {
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-          <span style={{ color: 'var(--text-secondary)' }}>Não tem conta? </span>
+          <span style={{ color: 'var(--text-secondary)' }}>NÃ£o tem conta? </span>
           <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>Cadastrar Loja</Link>
         </div>
 
@@ -244,9 +256,9 @@ export default function Login() {
           fontSize: '12px',
           color: 'var(--text-secondary)'
         }}>
-          <p style={{ fontWeight: 'bold', color: 'var(--primary)', marginBottom: '4px' }}>💡 Acesso Rápido para Teste:</p>
-          <p>📧 E-mail: <strong>demo@pneus.com</strong></p>
-          <p>🔑 Senha: <strong>password123</strong></p>
+          <p style={{ fontWeight: 'bold', color: 'var(--primary)', marginBottom: '4px' }}>ðŸ’¡ Acesso RÃ¡pido para Teste:</p>
+          <p>ðŸ“§ E-mail: <strong>demo@pneus.com</strong></p>
+          <p>ðŸ”‘ Senha: <strong>password123</strong></p>
         </div>
         )}
       </div>

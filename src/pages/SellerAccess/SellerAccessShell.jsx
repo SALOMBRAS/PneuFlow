@@ -148,7 +148,7 @@ export default function SellerAccessShell() {
         }
 
         const handshake = readHandshake();
-        if (!handshake?.ticket || !handshake?.ownerAccessToken) {
+        if (!handshake?.hashedToken && (!handshake?.ticket || !handshake?.ownerAccessToken)) {
           setErrorMessage('O acesso temporario expirou ou nao foi iniciado corretamente. Solicite um novo acesso pela lista de vendedores.');
           setStatus('error');
           return;
@@ -156,21 +156,36 @@ export default function SellerAccessShell() {
 
         setStatus('redeeming');
 
-        const redeemed = await storageService.redeemSellerAccess({
-          ownerAccessToken: handshake.ownerAccessToken,
-          ticket: handshake.ticket
-        });
+        let tokenHash = handshake.hashedToken;
+        let verificationType = handshake.verificationType || 'magiclink';
+        let auditId = handshake.auditId || null;
 
-        if (cancelled) return;
+        if (!tokenHash) {
+          const redeemed = await storageService.redeemSellerAccess({
+            ownerAccessToken: handshake.ownerAccessToken,
+            ticket: handshake.ticket
+          });
 
-        window.sessionStorage.setItem(IMPERSONATED_AUDIT_STORAGE_KEY, redeemed.audit_id);
+          if (cancelled) return;
+
+          auditId = redeemed.audit_id || null;
+          tokenHash = redeemed.hashed_token;
+          verificationType = redeemed.verification_type || 'magiclink';
+        }
+
+        if (auditId) {
+          window.sessionStorage.setItem(IMPERSONATED_AUDIT_STORAGE_KEY, auditId);
+        }
 
         const { error } = await impersonatedSupabase.auth.verifyOtp({
-          token_hash: redeemed.hashed_token,
-          type: redeemed.verification_type || 'magiclink'
+          token_hash: tokenHash,
+          type: verificationType
         });
 
         if (error) throw error;
+        tokenHash = null;
+        verificationType = null;
+        auditId = null;
         if (cancelled) return;
 
         setStatus('ready');
@@ -198,9 +213,7 @@ export default function SellerAccessShell() {
     const auditId = window.sessionStorage.getItem(IMPERSONATED_AUDIT_STORAGE_KEY);
 
     try {
-      if (auditId) {
-        await storageService.endSellerAccess(auditId);
-      }
+      await storageService.endSellerAccess(auditId || null);
     } catch (error) {
       console.error('Nao foi possivel registrar o encerramento da sessao temporaria:', error);
     } finally {

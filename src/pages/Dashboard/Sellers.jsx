@@ -111,7 +111,10 @@ export default function Sellers() {
     popup.name = JSON.stringify({
       type: 'pneuflow:seller-access',
       ticket: payload.ticket,
-      ownerAccessToken: payload.ownerAccessToken
+      ownerAccessToken: payload.ownerAccessToken,
+      auditId: payload.auditId,
+      hashedToken: payload.hashedToken,
+      verificationType: payload.verificationType
     });
     popup.location.replace(`${window.location.origin}/seller-access`);
     return true;
@@ -135,7 +138,10 @@ export default function Sellers() {
       const result = await storageService.createSellerAccess(sellerAccessTarget.id);
       const payload = {
         ticket: result.ticket,
-        ownerAccessToken: session.access_token
+        ownerAccessToken: session.access_token,
+        auditId: result.audit_id,
+        hashedToken: result.hashed_token,
+        verificationType: result.verification_type
       };
 
       const opened = openSellerAccessWindow(payload);
@@ -550,7 +556,7 @@ export default function Sellers() {
                   <tr key={member.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '16px 24px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ position: 'relative', width: '36px', height: '36px' }}>
+                        <div style={{ position: 'relative', width: '36px', height: '36px', overflow: 'visible' }}>
                           <div
                             style={{
                               width: '36px',
@@ -574,6 +580,7 @@ export default function Sellers() {
                                 setBlockedSellerAccess(null);
                                 setSellerAccessModalOpen(true);
                               }}
+                              data-testid="seller-access-button"
                               className="seller-access-avatar-button"
                               title="Acessar como vendedor"
                               aria-label={`Acessar como vendedor ${member.nome || member.email || 'vendedor'}`}
@@ -1120,6 +1127,7 @@ export default function Sellers() {
           align-items: center;
           justify-content: center;
           cursor: pointer;
+          z-index: 1;
           box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
         }
 
