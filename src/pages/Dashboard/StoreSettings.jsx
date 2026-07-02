@@ -411,43 +411,6 @@ export default function StoreSettings() {
           </div>
         </div>
 
-        <div className="card store-settings-card" style={{ padding: '24px', minWidth: 0 }}>
-          <h3 className="store-settings-section-title" style={{ fontSize: '18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
-            <Globe size={20} style={{ color: 'var(--primary)' }} /> SEO Básico (Para Buscadores)
-          </h3>
-          <div className="store-settings-seo-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', minWidth: 0 }}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="seo-title">Título da Página (SEO Title)</label>
-              <input
-                id="seo-title"
-                type="text"
-                className="form-input"
-                value={seoTitle}
-                onChange={(e) => setSeoTitle(e.target.value)}
-                placeholder="Título que aparece no Google e aba do navegador"
-              />
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                Ideal: 50-60 caracteres.
-              </span>
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="seo-description">Descrição da Página (Meta Description)</label>
-              <textarea
-                id="seo-description"
-                rows="2"
-                className="form-input"
-                value={seoDescription}
-                onChange={(e) => setSeoDescription(e.target.value)}
-                placeholder="Breve descrição que aparece nos resultados de busca"
-                style={{ resize: 'vertical' }}
-              />
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                Ideal: 150-160 caracteres.
-              </span>
-            </div>
-          </div>
-        </div>
-
         <div className="store-settings-footer" style={{ borderTop: '1px solid var(--border)', paddingTop: '20px', display: 'flex', justifyContent: 'flex-end', paddingBottom: '40px' }}>
           <button type="submit" className="btn btn-primary store-settings-save-btn" style={{ minWidth: '180px' }} disabled={saving || uploadingLogo}>
             <Save size={18} /> {saving ? 'Salvando...' : 'Salvar Alterações'}
