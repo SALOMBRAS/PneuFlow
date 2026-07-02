@@ -1825,8 +1825,8 @@ export default function DashboardHome() {
           display: grid;
           grid-template-columns: minmax(0, 1fr);
           gap: 18px;
-          width: min(1120px, calc(100% - 32px));
-          margin: 0 auto;
+          width: 100%;
+          margin: 0;
         }
 
         .dashboard-home-header-center {
@@ -1956,16 +1956,20 @@ export default function DashboardHome() {
 
         @media (min-width: 1280px) {
           .dashboard-home-header-inner {
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) auto;
+            grid-template-columns: minmax(0, 1fr) auto;
             align-items: start;
           }
 
           .dashboard-home-header-center {
-            align-items: flex-start;
+            align-items: flex-end;
           }
 
           .dashboard-home-header-right {
             align-self: start;
+          }
+
+          .dashboard-home-header-left {
+            min-width: 0;
           }
         }
 

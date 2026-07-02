@@ -502,8 +502,8 @@ export default function DashboardLayout({ children, onLogout }) {
         )}
         <div
           style={{
-            width: 'min(1120px, calc(100% - 32px))',
-            margin: trialMessage ? '0 auto 18px' : '0 auto 18px',
+            width: '100%',
+            margin: trialMessage ? '0 0 18px' : '0 0 18px',
             display: 'flex',
             justifyContent: 'flex-end'
           }}
@@ -566,9 +566,7 @@ export default function DashboardLayout({ children, onLogout }) {
           }
 
           .dashboard-topbar {
-            width: min(1120px, calc(100% - 32px)) !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
+            width: 100% !important;
           }
         }
 
