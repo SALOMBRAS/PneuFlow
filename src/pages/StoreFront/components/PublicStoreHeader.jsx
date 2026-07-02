@@ -1,5 +1,6 @@
 import React from 'react';
 import { MessageSquare, MapPin, Clock3, BadgeCheck } from 'lucide-react';
+import { formatBusinessHourLabel } from '../../../utils/storeHours';
 
 export default function PublicStoreHeader({
   store,
@@ -10,6 +11,7 @@ export default function PublicStoreHeader({
   commercialContactEnabled = true,
 }) {
   const statusClass = statusTone === 'success' ? 'status-pill--success' : 'status-pill--muted';
+  const hoursLabel = formatBusinessHourLabel(store.business_hours, store.hours || 'Atendimento comercial');
 
   return (
     <header className="public-store-header">
@@ -44,7 +46,7 @@ export default function PublicStoreHeader({
                 </span>
                 <span>
                   <Clock3 size={13} />
-                  {store.hours || 'Atendimento comercial'}
+                  {hoursLabel}
                 </span>
               </div>
             </div>

@@ -1,7 +1,40 @@
 import { useEffect, useState, useCallback } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
-import { Save, Check, ExternalLink, Zap, Globe, MapPin, Palette, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Save, Check, ExternalLink, Zap, MapPin, Palette, Upload, Loader2, Image as ImageIcon, Copy, Clock3 } from 'lucide-react';
+
+const WEEK_DAYS = [
+  { key: 'monday', label: 'Segunda' },
+  { key: 'tuesday', label: 'Terça' },
+  { key: 'wednesday', label: 'Quarta' },
+  { key: 'thursday', label: 'Quinta' },
+  { key: 'friday', label: 'Sexta' },
+  { key: 'saturday', label: 'Sábado' },
+  { key: 'sunday', label: 'Domingo' }
+];
+
+const createDefaultBusinessHours = () =>
+  WEEK_DAYS.reduce((acc, day) => {
+    acc[day.key] = { enabled: day.key !== 'sunday', open: '08:00', close: '18:00' };
+    if (day.key === 'saturday') acc[day.key] = { enabled: false, open: '08:00', close: '13:00' };
+    if (day.key === 'sunday') acc[day.key] = { enabled: false, open: '08:00', close: '18:00' };
+    return acc;
+  }, {});
+
+const normalizeBusinessHours = (value) => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return WEEK_DAYS.reduce((acc, day) => {
+      const current = value[day.key] || {};
+      acc[day.key] = {
+        enabled: Boolean(current.enabled),
+        open: typeof current.open === 'string' ? current.open : '08:00',
+        close: typeof current.close === 'string' ? current.close : '18:00'
+      };
+      return acc;
+    }, createDefaultBusinessHours());
+  }
+  return createDefaultBusinessHours();
+};
 
 export default function StoreSettings() {
   const { store, refreshStore } = useStore();
@@ -11,11 +44,11 @@ export default function StoreSettings() {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
-  const [hours, setHours] = useState('');
   const [logo, setLogo] = useState('');
   const [description, setDescription] = useState('');
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
+  const [businessHours, setBusinessHours] = useState(createDefaultBusinessHours());
   const [tipoVitrine, setTipoVitrine] = useState('carro');
   const [message, setMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
@@ -35,7 +68,7 @@ export default function StoreSettings() {
       setSeoDescription(store.seo_descricao || '');
       setTipoVitrine(store.tipo_vitrine || 'carro');
       setDescription(store.description || '');
-      setHours(store.hours || '');
+      setBusinessHours(normalizeBusinessHours(store.business_hours));
     }
   }, [store]);
 
@@ -104,14 +137,15 @@ export default function StoreSettings() {
         address,
         city,
         state,
-        hours,
         logo,
         banner: store.banner,
         cover: store.foto_capa,
         description,
         seoTitle,
         seoDescription,
-        tipo_vitrine: tipoVitrine
+        tipo_vitrine: tipoVitrine,
+        business_hours: businessHours,
+        hours: store.hours || null
       });
 
       if (updated) {
@@ -133,6 +167,25 @@ export default function StoreSettings() {
   if (!store) return null;
 
   const publicLink = `${window.location.origin}/store/${store.slug}`;
+  const updateDayHours = (dayKey, patch) => {
+    setBusinessHours((current) => ({
+      ...current,
+      [dayKey]: { ...current[dayKey], ...patch }
+    }));
+  };
+
+  const copyWeekdayHours = (dayKey) => {
+    const source = businessHours[dayKey];
+    if (!source) return;
+    setBusinessHours((current) =>
+      WEEK_DAYS.reduce((acc, day) => {
+        acc[day.key] = day.key === 'sunday'
+          ? current[day.key]
+          : { ...source, enabled: day.key === 'saturday' ? false : source.enabled };
+        return acc;
+      }, { ...current })
+    );
+  };
 
   const ImageUploadField = ({ id, label, value, uploading, onUpload }) => (
     <div className="form-group store-settings-upload">
@@ -358,15 +411,43 @@ export default function StoreSettings() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="store-hours">Horário de Funcionamento</label>
-              <input
-                id="store-hours"
-                type="text"
-                className="form-input"
-                value={hours}
-                onChange={(e) => setHours(e.target.value)}
-                placeholder="Ex: Seg a Sex: 08h às 18h"
-              />
+              <label className="form-label">Horários de funcionamento</label>
+              <div className="store-hours-grid">
+                {WEEK_DAYS.map((day) => {
+                  const current = businessHours[day.key] || {};
+                  return (
+                    <div key={day.key} className="store-hours-row">
+                      <div className="store-hours-row__top">
+                        <strong>{day.label}</strong>
+                        <button type="button" className="btn btn-secondary store-hours-copy" onClick={() => copyWeekdayHours(day.key)} disabled={!current.enabled}>
+                          <Copy size={14} />
+                          Copiar
+                        </button>
+                      </div>
+                      <label className="store-hours-toggle">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(current.enabled)}
+                          onChange={(e) => updateDayHours(day.key, { enabled: e.target.checked })}
+                        />
+                        <span>{current.enabled ? 'Aberto' : 'Fechado'}</span>
+                      </label>
+                      {current.enabled && (
+                        <div className="store-hours-time-grid">
+                          <label>
+                            <span>Abertura</span>
+                            <input type="time" className="form-input" value={current.open || ''} onChange={(e) => updateDayHours(day.key, { open: e.target.value })} />
+                          </label>
+                          <label>
+                            <span>Fechamento</span>
+                            <input type="time" className="form-input" value={current.close || ''} onChange={(e) => updateDayHours(day.key, { close: e.target.value })} />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="form-group">
@@ -519,6 +600,53 @@ export default function StoreSettings() {
           flex-wrap: wrap;
         }
 
+        .store-hours-grid {
+          display: grid;
+          gap: 12px;
+        }
+
+        .store-hours-row {
+          padding: 14px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          background: rgba(255,255,255,0.02);
+          display: grid;
+          gap: 10px;
+        }
+
+        .store-hours-row__top {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: center;
+        }
+
+        .store-hours-toggle {
+          display: inline-flex;
+          gap: 8px;
+          align-items: center;
+          color: var(--text-secondary);
+        }
+
+        .store-hours-time-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .store-hours-time-grid span {
+          display: block;
+          margin-bottom: 6px;
+          font-size: 12px;
+          color: var(--text-muted);
+        }
+
+        .store-hours-copy {
+          min-height: 34px;
+          padding: 6px 10px !important;
+          gap: 6px;
+        }
+
         @media (max-width: 1024px) {
           .store-settings-grid,
           .store-settings-seo-grid {
@@ -576,6 +704,10 @@ export default function StoreSettings() {
           .store-settings-upload-actions {
             flex-direction: column;
             align-items: stretch;
+          }
+
+          .store-hours-time-grid {
+            grid-template-columns: 1fr;
           }
 
           .store-settings-upload-actions .btn {

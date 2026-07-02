@@ -3,6 +3,7 @@ import { useParams, Link, useLocation } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { getSubscriptionAccess } from '../../utils/subscriptionAccess';
 import { getOrCreateVisitorId } from '../../utils/visitorId';
+import { formatBusinessHourLabel, getStoreStatus } from '../../utils/storeHours';
 import { formatBRLCurrency } from '../../utils/currency';
 import { VEHICLE_MODELS } from '../../data/vehicleModels';
 import { MOTORCYCLE_MODELS } from '../../data/motorcycleModels';
@@ -128,26 +129,6 @@ const debugReferral = (...args) => {
 const VISIT_SESSION_PREFIX = 'pneuflow_store_visit';
 const VISIT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const INACTIVE_STOREFRONT_MESSAGE = 'Esta vitrine está temporariamente inativa. Entre em contato com a loja ou aguarde a reativação.';
-
-const getStoreStatus = (hoursText) => {
-  const now = new Date();
-  const day = now.getDay();
-  const current = now.getHours() + now.getMinutes() / 60;
-
-  let open = day >= 1 && day <= 5 && current >= 8 && current < 18;
-  if (day === 6) open = current >= 8 && current < 13;
-  if (day === 0) open = false;
-
-  if (typeof hoursText === 'string' && hoursText.toLowerCase().includes('aberto')) {
-    open = true;
-  }
-
-  return {
-    open,
-    label: open ? 'Aberto agora' : 'Fechado agora',
-    tone: open ? 'success' : 'muted',
-  };
-};
 
 const getCompatibilitySnippet = (tire) =>
   tire.compatibilidade || tire.compatibility || tire.descricao || tire.description || 'Compatibilidade premium sob consulta';
@@ -479,7 +460,8 @@ export default function StoreHome() {
   const placeholderImage = 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=800';
   const primaryColor = '#f59e0b';
   const secondaryColor = '#121214';
-  const status = getStoreStatus(store?.hours);
+  const status = getStoreStatus(store);
+  const businessHourLabel = formatBusinessHourLabel(store?.business_hours, store?.hours || 'Atendimento comercial');
   const locationText = [store?.endereco, store?.cidade, store?.estado].filter(Boolean).join(', ') || 'Endereco nao informado';
   const primarySoft = hexToRgba(primaryColor, 0.12);
   const primaryMedium = hexToRgba(primaryColor, 0.22);
@@ -912,7 +894,7 @@ export default function StoreHome() {
             <div className="hours-list">
               <span className="hours-item">
                 <Clock3 size={14} />
-                {store.hours || 'Horário não informado'}
+                  {businessHourLabel}
               </span>
               <span className="hours-item">
                 <MapPin size={14} />
