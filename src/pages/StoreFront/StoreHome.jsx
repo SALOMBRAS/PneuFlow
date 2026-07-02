@@ -1413,7 +1413,7 @@ export default function StoreHome() {
                   }}
                 >
                   <ShoppingCart size={16} />
-                  {getAvailableStock(selectedTire) > 0 ? 'Adicionar ao orcamento' : 'Indisponivel'}
+                  {getAvailableStock(selectedTire) > 0 ? 'Adicionar ao carrinho' : 'Indisponivel'}
                 </button>
               </div>
             </div>
