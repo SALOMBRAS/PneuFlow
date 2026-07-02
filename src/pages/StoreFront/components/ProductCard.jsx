@@ -65,70 +65,72 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
       </button>
 
       <div className="product-content">
-        <div className="product-brand-row">
-          <span className="product-brand">{tire.marca}</span>
-          <span className="product-rating">
-            <Zap size={12} />
-            Destaque
-          </span>
-        </div>
-
-        <h3 className="product-title">{tire.titulo_anuncio || tire.modelo}</h3>
-
-        <div className="product-compatibility">
-          <ShieldCheck size={14} />
-          <span>{compatibility}</span>
-        </div>
-
-        <div className="product-specs">
-          <span>
-            <Gauge size={12} />
-            {tire.aro ? `Aro ${tire.aro}` : 'Linha premium'}
-          </span>
-          <span>
-            {vehicleLabel}
-          </span>
-        </div>
-
-        <QuantitySelector
-          value={desiredQuantity}
-          max={stockCount}
-          onChange={setDesiredQuantity}
-          label={getQuantitySelectorLabel(tire)}
-          availabilityText={getAvailabilityLabel(tire)}
-          helperText={helperText}
-          compact
-          disabled={!commercialContactEnabled}
-        />
-
-        <div className="product-price-row">
-          <div>
-            <span className="product-price-label">{isKitOffer(tire) ? 'Preço do kit' : 'A partir de'}</span>
-            <div className="product-price" style={{ color: primaryColor }}>{formatBRLCurrency(tire.preco)}</div>
-            <small style={{ color: 'var(--text-muted)' }}>{getOfferDescriptor(tire)}</small>
+        <div className="product-content-main">
+          <div className="product-brand-row">
+            <span className="product-brand">{tire.marca}</span>
+            <span className="product-rating">
+              <Zap size={12} />
+              Destaque
+            </span>
           </div>
+
+          <h3 className="product-title">{tire.titulo_anuncio || tire.modelo}</h3>
+
+          <div className="product-compatibility">
+            <ShieldCheck size={14} />
+            <span>{compatibility}</span>
+          </div>
+
+          <div className="product-specs">
+            <span>
+              <Gauge size={12} />
+              {tire.aro ? `Aro ${tire.aro}` : 'Linha premium'}
+            </span>
+            <span>{vehicleLabel}</span>
+          </div>
+
+          <QuantitySelector
+            value={desiredQuantity}
+            max={stockCount}
+            onChange={setDesiredQuantity}
+            label={getQuantitySelectorLabel(tire)}
+            availabilityText={getAvailabilityLabel(tire)}
+            helperText={helperText}
+            compact
+            disabled={!commercialContactEnabled}
+          />
+        </div>
+
+        <div className="product-card-footer">
+          <div className="product-price-row">
+            <div className="product-price-copy">
+              <span className="product-price-label">{isKitOffer(tire) ? 'Preço do kit' : 'A partir de'}</span>
+              <div className="product-price" style={{ color: primaryColor }}>{formatBRLCurrency(tire.preco)}</div>
+              <small className="product-price-note">{getOfferDescriptor(tire)}</small>
+            </div>
+            <button
+              onClick={() => onDetail(tire)}
+              type="button"
+              className="product-detail-link"
+              aria-label={`Ver detalhes do pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
+            >
+              <Info size={14} />
+              Ver
+            </button>
+          </div>
+
           <button
-            onClick={() => onDetail(tire)}
+            onClick={() => onInterest(tire, desiredQuantity)}
             type="button"
-            className="product-detail-link"
-            aria-label={`Ver detalhes do pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
+            className={`btn-whatsapp-card ${contactDisabled ? 'commercial-disabled' : ''}`}
+            aria-label={`Adicionar ao orcamento o pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
+            disabled={contactDisabled}
+            aria-disabled={contactDisabled}
           >
-            <Info size={14} />
-            Ver
+            <ShoppingCart size={16} />
+            {isStock ? 'Adicionar ao orcamento' : 'Indisponivel'}
           </button>
         </div>
-
-        <button
-          onClick={() => onInterest(tire, desiredQuantity)}
-          type="button"
-          className={`btn-whatsapp-card ${contactDisabled ? 'commercial-disabled' : ''}`}
-          aria-label={`Adicionar ao orcamento o pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
-          disabled={contactDisabled}
-          aria-disabled={contactDisabled}
-        >
-          <ShoppingCart size={16} />
-          {isStock ? 'Adicionar ao orcamento' : 'Indisponivel'}
-        </button>
       </div>
     </article>
   );
