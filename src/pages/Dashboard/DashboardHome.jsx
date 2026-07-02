@@ -226,6 +226,28 @@ function MetricButton({ metric, isSelected, onClick }) {
   );
 }
 
+function MetricSkeleton({ index }) {
+  return (
+    <div
+      className="dashboard-metric-card"
+      aria-hidden="true"
+      style={{
+        opacity: 0.78,
+        pointerEvents: 'none'
+      }}
+    >
+      <div className="dashboard-metric-card__top">
+        <span>Carregando...</span>
+        <div className="dashboard-metric-card__icon dashboard-metric-card__icon--amber">
+          <Clock size={20} />
+        </div>
+      </div>
+      <strong>--</strong>
+      <small>{index === 0 ? 'Preparando periodo salvo' : 'Buscando metricas do dashboard'}</small>
+    </div>
+  );
+}
+
 export default function DashboardHome() {
   const navigate = useNavigate();
   const { store, role, isSeller, user, refreshStore } = useStore();
@@ -251,10 +273,12 @@ export default function DashboardHome() {
   const [reportPreview, setReportPreview] = useState(null);
   const [dashboardPeriod, setDashboardPeriod] = useState('current_month');
   const [dashboardPeriodHydrated, setDashboardPeriodHydrated] = useState(false);
+  const [metricsInitialized, setMetricsInitialized] = useState(false);
   const dashboardPeriodStorageKey = useMemo(
     () => getDashboardPeriodStorageKey(user?.id, store?.id),
     [store?.id, user?.id]
   );
+  const dashboardPeriodReady = dashboardPeriodHydrated && isValidDashboardPeriod(dashboardPeriod);
 
   const handleMouseEnter = () => {
     if (tooltipTimeout) {
@@ -272,7 +296,7 @@ export default function DashboardHome() {
   };
 
   const loadData = useCallback(async () => {
-    if (!store) return;
+    if (!store?.id || !dashboardPeriodReady) return;
     setMetricsLoading(true);
     setMetricsError('');
     try {
@@ -297,16 +321,20 @@ export default function DashboardHome() {
       setLeads([]);
       setMetricsError('Algumas metricas nao puderam ser carregadas agora.');
     } finally {
+      setMetricsInitialized(true);
       setMetricsLoading(false);
     }
-  }, [dashboardPeriod, store]);
+  }, [dashboardPeriod, dashboardPeriodReady, store]);
 
   useEffect(() => {
+    if (!dashboardPeriodReady) return;
     loadData();
-  }, [loadData]);
+  }, [dashboardPeriodReady, loadData]);
 
   useEffect(() => {
+    setMetricsInitialized(false);
     setDashboardPeriodHydrated(false);
+    if (!dashboardPeriodStorageKey) return;
     setDashboardPeriod(readStoredDashboardPeriod(dashboardPeriodStorageKey));
     setDashboardPeriodHydrated(true);
   }, [dashboardPeriodStorageKey]);
@@ -348,6 +376,7 @@ export default function DashboardHome() {
 
   const publicLink = `${window.location.origin}/store/${store.slug}`;
   const selectedDashboardPeriod = DASHBOARD_PERIOD_PRESETS.find((option) => option.id === dashboardPeriod) || DASHBOARD_PERIOD_PRESETS[0];
+  const showInitialMetricsLoading = !dashboardPeriodReady || !metricsInitialized;
   const normalizeSlugPreview = (value) =>
     String(value || '')
       .normalize('NFD')
@@ -944,7 +973,7 @@ export default function DashboardHome() {
         )}
       </div>
 
-      {(metricsLoading || metricsError) && (
+      {((showInitialMetricsLoading || metricsLoading) || metricsError) && (
         <div
           style={{
             marginBottom: '20px',
@@ -957,22 +986,28 @@ export default function DashboardHome() {
             textAlign: 'left'
           }}
         >
-          {metricsLoading ? 'Carregando métricas comerciais...' : metricsError}
+          {showInitialMetricsLoading
+            ? 'Recuperando seu periodo salvo antes de carregar as metricas...'
+            : metricsLoading
+              ? 'Atualizando metricas comerciais...'
+              : metricsError}
         </div>
       )}
 
       <div className="dashboard-metric-grid">
-        {metricCards.map((metric) => (
-          <MetricButton
-            key={metric.id}
-            metric={metric}
-            isSelected={selectedMetric === metric.id}
-            onClick={() => openMetricDetail(metric.id)}
-          />
-        ))}
+        {showInitialMetricsLoading
+          ? metricCards.map((metric, index) => <MetricSkeleton key={metric.id} index={index} />)
+          : metricCards.map((metric) => (
+            <MetricButton
+              key={metric.id}
+              metric={metric}
+              isSelected={selectedMetric === metric.id}
+              onClick={() => openMetricDetail(metric.id)}
+            />
+          ))}
       </div>
 
-      {activeMetric && !mobileDetailOpen && (
+      {!showInitialMetricsLoading && activeMetric && !mobileDetailOpen && (
         <section id="dashboard-metric-details" className="dashboard-detail-panel" aria-live="polite">
           <MetricDetailsPanel
             metric={activeMetric}
@@ -982,7 +1017,7 @@ export default function DashboardHome() {
         </section>
       )}
 
-      {mobileDetailOpen && activeMetric && (
+      {!showInitialMetricsLoading && mobileDetailOpen && activeMetric && (
         <div className="dashboard-mobile-detail-backdrop" onClick={closeMetricDetail}>
           <div
             className="dashboard-mobile-detail-sheet"
@@ -1014,7 +1049,11 @@ export default function DashboardHome() {
             </button>
           </div>
 
-          {leads.length === 0 ? (
+          {showInitialMetricsLoading ? (
+            <div className="dashboard-empty-block">
+              Carregando os contatos do periodo salvo...
+            </div>
+          ) : leads.length === 0 ? (
             <div className="dashboard-empty-block">
               Nenhum lead gerado ainda. Divulgue sua vitrine para começar a receber contatos.
             </div>
