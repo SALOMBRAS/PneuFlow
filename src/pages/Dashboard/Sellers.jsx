@@ -112,6 +112,7 @@ export default function Sellers() {
       type: 'pneuflow:seller-access',
       ticket: payload.ticket,
       ownerAccessToken: payload.ownerAccessToken,
+      auditId: payload.auditId,
       hashedToken: payload.hashedToken,
       verificationType: payload.verificationType
     });
@@ -138,6 +139,7 @@ export default function Sellers() {
       const payload = {
         ticket: result.ticket,
         ownerAccessToken: session.access_token,
+        auditId: result.audit_id,
         hashedToken: result.hashed_token,
         verificationType: result.verification_type
       };

@@ -158,6 +158,7 @@ export default function SellerAccessShell() {
 
         let tokenHash = handshake.hashedToken;
         let verificationType = handshake.verificationType || 'magiclink';
+        let auditId = handshake.auditId || null;
 
         if (!tokenHash) {
           const redeemed = await storageService.redeemSellerAccess({
@@ -167,12 +168,13 @@ export default function SellerAccessShell() {
 
           if (cancelled) return;
 
-          if (redeemed.audit_id) {
-            window.sessionStorage.setItem(IMPERSONATED_AUDIT_STORAGE_KEY, redeemed.audit_id);
-          }
-
+          auditId = redeemed.audit_id || null;
           tokenHash = redeemed.hashed_token;
           verificationType = redeemed.verification_type || 'magiclink';
+        }
+
+        if (auditId) {
+          window.sessionStorage.setItem(IMPERSONATED_AUDIT_STORAGE_KEY, auditId);
         }
 
         const { error } = await impersonatedSupabase.auth.verifyOtp({
@@ -181,6 +183,9 @@ export default function SellerAccessShell() {
         });
 
         if (error) throw error;
+        tokenHash = null;
+        verificationType = null;
+        auditId = null;
         if (cancelled) return;
 
         setStatus('ready');
@@ -208,9 +213,7 @@ export default function SellerAccessShell() {
     const auditId = window.sessionStorage.getItem(IMPERSONATED_AUDIT_STORAGE_KEY);
 
     try {
-      if (auditId) {
-        await storageService.endSellerAccess(auditId);
-      }
+      await storageService.endSellerAccess(auditId || null);
     } catch (error) {
       console.error('Nao foi possivel registrar o encerramento da sessao temporaria:', error);
     } finally {

@@ -33,28 +33,46 @@ serve(async (req) => {
   }
 
   try {
+    let stage = 'request_start'
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return jsonResponse({ error: 'Unauthorized' }, 401)
 
+    stage = 'parse_payload'
     const { audit_id } = await req.json()
-    if (!audit_id) return jsonResponse({ error: 'Sessao temporaria invalida.' }, 400)
 
+    stage = 'create_admin_client'
     const supabaseAdmin = getAdminClient()
     const token = authHeader.replace('Bearer ', '').trim()
+    stage = 'validate_requester'
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
 
     if (userError || !user) return jsonResponse({ error: 'Unauthorized' }, 401)
 
-    const { data: audit, error: auditError } = await supabaseAdmin
+    stage = 'load_audit'
+    const auditQuery = supabaseAdmin
       .from('seller_access_audit')
-      .select('id, seller_user_id')
-      .eq('id', audit_id)
-      .maybeSingle()
+      .select('id, seller_user_id, status, ended_at')
+      .eq('seller_user_id', user.id)
+      .is('ended_at', null)
+      .in('status', ['requested', 'consumed'])
+      .order('requested_at', { ascending: false })
+      .limit(1)
+
+    const { data: auditRows, error: auditError } = audit_id
+      ? await auditQuery.eq('id', audit_id)
+      : await auditQuery
+
+    const audit = auditRows?.[0] ?? null
 
     if (auditError || !audit || audit.seller_user_id !== user.id) {
       return jsonResponse({ error: 'Sessao temporaria invalida.' }, 403)
     }
 
+    if (audit.ended_at || audit.status === 'ended') {
+      return jsonResponse({ success: true })
+    }
+
+    stage = 'update_audit'
     const endedAt = new Date().toISOString()
     const { error: updateError } = await supabaseAdmin
       .from('seller_access_audit')

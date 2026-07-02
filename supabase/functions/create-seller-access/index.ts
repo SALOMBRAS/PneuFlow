@@ -19,6 +19,7 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 const GENERIC_FORBIDDEN_MESSAGE = 'Voce nao possui permissao para acessar esta conta.'
 const GENERIC_SELLER_MESSAGE = 'Este vendedor nao esta disponivel para acesso.'
 const GENERIC_INTERNAL_MESSAGE = 'Nao foi possivel iniciar o acesso temporario.'
+const RATE_LIMIT_MESSAGE = 'Muitas solicitacoes para este vendedor. Aguarde alguns minutos e tente novamente.'
 
 const getAdminClient = () => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
@@ -29,6 +30,48 @@ const getAdminClient = () => {
   }
 
   return createClient(supabaseUrl, serviceRoleKey)
+}
+
+const buildAuditPayload = ({
+  member,
+  requesterId,
+  status,
+  expiresAt,
+  failureReason = null,
+}: {
+  member: {
+    id: string
+    store_id: string
+    user_id: string | null
+  }
+  requesterId: string
+  status: string
+  expiresAt: string
+  failureReason?: string | null
+}) => ({
+  store_id: member.store_id,
+  owner_user_id: requesterId,
+  seller_member_id: member.id,
+  seller_user_id: member.user_id,
+  status,
+  expires_at: expiresAt,
+  failure_reason: failureReason,
+  requested_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+})
+
+const insertAudit = async (
+  supabaseAdmin: ReturnType<typeof createClient>,
+  payload: ReturnType<typeof buildAuditPayload>
+) => {
+  const { data, error } = await supabaseAdmin
+    .from('seller_access_audit')
+    .insert(payload)
+    .select('id')
+    .single()
+
+  if (error) throw error
+  return data
 }
 
 serve(async (req) => {
@@ -71,15 +114,13 @@ serve(async (req) => {
       .maybeSingle()
 
     if (storeError || !store || store.owner_id !== requester.id) {
-      await supabaseAdmin.from('seller_access_audit').insert({
-        store_id: member.store_id,
-        owner_user_id: requester.id,
-        seller_member_id: member.id,
-        seller_user_id: member.user_id,
+      await insertAudit(supabaseAdmin, buildAuditPayload({
+        member,
+        requesterId: requester.id,
         status: 'failed',
-        expires_at: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
-        failure_reason: 'owner_not_authorized',
-      })
+        expiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+        failureReason: 'owner_not_authorized',
+      }))
 
       return jsonResponse({ error: GENERIC_FORBIDDEN_MESSAGE }, 403)
     }
@@ -94,35 +135,53 @@ serve(async (req) => {
       .maybeSingle()
 
     if (!ownerMembership || ownerMembership.status !== 'active') {
-      await supabaseAdmin.from('seller_access_audit').insert({
-        store_id: member.store_id,
-        owner_user_id: requester.id,
-        seller_member_id: member.id,
-        seller_user_id: member.user_id,
+      await insertAudit(supabaseAdmin, buildAuditPayload({
+        member,
+        requesterId: requester.id,
         status: 'failed',
-        expires_at: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
-        failure_reason: 'owner_inactive',
-      })
+        expiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+        failureReason: 'owner_inactive',
+      }))
 
       return jsonResponse({ error: GENERIC_FORBIDDEN_MESSAGE }, 403)
     }
 
     stage = 'validate_seller'
     if (member.role !== 'seller' || member.status !== 'active' || !member.user_id) {
-      await supabaseAdmin.from('seller_access_audit').insert({
-        store_id: member.store_id,
-        owner_user_id: requester.id,
-        seller_member_id: member.id,
-        seller_user_id: member.user_id,
+      await insertAudit(supabaseAdmin, buildAuditPayload({
+        member,
+        requesterId: requester.id,
         status: 'failed',
-        expires_at: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
-        failure_reason: 'seller_unavailable',
-      })
+        expiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+        failureReason: 'seller_unavailable',
+      }))
 
       return jsonResponse({ error: GENERIC_SELLER_MESSAGE }, 403)
     }
 
+    stage = 'check_rate_limit'
     const expiresAt = new Date(Date.now() + 2 * 60 * 1000).toISOString()
+    const windowStart = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+    const { count: recentCount, error: rateLimitError } = await supabaseAdmin
+      .from('seller_access_audit')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_user_id', requester.id)
+      .eq('seller_user_id', member.user_id)
+      .gte('requested_at', windowStart)
+
+    if (rateLimitError) throw rateLimitError
+
+    if ((recentCount ?? 0) >= 5) {
+      await insertAudit(supabaseAdmin, buildAuditPayload({
+        member,
+        requesterId: requester.id,
+        status: 'failed',
+        expiresAt,
+        failureReason: 'rate_limit',
+      }))
+
+      return jsonResponse({ error: RATE_LIMIT_MESSAGE }, 429)
+    }
 
     stage = 'generate_link'
     const { data: generatedLink, error: generatedLinkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -134,8 +193,17 @@ serve(async (req) => {
       throw generatedLinkError || new Error('Nao foi possivel gerar o acesso do vendedor')
     }
 
+    stage = 'insert_audit'
+    const audit = await insertAudit(supabaseAdmin, buildAuditPayload({
+      member,
+      requesterId: requester.id,
+      status: 'requested',
+      expiresAt,
+    }))
+
     stage = 'return_success'
     return jsonResponse({
+      audit_id: audit.id,
       hashed_token: generatedLink.properties.hashed_token,
       verification_type: generatedLink.properties.verification_type,
       expires_at: expiresAt,
