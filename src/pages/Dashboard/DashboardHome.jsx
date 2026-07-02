@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
@@ -50,6 +50,7 @@ const emptyCommercialMetrics = {
 };
 
 const DASHBOARD_PERIOD_STORAGE_PREFIX = 'pneuflow_dashboard_period';
+const DEFAULT_DASHBOARD_PERIOD = 'current_month';
 
 const getDashboardPeriodStorageKey = (userId, storeId) => {
   if (!userId || !storeId) return null;
@@ -60,10 +61,25 @@ const isValidDashboardPeriod = (value) =>
   DASHBOARD_PERIOD_PRESETS.some((option) => option.id === value);
 
 const readStoredDashboardPeriod = (storageKey) => {
-  if (!storageKey || typeof window === 'undefined') return 'current_month';
+  if (!storageKey || typeof window === 'undefined') return DEFAULT_DASHBOARD_PERIOD;
 
-  const storedValue = window.localStorage.getItem(storageKey);
-  return isValidDashboardPeriod(storedValue) ? storedValue : 'current_month';
+  try {
+    const storedValue = window.localStorage.getItem(storageKey);
+    return isValidDashboardPeriod(storedValue) ? storedValue : DEFAULT_DASHBOARD_PERIOD;
+  } catch {
+    return DEFAULT_DASHBOARD_PERIOD;
+  }
+};
+
+const persistDashboardPeriod = (storageKey, value) => {
+  if (!storageKey || typeof window === 'undefined') return;
+  if (!isValidDashboardPeriod(value)) return;
+
+  try {
+    window.localStorage.setItem(storageKey, value);
+  } catch {
+    // Ignore storage write failures and keep the current in-memory selection.
+  }
 };
 
 const formatCurrency = (value) =>
@@ -226,6 +242,31 @@ function MetricButton({ metric, isSelected, onClick }) {
   );
 }
 
+function DashboardPeriodSkeleton({ phase }) {
+  const message = phase === 'waiting_identity'
+    ? 'Aguardando identificacao da loja para recuperar o periodo salvo.'
+    : 'Lendo o periodo salvo antes de carregar as metricas.';
+
+  return (
+    <div
+      className="card"
+      style={{
+        padding: '16px 18px',
+        display: 'grid',
+        gap: '6px',
+        minHeight: '84px'
+      }}
+    >
+      <strong style={{ display: 'block', fontSize: '15px', color: 'var(--text-primary)' }}>
+        Periodo das metricas
+      </strong>
+      <span style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.5 }}>
+        {message}
+      </span>
+    </div>
+  );
+}
+
 export default function DashboardHome() {
   const navigate = useNavigate();
   const { store, role, isSeller, user, refreshStore } = useStore();
@@ -249,11 +290,22 @@ export default function DashboardHome() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState('');
   const [reportPreview, setReportPreview] = useState(null);
-  const [dashboardPeriod, setDashboardPeriod] = useState('current_month');
+  const [dashboardPeriod, setDashboardPeriod] = useState(DEFAULT_DASHBOARD_PERIOD);
   const [dashboardPeriodHydrated, setDashboardPeriodHydrated] = useState(false);
+  const [dashboardPeriodPhase, setDashboardPeriodPhase] = useState('waiting_identity');
+  const [metricsInitialized, setMetricsInitialized] = useState(false);
   const dashboardPeriodStorageKey = useMemo(
     () => getDashboardPeriodStorageKey(user?.id, store?.id),
     [store?.id, user?.id]
+  );
+  const dashboardIdentityKey = dashboardPeriodStorageKey || '';
+  const metricsRequestRef = useRef(0);
+  const hydratedIdentityRef = useRef('');
+  const dashboardPeriodReady = (
+    dashboardPeriodPhase === 'ready' &&
+    dashboardPeriodHydrated &&
+    isValidDashboardPeriod(dashboardPeriod) &&
+    Boolean(store?.id)
   );
 
   const handleMouseEnter = () => {
@@ -272,18 +324,33 @@ export default function DashboardHome() {
   };
 
   const loadData = useCallback(async () => {
-    if (!store) return;
+    if (!store?.id || !dashboardPeriodReady) return;
+
+    const requestId = ++metricsRequestRef.current;
+    const requestIdentityKey = dashboardIdentityKey;
+    const requestPeriod = dashboardPeriod;
+
     setMetricsLoading(true);
     setMetricsError('');
+
     try {
-      const selectedPeriod = buildPresetDateWindow(dashboardPeriod);
+      const selectedPeriod = buildPresetDateWindow(requestPeriod);
       const data = await storageService.getDashboardCommercialMetrics(store.id, {
         startAt: selectedPeriod.startAt,
         endAt: selectedPeriod.endAt
       });
+
+      const isStaleRequest = (
+        requestId !== metricsRequestRef.current ||
+        requestIdentityKey !== hydratedIdentityRef.current ||
+        requestPeriod !== dashboardPeriod
+      );
+      if (isStaleRequest) return;
+
       const metrics = buildCommercialMetrics(data);
       setCommercialMetrics(metrics);
       setLeads(data.leads || []);
+      setMetricsInitialized(true);
 
       if (Array.isArray(data.partialErrors) && data.partialErrors.length > 0) {
         const labels = data.partialErrors.map((item) => item.label).join(', ');
@@ -292,32 +359,57 @@ export default function DashboardHome() {
         setMetricsError('');
       }
     } catch (err) {
+      const isStaleRequest = (
+        requestId !== metricsRequestRef.current ||
+        requestIdentityKey !== hydratedIdentityRef.current ||
+        requestPeriod !== dashboardPeriod
+      );
+      if (isStaleRequest) return;
+
       console.error('Erro ao carregar dados do dashboard:', err);
       setCommercialMetrics(emptyCommercialMetrics);
       setLeads([]);
       setMetricsError('Algumas metricas nao puderam ser carregadas agora.');
+      setMetricsInitialized(true);
     } finally {
+      const isStaleRequest = (
+        requestId !== metricsRequestRef.current ||
+        requestIdentityKey !== hydratedIdentityRef.current ||
+        requestPeriod !== dashboardPeriod
+      );
+      if (isStaleRequest) return;
+
       setMetricsLoading(false);
     }
-  }, [dashboardPeriod, store]);
+  }, [dashboardIdentityKey, dashboardPeriod, dashboardPeriodReady, store?.id]);
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [dashboardPeriodReady, loadData]);
 
   useEffect(() => {
+    metricsRequestRef.current += 1;
+    setMetricsInitialized(false);
     setDashboardPeriodHydrated(false);
-    setDashboardPeriod(readStoredDashboardPeriod(dashboardPeriodStorageKey));
+    setMetricsLoading(true);
+    setMetricsError('');
+
+    if (!dashboardIdentityKey) {
+      hydratedIdentityRef.current = '';
+      setDashboardPeriodPhase('waiting_identity');
+      setDashboardPeriod(DEFAULT_DASHBOARD_PERIOD);
+      setCommercialMetrics(emptyCommercialMetrics);
+      setLeads([]);
+      return;
+    }
+
+    setDashboardPeriodPhase('hydrating_preference');
+    const storedPeriod = readStoredDashboardPeriod(dashboardIdentityKey);
+    hydratedIdentityRef.current = dashboardIdentityKey;
+    setDashboardPeriod(storedPeriod);
     setDashboardPeriodHydrated(true);
-  }, [dashboardPeriodStorageKey]);
-
-  useEffect(() => {
-    if (!dashboardPeriodStorageKey || typeof window === 'undefined') return;
-    if (!dashboardPeriodHydrated) return;
-    if (!isValidDashboardPeriod(dashboardPeriod)) return;
-
-    window.localStorage.setItem(dashboardPeriodStorageKey, dashboardPeriod);
-  }, [dashboardPeriod, dashboardPeriodHydrated, dashboardPeriodStorageKey]);
+    setDashboardPeriodPhase('ready');
+  }, [dashboardIdentityKey]);
 
   useEffect(() => {
     if (!selectedMetric) return undefined;
@@ -362,6 +454,16 @@ export default function DashboardHome() {
     navigator.clipboard.writeText(publicLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDashboardPeriodChange = (nextPeriod) => {
+    if (!isValidDashboardPeriod(nextPeriod)) return;
+    if (nextPeriod === dashboardPeriod) return;
+
+    metricsRequestRef.current += 1;
+    setMetricsInitialized(false);
+    setDashboardPeriod(nextPeriod);
+    persistDashboardPeriod(dashboardIdentityKey, nextPeriod);
   };
 
   const handleStartSlugEdit = () => {
@@ -656,6 +758,7 @@ export default function DashboardHome() {
     }
   ].filter((metric) => metric.id !== 'sales' && metric.id !== 'conversion');
   const activeMetric = selectedMetric ? metricCards.find((metric) => metric.id === selectedMetric) : null;
+  const showInitialMetricsLoading = !dashboardPeriodReady || !metricsInitialized;
 
   const closeMetricDetail = () => {
     setSelectedMetric(null);
@@ -962,7 +1065,7 @@ export default function DashboardHome() {
       )}
 
       <div className="dashboard-metric-grid">
-        {metricCards.map((metric) => (
+        {!showInitialMetricsLoading && metricCards.map((metric) => (
           <MetricButton
             key={metric.id}
             metric={metric}
@@ -972,7 +1075,7 @@ export default function DashboardHome() {
         ))}
       </div>
 
-      {activeMetric && !mobileDetailOpen && (
+      {!showInitialMetricsLoading && activeMetric && !mobileDetailOpen && (
         <section id="dashboard-metric-details" className="dashboard-detail-panel" aria-live="polite">
           <MetricDetailsPanel
             metric={activeMetric}
@@ -982,7 +1085,7 @@ export default function DashboardHome() {
         </section>
       )}
 
-      {mobileDetailOpen && activeMetric && (
+      {!showInitialMetricsLoading && mobileDetailOpen && activeMetric && (
         <div className="dashboard-mobile-detail-backdrop" onClick={closeMetricDetail}>
           <div
             className="dashboard-mobile-detail-sheet"
@@ -1014,7 +1117,11 @@ export default function DashboardHome() {
             </button>
           </div>
 
-          {leads.length === 0 ? (
+          {showInitialMetricsLoading ? (
+            <div className="dashboard-empty-block">
+              Carregando os contatos do periodo salvo...
+            </div>
+          ) : leads.length === 0 ? (
             <div className="dashboard-empty-block">
               Nenhum lead gerado ainda. Divulgue sua vitrine para começar a receber contatos.
             </div>
@@ -1061,12 +1168,16 @@ export default function DashboardHome() {
               </button>
             </div>
           </div>
-          <DashboardPeriodControl
-            value={dashboardPeriod}
-            options={DASHBOARD_PERIOD_PRESETS}
-            selectedLabel={selectedDashboardPeriod.label}
-            onChange={setDashboardPeriod}
-          />
+          {dashboardPeriodReady ? (
+            <DashboardPeriodControl
+              value={dashboardPeriod}
+              options={DASHBOARD_PERIOD_PRESETS}
+              selectedLabel={selectedDashboardPeriod.label}
+              onChange={handleDashboardPeriodChange}
+            />
+          ) : (
+            <DashboardPeriodSkeleton phase={dashboardPeriodPhase} />
+          )}
         </div>
 
         <div className="dashboard-side-stack">
