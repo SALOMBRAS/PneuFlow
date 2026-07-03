@@ -9,6 +9,10 @@
     linear-gradient(180deg, #070a0f 0%, #090d14 34%, #070a0f 68%, #090d14 100%);
 }
 
+.landing-page--snap {
+  scroll-behavior: smooth;
+}
+
 .landing-page::before {
   content: "";
   position: absolute;
@@ -33,6 +37,20 @@
   min-width: 0;
 }
 
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translate3d(var(--reveal-x, 0), var(--reveal-y, 24px), 0) scale(0.985);
+  transition:
+    opacity var(--reveal-duration, 600ms) cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+    transform var(--reveal-duration, 600ms) cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+  will-change: transform, opacity;
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
 .landing-page .container {
   width: 100%;
   max-width: 1320px;
@@ -52,6 +70,50 @@
 .landing-page .section-padding {
   position: relative;
   z-index: 1;
+}
+
+.landing-snap-section {
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+  transition: opacity 600ms cubic-bezier(0.22, 1, 0.36, 1), transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 1200px) {
+  .landing-page--snap {
+    scroll-snap-type: y proximity;
+  }
+
+  .landing-snap-section {
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+  }
+
+  .landing-pricing-section,
+  .landing-final-cta-section {
+    min-height: 78svh;
+  }
+
+  .landing-pricing-section > .container,
+  .landing-final-cta-section > .container {
+    padding-block: clamp(8px, 2vh, 24px);
+  }
+
+  .landing-snap-section > .container {
+    width: 100%;
+  }
+
+  .landing-snap-section:not(:target) {
+    opacity: 0.98;
+    transform: scale(0.99);
+  }
+
+  .landing-snap-section:target,
+  .landing-snap-section:focus-within,
+  .landing-snap-section:hover {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Header Responsiveness */
@@ -96,6 +158,36 @@
     width: auto;
     min-height: 40px;
   }
+}
+
+@media (max-width: 1199px) {
+  .landing-page--snap {
+    scroll-snap-type: none;
+  }
+
+  .landing-snap-section {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 576px) {
+  .reveal-on-scroll {
+    --reveal-y: 14px;
+    --reveal-duration: 450ms;
+  }
+
+  .landing-pricing-section.section-padding,
+  .landing-final-cta-section.section-padding {
+    padding-block: 32px;
+  }
+
+  .landing-pricing-section {
+    overflow: visible;
+  }
+}
+
+.landing-pricing-section {
+  overflow: hidden;
 }
 
 /* Hero Section Responsiveness */
@@ -367,11 +459,126 @@
   max-width: 980px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.86fr) auto;
-  align-items: center;
-  gap: clamp(22px, 4vw, 42px);
-  padding: clamp(24px, 4vw, 42px);
+  grid-template-columns: minmax(220px, 1fr) minmax(240px, 1fr) minmax(260px, 1fr);
+  align-items: start;
+  gap: clamp(24px, 3vw, 36px);
+  padding: clamp(22px, 3.2vw, 34px);
   border-radius: 30px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 300ms ease, box-shadow 300ms ease;
+}
+
+.landing-pricing-card--featured {
+  box-shadow:
+    0 0 0 1px rgba(251, 191, 36, 0.22),
+    0 0 28px rgba(245, 158, 11, 0.12),
+    0 20px 54px rgba(0, 0, 0, 0.24);
+}
+
+.landing-pricing-card--featured::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top right, rgba(251, 191, 36, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(251, 191, 36, 0.08), transparent 42%);
+  pointer-events: none;
+}
+
+.landing-pricing-card--featured::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+}
+
+.landing-pricing-card--featured:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 0 0 1px rgba(251, 191, 36, 0.28),
+    0 0 34px rgba(245, 158, 11, 0.16),
+    0 24px 64px rgba(0, 0, 0, 0.28);
+}
+
+.landing-pricing-card--featured > * {
+  position: relative;
+  z-index: 1;
+}
+
+.landing-pricing-column {
+  min-width: 0;
+}
+
+.landing-pricing-column--summary {
+  max-width: 300px;
+}
+
+.landing-pricing-column--benefits {
+  align-self: center;
+  padding-top: 16px;
+}
+
+.landing-pricing-column--cta {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-self: stretch;
+  gap: 12px;
+}
+
+.landing-pricing-cta-wrap {
+  display: grid;
+  gap: 12px;
+  justify-items: stretch;
+}
+
+.landing-pricing-urgency {
+  border-radius: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(251, 191, 36, 0.24);
+  background:
+    radial-gradient(circle at top left, rgba(251, 191, 36, 0.12), transparent 52%),
+    linear-gradient(135deg, rgba(18, 24, 38, 0.96), rgba(10, 14, 22, 0.98));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.landing-pricing-urgency__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: #fbbf24;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.landing-pricing-urgency__label::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #f59e0b;
+  box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.28);
+  animation: pricingPulse 2.2s ease-in-out infinite;
+}
+
+.landing-pricing-urgency p {
+  margin: 0 0 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.landing-pricing-urgency small {
+  display: block;
+  color: var(--text-description);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .landing-pricing-stack {
@@ -467,8 +674,8 @@
   gap: 0.06em;
   flex-wrap: nowrap;
   white-space: nowrap;
-  margin: 12px 0 10px;
-  font-size: clamp(42px, 5.6vw, 64px);
+  margin: 10px 0 8px;
+  font-size: clamp(40px, 5.2vw, 58px);
   line-height: 0.9;
   letter-spacing: -0.055em;
 }
@@ -488,7 +695,8 @@
 
 .landing-pricing-card p {
   margin: 0;
-  max-width: 48ch;
+  max-width: 31ch;
+  line-height: 1.5;
 }
 
 .landing-pricing-trial {
@@ -505,6 +713,7 @@
   padding: 0;
   list-style: none;
   font-size: 14px;
+  line-height: 1.45;
 }
 
 .landing-pricing-list li {
@@ -521,6 +730,38 @@
 
 .landing-pricing-cta {
   min-width: 210px;
+  width: 100%;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #111827;
+  box-shadow: 0 12px 30px rgba(245, 158, 11, 0.22);
+  transition: transform 250ms ease, box-shadow 250ms ease, filter 250ms ease;
+}
+
+.landing-pricing-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(245, 158, 11, 0.3);
+  filter: brightness(1.02);
+}
+
+@keyframes pricingPulse {
+  0%, 100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.28);
+  }
+  50% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+  }
+}
+
+@media (max-width: 1199px) {
+  .landing-pricing-card {
+    grid-template-columns: minmax(220px, 0.95fr) minmax(0, 1.05fr);
+  }
+
+  .landing-pricing-column--cta {
+    grid-column: 2;
+  }
 }
 
 .landing-pricing-side {
@@ -597,6 +838,12 @@
     grid-template-columns: 1fr;
   }
 
+  .landing-pricing-column--cta {
+    grid-column: auto;
+  }
+
+  .landing-pricing-column--benefits {
+    padding-top: 0;
   .landing-pricing-offerbar {
     align-items: flex-start;
     flex-direction: column;
@@ -652,6 +899,16 @@
     border-radius: 22px;
   }
 
+  .landing-pricing-card {
+    gap: 16px;
+  }
+
+  .landing-pricing-column--summary {
+    max-width: none;
+  }
+
+  .landing-pricing-column--cta {
+    gap: 12px;
   .landing-pricing-heading {
     align-items: flex-start;
   }
@@ -659,9 +916,29 @@
   .landing-pricing-price {
     font-size: clamp(36px, 13vw, 48px);
   }
+
+  .landing-pricing-list {
+    gap: 12px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .landing-page--snap {
+    scroll-snap-type: none !important;
+  }
+
+  .landing-snap-section {
+    min-height: auto;
+    transition: none !important;
+  }
+
+  .reveal-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto;
+  }
+
   .hero-title-type__cursor {
     animation: none;
     opacity: 1;
@@ -970,6 +1247,11 @@
 /* Utility classes for consistency */
 .section-padding {
   padding: clamp(60px, 10vw, 100px) 0;
+}
+
+.landing-pricing-section.section-padding,
+.landing-final-cta-section.section-padding {
+  padding-block: clamp(40px, 6vw, 72px);
 }
 
 @media (max-width: 480px) {

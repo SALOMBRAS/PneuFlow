@@ -348,6 +348,20 @@ export default function DashboardHome() {
   }, [dashboardPeriod, dashboardPeriodHydrated, dashboardPeriodStorageKey]);
 
   useEffect(() => {
+    setDashboardPeriodHydrated(false);
+    setDashboardPeriod(readStoredDashboardPeriod(dashboardPeriodStorageKey));
+    setDashboardPeriodHydrated(true);
+  }, [dashboardPeriodStorageKey]);
+
+  useEffect(() => {
+    if (!dashboardPeriodStorageKey || typeof window === 'undefined') return;
+    if (!dashboardPeriodHydrated) return;
+    if (!isValidDashboardPeriod(dashboardPeriod)) return;
+
+    window.localStorage.setItem(dashboardPeriodStorageKey, dashboardPeriod);
+  }, [dashboardPeriod, dashboardPeriodHydrated, dashboardPeriodStorageKey]);
+
+  useEffect(() => {
     if (!selectedMetric) return undefined;
 
     const handleEscape = (event) => {

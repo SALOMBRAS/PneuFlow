@@ -13,10 +13,18 @@ import {
   CreditCard
 } from 'lucide-react';
 import './LandingPage.css';
+import RevealOnScroll from '../components/RevealOnScroll';
 import FeedbackCarousel from '../components/FeedbackCarousel';
 import InteractiveDemo from '../components/InteractiveDemo/InteractiveDemo';
 
 const CardSwapHero = lazy(() => import('../components/CardSwap/CardSwapHero'));
+
+const pricingLaunchConfig = {
+  urgencyEnabled: true,
+  onboardingSlots: null,
+  offerEndDate: null,
+  launchOfferLabel: 'Condição de lançamento',
+};
 
 const heroPhrases = [
   {
@@ -361,7 +369,7 @@ export default function LandingPage() {
   const primaryCtaLabel = isWaitlistOpen ? PRICING_PLAN.waitlistCtaLabel : PRICING_PLAN.ctaLabel;
 
   return (
-    <div className="landing-page" style={{ backgroundColor: 'var(--bg-dark)', minHeight: '100vh' }}>
+    <div className="landing-page landing-page--snap" style={{ backgroundColor: 'var(--bg-dark)', minHeight: '100vh' }}>
       {/* Navigation */}
       <header className="landing-header" style={{
         borderBottom: '1px solid var(--border)',
@@ -405,9 +413,9 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="section-padding landing-hero-section">
+      <section className="section-padding landing-hero-section landing-snap-section">
         <div className="container hero-grid">
-          <div>
+          <RevealOnScroll className="landing-hero-copy" duration={520} distance={16}>
             <span style={{ 
               backgroundColor: 'var(--primary-glow)', 
               color: 'var(--primary)', 
@@ -452,23 +460,25 @@ export default function LandingPage() {
                 <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Catálogo 100% Autônomo</span>
               </div>
             </div>
-          </div>
+          </RevealOnScroll>
           
           {!isMobileHero && (
-            <div className="hero-mockup">
+            <RevealOnScroll className="hero-mockup" direction="right" delay={120} duration={640} distance={20}>
               <Suspense fallback={<div className="card-swap-fallback" aria-hidden="true" />}>
                 <CardSwapHero />
               </Suspense>
-            </div>
+            </RevealOnScroll>
           )}
         </div>
       </section>
 
-      <InteractiveDemo />
+      <RevealOnScroll duration={620} distance={20}>
+        <InteractiveDemo />
+      </RevealOnScroll>
 
-      <section id="beneficios" className="section-padding landing-benefits-section">
+      <section id="beneficios" className="section-padding landing-benefits-section landing-snap-section">
         <div className="container">
-          <div className="pf-section-header landing-centered-header">
+          <RevealOnScroll className="pf-section-header landing-centered-header" delay={40} duration={560} distance={18}>
             <div>
               <span className="pf-kicker">Produto para vender mais</span>
               <h2 className="title-lg">Uma vitrine que trabalha antes do cliente chamar.</h2>
@@ -476,23 +486,30 @@ export default function LandingPage() {
                 O PneuFlow organiza o que hoje fica espalhado entre fotos, listas e mensagens soltas, deixando a compra mais clara para o motorista.
               </p>
             </div>
-          </div>
+          </RevealOnScroll>
 
           <div className="landing-benefits-grid">
-            {benefitCards.map((benefit) => (
-              <article key={benefit.title} className="pf-card pf-card-hover landing-benefit-card">
+            {benefitCards.map((benefit, index) => (
+              <RevealOnScroll
+                key={benefit.title}
+                as="article"
+                className="pf-card pf-card-hover landing-benefit-card"
+                delay={index * 90}
+                duration={600}
+                distance={24}
+              >
                 <div className="landing-benefit-icon">{benefit.icon}</div>
                 <h3>{benefit.title}</h3>
                 <p>{benefit.text}</p>
-              </article>
+              </RevealOnScroll>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="como-funciona" className="section-padding landing-how-section">
+      <section id="como-funciona" className="section-padding landing-how-section landing-snap-section">
         <div className="container">
-          <div className="landing-how-card pf-card-premium">
+          <RevealOnScroll className="landing-how-card pf-card-premium" delay={60} duration={620} distance={24}>
             <div className="landing-how-copy">
               <span className="pf-kicker">Como funciona</span>
               <h2 className="title-lg">Do cadastro ao WhatsApp em três passos.</h2>
@@ -502,19 +519,26 @@ export default function LandingPage() {
             </div>
 
             <div className="landing-how-steps">
-              {howItWorks.map((item) => (
-                <article key={item.step} className="landing-how-step">
+              {howItWorks.map((item, index) => (
+                <RevealOnScroll
+                  key={item.step}
+                  as="article"
+                  className="landing-how-step"
+                  delay={index * 100}
+                  duration={560}
+                  distance={20}
+                >
                   <span>{item.step}</span>
                   <h3>{item.title}</h3>
                   <p>{item.text}</p>
-                </article>
+                </RevealOnScroll>
               ))}
             </div>
-          </div>
+          </RevealOnScroll>
         </div>
       </section>
 
-      <section id="preco" className="section-padding landing-pricing-section">
+      <section id="preco" className="section-padding landing-pricing-section landing-snap-section">
         <div className="container">
           <div className="landing-pricing-stack">
             {showOfferBar && (
@@ -579,24 +603,30 @@ export default function LandingPage() {
       </section>
 
       {/* Feedback Carousel Section */}
-      <FeedbackCarousel />
+      <RevealOnScroll duration={560} distance={18}>
+        <FeedbackCarousel />
+      </RevealOnScroll>
 
       {/* FAQ Section */}
-      <section id="faq" className="section-padding landing-faq-section">
+      <section id="faq" className="section-padding landing-faq-section landing-snap-section">
         <div className="container" style={{ maxWidth: '800px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+          <RevealOnScroll style={{ textAlign: 'center', marginBottom: '56px' }} duration={520} distance={16}>
             <h2 className="title-lg">Perguntas Frequentes</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '16px' }}>
               Tudo o que você precisa saber sobre o PneuFlow.
             </p>
-          </div>
+          </RevealOnScroll>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {faqs.map((faq, index) => (
-              <article
+              <RevealOnScroll
                 key={index} 
+                as="article"
                 className="card" 
                 style={{ padding: '20px', borderColor: activeFaq === index ? 'var(--primary)' : 'var(--border)' }}
+                delay={index * 90}
+                duration={560}
+                distance={18}
               >
                 <button
                   type="button"
@@ -629,22 +659,24 @@ export default function LandingPage() {
                     {faq.a}
                   </p>
                 )}
-              </article>
+              </RevealOnScroll>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA final */}
-      <section className="section-padding landing-final-cta-section" style={{ textAlign: 'center' }}>
+      <section className="section-padding landing-final-cta-section landing-snap-section" style={{ textAlign: 'center' }}>
         <div className="container">
-          <h2 style={{ fontSize: 'clamp(28px, 5vw, 36px)', marginBottom: '20px' }}>Pronto para decolar as vendas da sua loja?</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(16px, 2vw, 18px)', marginBottom: '32px', maxWidth: '600px', margin: '0 auto 32px' }}>
-            Crie sua vitrine em menos de 5 minutos e comece com o nosso Plano Free para conhecer todas as funcionalidades.
-          </p>
-          <button onClick={() => navigate('/register')} className="btn btn-primary" style={{ padding: '14px 32px', fontSize: '16px' }}>
-            Criar minha vitrine grátis
-          </button>
+          <RevealOnScroll duration={560} distance={16}>
+            <h2 style={{ fontSize: 'clamp(28px, 5vw, 36px)', marginBottom: '20px' }}>Pronto para decolar as vendas da sua loja?</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(16px, 2vw, 18px)', marginBottom: '32px', maxWidth: '600px', margin: '0 auto 32px' }}>
+              Crie sua vitrine em menos de 5 minutos e comece com o nosso Plano Free para conhecer todas as funcionalidades.
+            </p>
+            <button onClick={() => navigate('/register')} className="btn btn-primary" style={{ padding: '14px 32px', fontSize: '16px' }}>
+              Criar minha vitrine grátis
+            </button>
+          </RevealOnScroll>
         </div>
       </section>
 

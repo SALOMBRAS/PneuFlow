@@ -3,6 +3,33 @@ export const MAX_TIRES_PER_OFFER = 20;
 const isReliableAmount = (value) => Number.isFinite(value) && value >= 0;
 const isPositiveAmount = (value) => Number.isFinite(value) && value > 0;
 
+const resolveItemHistoricalValue = (items) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return null;
+  }
+
+  const explicitValue = Number(items.reduce((sum, item) => {
+    const itemValue = Number(item?.valor_total);
+    if (item?.valor_total != null && isReliableAmount(itemValue)) {
+      return sum + itemValue;
+    }
+
+    const quantity = Math.max(1, Number.parseInt(item?.quantidade, 10) || 1);
+    const price = Number(item?.preco_unitario_anuncio);
+    if (item?.preco_unitario_anuncio != null && isReliableAmount(price)) {
+      return sum + (price * quantity);
+    }
+
+    return sum;
+  }, 0));
+
+  if (explicitValue > 0) {
+    return Number(explicitValue.toFixed(2));
+  }
+
+  return null;
+};
+
 export const normalizeOfferQuantity = (value, fallback = 1) => {
   const parsed = Number.parseInt(value ?? fallback, 10);
   if (!Number.isFinite(parsed)) {
@@ -210,36 +237,28 @@ export const getLeadOfferPrice = (lead) => {
 };
 
 export const getLeadHistoricalValue = (lead, mode = 'desired') => {
+  const snapshotItems = Array.isArray(lead?.items)
+    ? lead.items
+    : Array.isArray(lead?.itens)
+      ? lead.itens
+      : null;
+
+  const snapshotValue = resolveItemHistoricalValue(snapshotItems);
+  if (snapshotValue != null) {
+    return snapshotValue;
+  }
+
+  const explicitValue = Number(lead?.valor_total);
+  if (lead?.valor_total != null && isReliableAmount(explicitValue) && explicitValue > 0) {
+    return explicitValue;
+  }
+
   if (isMultiItemLead(lead)) {
-    const explicitValue = Number(lead?.valor_total);
-    if (lead?.valor_total != null && isPositiveAmount(explicitValue)) {
-      return explicitValue;
-    }
-
-    let hasReliableSnapshot = false;
-    const total = getLeadItems(lead).reduce((sum, item) => {
-      const itemValue = Number(item?.valor_total);
-      if (item?.valor_total != null && isPositiveAmount(itemValue)) {
-        hasReliableSnapshot = true;
-        return sum + itemValue;
-      }
-
-      const quantity = Math.max(1, Number.parseInt(item?.quantidade, 10) || 1);
-      const price = Number(item?.preco_unitario_anuncio);
-      if (item?.preco_unitario_anuncio != null && isPositiveAmount(price)) {
-        hasReliableSnapshot = true;
-        return sum + (price * quantity);
-      }
-
-      return sum;
-    }, 0);
-
-    return hasReliableSnapshot ? Number(total.toFixed(2)) : null;
+    return null;
   }
 
   const offerQuantity = getLeadOfferQuantity(lead, mode);
-  const explicitValue = Number(lead?.valor_total);
-  if (lead?.valor_total != null && isPositiveAmount(explicitValue)) {
+  if (lead?.valor_total != null && isReliableAmount(explicitValue) && explicitValue > 0) {
     return explicitValue;
   }
 
@@ -248,7 +267,7 @@ export const getLeadHistoricalValue = (lead, mode = 'desired') => {
     return null;
   }
 
-  if (!isPositiveAmount(unitPrice)) {
+  if (!isReliableAmount(unitPrice)) {
     return null;
   }
 

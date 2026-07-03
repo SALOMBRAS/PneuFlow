@@ -723,6 +723,15 @@ export default function Leads() {
                 <span>Arraste para o lado para ver cliente, produto, vendedor, status, valor e ações.</span>
               </div>
               <table className="leads-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <colgroup>
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '17%' }} />
+                  <col style={{ width: '30%' }} />
+                  <col style={{ width: '9%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '5%' }} />
+                </colgroup>
                 <thead>
                   <tr style={{ backgroundColor: 'var(--secondary)', borderBottom: '1px solid var(--border)' }}>
                     <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Cliente</th>
@@ -972,7 +981,7 @@ export default function Leads() {
                             </span>
                           ) : (
                             <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)' }}>
-                              {formatHistoricalCurrency(leadValue)}
+                              {formatBRLCurrency(leadValue)}
                             </span>
                           )}
                         </td>
@@ -1409,6 +1418,131 @@ export default function Leads() {
 
         .leads-swipe-hint {
           display: none;
+        }
+
+        @media (min-width: 1024px) {
+          .leads-table-card {
+            overflow: visible;
+          }
+
+          .leads-table-wrap {
+            min-width: 0;
+            max-width: 100%;
+            overflow-x: hidden;
+          }
+
+          .leads-table {
+            table-layout: fixed;
+            min-width: 0;
+            width: 100%;
+          }
+
+          .leads-table th,
+          .leads-table td {
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+          }
+
+          .leads-table th:first-child,
+          .leads-table td:first-child {
+            padding-left: 16px !important;
+          }
+
+          .leads-table th:last-child,
+          .leads-table td:last-child {
+            padding-right: 16px !important;
+          }
+
+          .leads-table th:nth-child(1),
+          .leads-table td:nth-child(1) {
+            width: 12%;
+          }
+
+          .leads-table th:nth-child(2),
+          .leads-table td:nth-child(2) {
+            width: 13%;
+          }
+
+          .leads-table th:nth-child(3),
+          .leads-table td:nth-child(3) {
+            width: 15%;
+          }
+
+          .leads-table th:nth-child(4),
+          .leads-table td:nth-child(4) {
+            width: 33%;
+          }
+
+          .leads-table th:nth-child(5),
+          .leads-table td:nth-child(5) {
+            width: 8%;
+          }
+
+          .leads-table th:nth-child(6),
+          .leads-table td:nth-child(6) {
+            width: 11%;
+          }
+
+          .leads-table th:nth-child(7),
+          .leads-table td:nth-child(7) {
+            width: 8%;
+          }
+
+          .lead-status-cell {
+            min-width: 0;
+          }
+
+          .lead-status-control {
+            grid-template-columns: minmax(100px, 0.82fr) minmax(120px, 1.18fr);
+          }
+
+          .lead-status-pill {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .lead-sale-quantity-field {
+            grid-template-columns: 30px minmax(60px, 76px) 30px;
+          }
+
+          .lead-sale-quantity-summary {
+            padding: 10px 12px;
+          }
+
+          .lead-sale-quantity-summary strong {
+            font-size: 14px;
+          }
+
+          .lead-status-note,
+          .lead-quantity-status {
+            max-width: 100%;
+          }
+
+          .leads-table td:nth-child(7) > div {
+            justify-content: center;
+          }
+
+          .leads-table th:nth-child(7) {
+            text-align: center;
+          }
+
+          .leads-table td:nth-child(7) .btn {
+            width: 42px;
+            min-width: 42px;
+            height: 42px;
+            min-height: 42px;
+            padding: 0;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+          }
+
+          .leads-table td:nth-child(7) .btn svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+          }
         }
 
         .leads-pagination {
