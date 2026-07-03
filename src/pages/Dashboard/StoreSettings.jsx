@@ -49,6 +49,9 @@ export default function StoreSettings() {
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
   const [businessHours, setBusinessHours] = useState(createDefaultBusinessHours());
+  const [scheduleDraft, setScheduleDraft] = useState(createDefaultBusinessHours());
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduleDirty, setScheduleDirty] = useState(false);
   const [tipoVitrine, setTipoVitrine] = useState('carro');
   const [message, setMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
@@ -69,6 +72,8 @@ export default function StoreSettings() {
       setTipoVitrine(store.tipo_vitrine || 'carro');
       setDescription(store.description || '');
       setBusinessHours(normalizeBusinessHours(store.business_hours));
+      setScheduleDraft(normalizeBusinessHours(store.business_hours));
+      setScheduleDirty(false);
     }
   }, [store]);
 
@@ -167,16 +172,17 @@ export default function StoreSettings() {
 
   const publicLink = `${window.location.origin}/store/${store.slug}`;
   const updateDayHours = (dayKey, patch) => {
-    setBusinessHours((current) => ({
+    setScheduleDraft((current) => ({
       ...current,
       [dayKey]: { ...current[dayKey], ...patch }
     }));
+    setScheduleDirty(true);
   };
 
   const copyWeekdayHours = (dayKey) => {
-    const source = businessHours[dayKey];
+    const source = scheduleDraft[dayKey];
     if (!source) return;
-    setBusinessHours((current) =>
+    setScheduleDraft((current) =>
       WEEK_DAYS.reduce((acc, day) => {
         acc[day.key] = day.key === 'sunday'
           ? current[day.key]
@@ -184,13 +190,14 @@ export default function StoreSettings() {
         return acc;
       }, { ...current })
     );
+    setScheduleDirty(true);
   };
 
   const applyMondayToWeekdays = () => {
-    const source = businessHours.monday;
+    const source = scheduleDraft.monday;
     if (!source) return;
 
-    setBusinessHours((current) =>
+    setScheduleDraft((current) =>
       WEEK_DAYS.reduce((acc, day) => {
         if (day.key === 'saturday' || day.key === 'sunday') {
           acc[day.key] = current[day.key];
@@ -201,9 +208,10 @@ export default function StoreSettings() {
         return acc;
         }, { ...current })
     );
+    setScheduleDirty(true);
   };
 
-  const getFirstOpenDay = () => WEEK_DAYS.find((day) => businessHours[day.key]?.enabled && businessHours[day.key]?.open && businessHours[day.key]?.close);
+  const getFirstOpenDay = () => WEEK_DAYS.find((day) => scheduleDraft[day.key]?.enabled && scheduleDraft[day.key]?.open && scheduleDraft[day.key]?.close);
 
   const copyFirstOpenDayToOpenDays = () => {
     const sourceDay = getFirstOpenDay();
@@ -212,8 +220,8 @@ export default function StoreSettings() {
     const confirmCopy = window.confirm(`Copiar o horário de ${sourceDay.label} para os demais dias abertos?`);
     if (!confirmCopy) return;
 
-    const source = businessHours[sourceDay.key];
-    setBusinessHours((current) =>
+    const source = scheduleDraft[sourceDay.key];
+    setScheduleDraft((current) =>
       WEEK_DAYS.reduce((acc, day) => {
         const currentDay = current[day.key] || {};
         if (!currentDay.enabled) {
@@ -225,7 +233,148 @@ export default function StoreSettings() {
         return acc;
       }, { ...current })
     );
+    setScheduleDirty(true);
   };
+
+  const openScheduleModal = () => {
+    setScheduleDraft(businessHours);
+    setScheduleDirty(false);
+    setScheduleModalOpen(true);
+  };
+
+  const closeScheduleModal = () => {
+    if (scheduleDirty && !window.confirm('Descartar as alterações de horários?')) {
+      return;
+    }
+    setScheduleDraft(businessHours);
+    setScheduleDirty(false);
+    setScheduleModalOpen(false);
+  };
+
+  const handleSaveSchedule = () => {
+    setBusinessHours(scheduleDraft);
+    setScheduleDirty(false);
+    setScheduleModalOpen(false);
+  };
+
+  const businessHoursSummary = (() => {
+    const openDays = WEEK_DAYS.filter((day) => businessHours[day.key]?.enabled);
+    if (!openDays.length) return 'Horários desativados';
+    const firstOpen = openDays[0];
+    const lastOpen = openDays[openDays.length - 1];
+    const weekdaySpan = openDays.length === 5 && openDays[0]?.key === 'monday' && openDays[4]?.key === 'friday';
+    const range = firstOpen ? `${businessHours[firstOpen.key].open} às ${businessHours[firstOpen.key].close}` : '';
+    const weekendClosed = !businessHours.saturday?.enabled && !businessHours.sunday?.enabled;
+    return [
+      weekdaySpan ? 'Seg a Sex' : firstOpen?.label,
+      range,
+      weekendClosed ? 'Sáb/Dom fechado' : lastOpen?.label
+    ].filter(Boolean).join(' • ');
+  })();
+
+  const renderScheduleEditor = () => (
+    <>
+      <div className="store-hours-panel__toolbar">
+        <div>
+          <strong>Ativar horários</strong>
+          <p>Use os chips para abrir ou fechar cada dia sem perder os horários já cadastrados.</p>
+        </div>
+        <div className="store-hours-panel__actions">
+          <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={applyMondayToWeekdays}>
+            <CalendarDays size={14} />
+            Aplicar segunda aos dias úteis
+          </button>
+          <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={copyFirstOpenDayToOpenDays}>
+            <Copy size={14} />
+            Copiar horário para todos
+          </button>
+        </div>
+      </div>
+
+      <div className="store-hours-chips" aria-label="Dias da semana">
+        {WEEK_DAYS.map((day) => {
+          const current = scheduleDraft[day.key] || {};
+          return (
+            <button
+              key={day.key}
+              type="button"
+              className={`store-hours-chip ${current.enabled ? 'is-open' : 'is-closed'}`}
+              onClick={() => updateDayHours(day.key, { enabled: !current.enabled })}
+              aria-label={day.label}
+              title={day.label}
+            >
+              {day.label.charAt(0)}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="store-hours-list">
+        {WEEK_DAYS.map((day) => {
+          const current = scheduleDraft[day.key] || {};
+          const isOpen = Boolean(current.enabled);
+          return (
+            <div key={day.key} className={`store-hours-row ${isOpen ? '' : 'is-closed'}`}>
+              <div className="store-hours-cell store-hours-cell--day">
+                <strong>{day.label}</strong>
+              </div>
+              <div className="store-hours-cell store-hours-cell--status">
+                <button
+                  type="button"
+                  className={`store-hours-switch ${isOpen ? 'is-open' : 'is-closed'}`}
+                  onClick={() => updateDayHours(day.key, { enabled: !isOpen })}
+                  aria-label={`${isOpen ? 'Fechar' : 'Abrir'} ${day.label}`}
+                >
+                  <span className="store-hours-switch__track" aria-hidden="true">
+                    <span className="store-hours-switch__thumb" />
+                  </span>
+                  <span className="store-hours-switch__label">{isOpen ? 'Aberto' : 'Fechado'}</span>
+                </button>
+              </div>
+              <div className="store-hours-cell store-hours-cell--open">
+                {isOpen ? (
+                  <input
+                    type="time"
+                    className="form-input store-hours-time-input"
+                    value={current.open || ''}
+                    onChange={(e) => updateDayHours(day.key, { open: e.target.value })}
+                  />
+                ) : (
+                  <span className="store-hours-closed-text">Fechado</span>
+                )}
+              </div>
+              <div className="store-hours-cell store-hours-cell--separator">até</div>
+              <div className="store-hours-cell store-hours-cell--close">
+                {isOpen ? (
+                  <input
+                    type="time"
+                    className="form-input store-hours-time-input"
+                    value={current.close || ''}
+                    onChange={(e) => updateDayHours(day.key, { close: e.target.value })}
+                  />
+                ) : (
+                  <span className="store-hours-closed-text">Fechado</span>
+                )}
+              </div>
+              <div className="store-hours-cell store-hours-cell--action">
+                {isOpen ? (
+                  <button
+                    type="button"
+                    className="store-hours-icon-btn"
+                    onClick={() => copyWeekdayHours(day.key)}
+                    title="Copiar este horário para os dias abertos"
+                    aria-label={`Copiar horário de ${day.label}`}
+                  >
+                    <Copy size={14} />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
 
   const ImageUploadField = ({ id, label, value, uploading, onUpload }) => (
     <div className="form-group store-settings-upload">
@@ -496,106 +645,15 @@ export default function StoreSettings() {
               <Clock3 size={20} style={{ color: 'var(--primary)' }} /> Horários de funcionamento
             </h3>
 
-            <div className="store-hours-panel">
-              <div className="store-hours-panel__toolbar">
-                <div>
-                  <strong>Ativar horários</strong>
-                  <p>Use os chips para abrir ou fechar cada dia sem perder os horários já cadastrados.</p>
-                </div>
-                <div className="store-hours-panel__actions">
-                  <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={applyMondayToWeekdays}>
-                    <CalendarDays size={14} />
-                    Aplicar segunda aos dias úteis
-                  </button>
-                  <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={copyFirstOpenDayToOpenDays}>
-                    <Copy size={14} />
-                    Copiar horário para todos
-                  </button>
-                </div>
+            <div className="store-hours-summary-card">
+              <div>
+                <strong>Horários configurados</strong>
+                <p>{businessHoursSummary}</p>
               </div>
-
-              <div className="store-hours-chips" aria-label="Dias da semana">
-                {WEEK_DAYS.map((day) => {
-                  const current = businessHours[day.key] || {};
-                  return (
-                    <button
-                      key={day.key}
-                      type="button"
-                      className={`store-hours-chip ${current.enabled ? 'is-open' : 'is-closed'}`}
-                      onClick={() => updateDayHours(day.key, { enabled: !current.enabled })}
-                      aria-label={day.label}
-                      title={day.label}
-                    >
-                      {day.label.charAt(0)}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="store-hours-list">
-                {WEEK_DAYS.map((day) => {
-                  const current = businessHours[day.key] || {};
-                  const isOpen = Boolean(current.enabled);
-                  return (
-                    <div key={day.key} className={`store-hours-row ${isOpen ? '' : 'is-closed'}`}>
-                      <div className="store-hours-cell store-hours-cell--day">
-                        <strong>{day.label}</strong>
-                      </div>
-                      <div className="store-hours-cell store-hours-cell--status">
-                        <button
-                          type="button"
-                          className={`store-hours-switch ${isOpen ? 'is-open' : 'is-closed'}`}
-                          onClick={() => updateDayHours(day.key, { enabled: !isOpen })}
-                          aria-label={`${isOpen ? 'Fechar' : 'Abrir'} ${day.label}`}
-                        >
-                          <span className="store-hours-switch__track" aria-hidden="true">
-                            <span className="store-hours-switch__thumb" />
-                          </span>
-                          <span className="store-hours-switch__label">{isOpen ? 'Aberto' : 'Fechado'}</span>
-                        </button>
-                      </div>
-                      <div className="store-hours-cell store-hours-cell--open">
-                        {isOpen ? (
-                          <input
-                            type="time"
-                            className="form-input store-hours-time-input"
-                            value={current.open || ''}
-                            onChange={(e) => updateDayHours(day.key, { open: e.target.value })}
-                          />
-                        ) : (
-                          <span className="store-hours-closed-text">Fechado</span>
-                        )}
-                      </div>
-                      <div className="store-hours-cell store-hours-cell--separator">até</div>
-                      <div className="store-hours-cell store-hours-cell--close">
-                        {isOpen ? (
-                          <input
-                            type="time"
-                            className="form-input store-hours-time-input"
-                            value={current.close || ''}
-                            onChange={(e) => updateDayHours(day.key, { close: e.target.value })}
-                          />
-                        ) : (
-                          <span className="store-hours-closed-text">Fechado</span>
-                        )}
-                      </div>
-                      <div className="store-hours-cell store-hours-cell--action">
-                        {isOpen ? (
-                          <button
-                            type="button"
-                            className="store-hours-icon-btn"
-                            onClick={() => copyWeekdayHours(day.key)}
-                            title="Copiar este horário para os dias abertos"
-                            aria-label={`Copiar horário de ${day.label}`}
-                          >
-                            <Copy size={14} />
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <button type="button" className="btn btn-primary store-hours-summary-action" onClick={openScheduleModal}>
+                <Clock3 size={16} />
+                Escolher horário de funcionamento
+              </button>
             </div>
           </div>
         </div>
@@ -606,6 +664,39 @@ export default function StoreSettings() {
           </button>
         </div>
       </form>
+
+      {scheduleModalOpen ? (
+        <div
+          className="store-hours-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="store-hours-modal-title"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeScheduleModal();
+          }}
+        >
+          <div className="store-hours-modal__dialog" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="store-hours-modal__header">
+              <div>
+                <h3 id="store-hours-modal-title">Horários de funcionamento</h3>
+                <p>Edite a disponibilidade da loja sem sair da tela de configurações.</p>
+              </div>
+              <button type="button" className="store-hours-modal__close" onClick={closeScheduleModal} aria-label="Fechar modal">
+                ×
+              </button>
+            </div>
+
+            <div className="store-hours-panel store-hours-panel--modal">
+              {renderScheduleEditor()}
+            </div>
+
+            <div className="store-hours-modal__footer">
+              <button type="button" className="btn btn-secondary" onClick={closeScheduleModal}>Cancelar</button>
+              <button type="button" className="btn btn-primary" onClick={handleSaveSchedule}>Salvar horários</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <style>{`
         .store-settings-page {
@@ -758,6 +849,101 @@ export default function StoreSettings() {
           display: grid;
           gap: 12px;
           min-width: 0;
+        }
+
+        .store-hours-summary-card {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          min-width: 0;
+          padding: 18px 20px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          background: rgba(255,255,255,0.02);
+        }
+
+        .store-hours-summary-card strong {
+          display: block;
+          font-size: 14px;
+          margin-bottom: 4px;
+        }
+
+        .store-hours-summary-card p {
+          margin: 0;
+          color: var(--text-muted);
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        .store-hours-summary-action {
+          white-space: nowrap;
+          flex: 0 0 auto;
+        }
+
+        .store-hours-modal {
+          position: fixed;
+          inset: 0;
+          z-index: 80;
+          display: grid;
+          place-items: center;
+          padding: 20px;
+          background: rgba(3, 7, 18, 0.72);
+          backdrop-filter: blur(10px);
+        }
+
+        .store-hours-modal__dialog {
+          width: min(1080px, 100%);
+          max-height: min(90vh, 920px);
+          overflow: auto;
+          border-radius: 24px;
+          border: 1px solid var(--border);
+          background: linear-gradient(180deg, rgba(17,24,39,0.98), rgba(10,14,23,0.98));
+          box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+          padding: 20px;
+          display: grid;
+          gap: 16px;
+        }
+
+        .store-hours-modal__header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 16px;
+        }
+
+        .store-hours-modal__header h3 {
+          margin: 0;
+          font-size: 20px;
+        }
+
+        .store-hours-modal__header p {
+          margin: 6px 0 0;
+          color: var(--text-muted);
+          font-size: 13px;
+        }
+
+        .store-hours-modal__close {
+          width: 38px;
+          height: 38px;
+          border-radius: 12px;
+          border: 1px solid var(--border);
+          background: rgba(255,255,255,0.04);
+          color: var(--text-secondary);
+          cursor: pointer;
+          font-size: 22px;
+          line-height: 1;
+        }
+
+        .store-hours-panel--modal {
+          background: transparent;
+        }
+
+        .store-hours-modal__footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          flex-wrap: wrap;
         }
 
         .store-hours-panel__toolbar {
@@ -1081,6 +1267,36 @@ export default function StoreSettings() {
             width: 100%;
             justify-content: center;
             min-width: 0 !important;
+          }
+
+          .store-hours-summary-card {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .store-hours-summary-action {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .store-hours-modal {
+            padding: 12px;
+          }
+
+          .store-hours-modal__dialog {
+            padding: 16px;
+            border-radius: 18px;
+          }
+
+          .store-hours-modal__header,
+          .store-hours-modal__footer {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .store-hours-modal__footer .btn {
+            width: 100%;
+            justify-content: center;
           }
         }
 
