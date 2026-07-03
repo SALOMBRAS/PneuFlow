@@ -133,6 +133,19 @@ const INACTIVE_STOREFRONT_MESSAGE = 'Esta vitrine está temporariamente inativa.
 const getCompatibilitySnippet = (tire) =>
   tire.compatibilidade || tire.compatibility || tire.descricao || tire.description || 'Compatibilidade premium sob consulta';
 
+const formatPublicAddress = (store) => {
+  const street = store?.endereco || '';
+  const number = store?.address_number || '';
+  const complement = store?.address_complement || '';
+  const neighborhood = store?.neighborhood || '';
+  const city = store?.cidade || '';
+  const state = store?.estado || '';
+
+  const firstLine = [street, number ? `nº ${number}` : '', complement].filter(Boolean).join(' - ');
+  const secondLine = [neighborhood, city ? `${city}${state ? `/${state}` : ''}` : ''].filter(Boolean).join(', ');
+  return [firstLine, secondLine].filter(Boolean).join(' — ') || 'Endereco nao informado';
+};
+
 export default function StoreHome() {
   const { storeSlug } = useParams();
   const location = useLocation();
@@ -462,7 +475,7 @@ export default function StoreHome() {
   const secondaryColor = '#121214';
   const status = getStoreStatus(store);
   const businessHourLabel = formatBusinessHourLabel(store?.business_hours, 'Atendimento comercial');
-  const locationText = [store?.endereco, store?.cidade, store?.estado].filter(Boolean).join(', ') || 'Endereco nao informado';
+  const locationText = formatPublicAddress(store);
   const primarySoft = hexToRgba(primaryColor, 0.12);
   const primaryMedium = hexToRgba(primaryColor, 0.22);
   const secondarySoft = hexToRgba(secondaryColor, 0.16);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
 import { Save, Check, ExternalLink, Zap, MapPin, Palette, Upload, Loader2, Image as ImageIcon, Copy, Clock3, CalendarDays, CarFront, Bike } from 'lucide-react';
@@ -49,6 +49,12 @@ const VEHICLE_TYPE_OPTIONS = [
   }
 ];
 
+const formatPostalCode = (value) => {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
 const normalizeBusinessHours = (value) => {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return WEEK_DAYS.reduce((acc, day) => {
@@ -69,7 +75,11 @@ export default function StoreSettings() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [address, setAddress] = useState('');
+  const [addressNumber, setAddressNumber] = useState('');
+  const [addressComplement, setAddressComplement] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [logo, setLogo] = useState('');
@@ -85,6 +95,9 @@ export default function StoreSettings() {
   const [isSuccess, setIsSuccess] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [postalCodeLookup, setPostalCodeLookup] = useState({ loading: false, error: '' });
+  const [lastLookupPostalCode, setLastLookupPostalCode] = useState('');
+  const postalLookupTokenRef = useRef(0);
 
   useEffect(() => {
     if (store) {
@@ -92,6 +105,10 @@ export default function StoreSettings() {
       setPhone(store.telefone || '');
       setWhatsapp(store.whatsapp || '');
       setAddress(store.endereco || '');
+      setPostalCode(formatPostalCode(store.postal_code || ''));
+      setAddressNumber(store.address_number || '');
+      setAddressComplement(store.address_complement || '');
+      setNeighborhood(store.neighborhood || '');
       setCity(store.cidade || '');
       setState(store.estado || '');
       setLogo(store.logo || '');
@@ -102,6 +119,7 @@ export default function StoreSettings() {
       setBusinessHours(normalizeBusinessHours(store.business_hours));
       setScheduleDraft(normalizeBusinessHours(store.business_hours));
       setScheduleDirty(false);
+      setLastLookupPostalCode(String(store.postal_code || '').replace(/\D/g, '').slice(0, 8));
     }
   }, [store]);
 
@@ -144,6 +162,48 @@ export default function StoreSettings() {
     }
   };
 
+  const runPostalCodeLookup = useCallback(async (value) => {
+    const digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+    if (digits.length !== 8) {
+      setPostalCodeLookup((current) => ({ ...current, error: '' }));
+      return;
+    }
+
+    if (digits === lastLookupPostalCode) return;
+
+    const lookupId = postalLookupTokenRef.current + 1;
+    postalLookupTokenRef.current = lookupId;
+    setPostalCodeLookup({ loading: true, error: '' });
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      if (!response.ok) {
+        throw new Error('lookup_failed');
+      }
+
+      const data = await response.json();
+      if (postalLookupTokenRef.current !== lookupId) return;
+
+      if (data?.erro) {
+        setPostalCodeLookup({ loading: false, error: 'CEP não encontrado.' });
+        return;
+      }
+
+      setLastLookupPostalCode(digits);
+      setAddress(data.logradouro || '');
+      setNeighborhood(data.bairro || '');
+      setCity(data.localidade || '');
+      setState((data.uf || '').toUpperCase());
+      setPostalCodeLookup({ loading: false, error: '' });
+    } catch {
+      if (postalLookupTokenRef.current !== lookupId) return;
+      setPostalCodeLookup({
+        loading: false,
+        error: 'Não foi possível consultar o CEP. Preencha o endereço manualmente.'
+      });
+    }
+  }, [lastLookupPostalCode]);
+
   const handleSave = async (e) => {
     e.preventDefault();
     setMessage('');
@@ -167,7 +227,11 @@ export default function StoreSettings() {
         name,
         whatsapp: cleanWhatsapp.startsWith('55') ? cleanWhatsapp : `55${cleanWhatsapp}`,
         phone,
+        postalCode: postalCode.replace(/\D/g, ''),
         address,
+        addressNumber,
+        addressComplement,
+        neighborhood,
         city,
         state,
         logo,
@@ -589,17 +653,87 @@ export default function StoreSettings() {
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="store-address">Endereço</label>
-              <input
-                id="store-address"
-                type="text"
-                className="form-input"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Rua Exemplo, 123 - Bairro"
-              />
+            <div className="store-settings-address-grid">
+              <div className="form-group store-settings-address-grid__cep">
+                <label className="form-label" htmlFor="store-postal-code">CEP</label>
+                <div className="store-settings-postal-wrapper">
+                  <input
+                    id="store-postal-code"
+                    type="text"
+                    inputMode="numeric"
+                    className="form-input"
+                    value={postalCode}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
+                      setPostalCode(formatPostalCode(digits));
+                      if (digits.length === 8) {
+                        runPostalCodeLookup(digits);
+                      } else {
+                        setPostalCodeLookup({ loading: false, error: '' });
+                      }
+                    }}
+                    onBlur={() => runPostalCodeLookup(postalCode)}
+                    placeholder="00000-000"
+                  />
+                  {postalCodeLookup.loading ? <span className="store-settings-postal-status">Consultando...</span> : null}
+                </div>
+              </div>
+
+              <div className="form-group store-settings-address-grid__street">
+                <label className="form-label" htmlFor="store-address">Rua / Logradouro</label>
+                <input
+                  id="store-address"
+                  type="text"
+                  className="form-input"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Rua Exemplo"
+                />
+              </div>
+
+              <div className="store-settings-address-grid__row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="store-number">Número</label>
+                  <input
+                    id="store-number"
+                    type="text"
+                    className="form-input"
+                    value={addressNumber}
+                    onChange={(e) => setAddressNumber(e.target.value)}
+                    placeholder="Ex.: 125"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="store-complement">Complemento</label>
+                  <input
+                    id="store-complement"
+                    type="text"
+                    className="form-input"
+                    value={addressComplement}
+                    onChange={(e) => setAddressComplement(e.target.value)}
+                    placeholder="Ex.: Sala 02"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="store-neighborhood">Bairro</label>
+                <input
+                  id="store-neighborhood"
+                  type="text"
+                  className="form-input"
+                  value={neighborhood}
+                  onChange={(e) => setNeighborhood(e.target.value)}
+                  placeholder="Bairro"
+                />
+              </div>
             </div>
+
+            {postalCodeLookup.error ? (
+              <div className="store-settings-postal-error" role="status">
+                {postalCodeLookup.error}
+              </div>
+            ) : null}
 
             <div className="store-settings-city-state" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', minWidth: 0 }}>
               <div className="form-group">
@@ -898,6 +1032,52 @@ export default function StoreSettings() {
 
         .store-settings-upload-actions {
           flex-wrap: wrap;
+        }
+
+        .store-settings-address-grid {
+          display: grid;
+          gap: 16px;
+          min-width: 0;
+          grid-template-columns: 120px minmax(0, 1fr);
+          grid-template-areas:
+            'cep street'
+            'row row'
+            'neighborhood neighborhood';
+        }
+
+        .store-settings-address-grid__cep {
+          grid-area: cep;
+        }
+
+        .store-settings-address-grid__street {
+          grid-area: street;
+        }
+
+        .store-settings-address-grid__row {
+          grid-area: row;
+          display: grid;
+          grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr);
+          gap: 16px;
+          min-width: 0;
+        }
+
+        .store-settings-postal-wrapper {
+          display: grid;
+          gap: 8px;
+        }
+
+        .store-settings-postal-status {
+          color: var(--text-muted);
+          font-size: 12px;
+        }
+
+        .store-settings-postal-error {
+          padding: 12px 14px;
+          border: 1px solid rgba(245, 158, 11, 0.24);
+          border-radius: var(--radius-md);
+          background: rgba(255,255,255,0.02);
+          color: var(--text-secondary);
+          font-size: 13px;
         }
 
         .store-settings-vehicle-helper {
@@ -1347,9 +1527,22 @@ export default function StoreSettings() {
           .store-settings-grid,
           .store-settings-seo-grid,
           .store-settings-two-col,
+          .store-settings-address-grid,
           .store-settings-city-state {
             grid-template-columns: 1fr !important;
             gap: 16px !important;
+          }
+
+          .store-settings-address-grid {
+            grid-template-areas:
+              'cep'
+              'street'
+              'row'
+              'neighborhood';
+          }
+
+          .store-settings-address-grid__row {
+            grid-template-columns: 1fr;
           }
 
           .store-settings-card {
