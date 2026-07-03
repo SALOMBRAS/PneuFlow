@@ -13,6 +13,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
+import RevealOnScroll from '../RevealOnScroll';
 import './InteractiveDemo.css';
 
 const demoTabs = [
@@ -442,7 +443,7 @@ export default function InteractiveDemo() {
   return (
     <section id="demo-interativa" className="interactive-demo-section" aria-labelledby="interactive-demo-title">
       <div className="interactive-demo-shell">
-        <div className="interactive-demo-heading">
+        <RevealOnScroll className="interactive-demo-heading" duration={520} distance={16}>
           <span className="interactive-demo-eyebrow">
             <Zap size={13} fill="currentColor" />
             Demonstracao interativa
@@ -455,10 +456,10 @@ export default function InteractiveDemo() {
           <small className="interactive-demo-disclaimer">
             Demonstracao interativa — dados ficticios, sem envio e sem alteracao real.
           </small>
-        </div>
+        </RevealOnScroll>
 
         <div className="interactive-demo-grid">
-          <aside className="interactive-demo-copy">
+          <RevealOnScroll as="aside" className="interactive-demo-copy" delay={100} duration={560} distance={18}>
             <span className="interactive-demo-kicker">Experimente uma previa sem cadastrar nada</span>
             <div className="interactive-demo-copy-card" key={active.id}>
               <ActiveIcon size={28} />
@@ -476,9 +477,9 @@ export default function InteractiveDemo() {
                 <ArrowRight size={17} />
               </Link>
             </div>
-          </aside>
+          </RevealOnScroll>
 
-          <div className="interactive-demo-stage">
+          <RevealOnScroll className="interactive-demo-stage" delay={180} duration={700} distance={28}>
             <div className="interactive-demo-tabbar" role="tablist" aria-label="Previa demonstrativa do PneuFlow">
               {demoTabs.map((tab) => {
                 const Icon = tab.icon;
@@ -533,7 +534,7 @@ export default function InteractiveDemo() {
               <Smartphone size={15} />
               Clique nas abas para testar uma previa ficticia
             </p>
-          </div>
+          </RevealOnScroll>
         </div>
       </div>
     </section>
