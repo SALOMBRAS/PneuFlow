@@ -43,6 +43,7 @@ export function NotificationProvider({ children }) {
   const [popupEnabled, setPopupEnabledState] = useState(true);
   const [categoryPreferences, setCategoryPreferences] = useState(DEFAULT_CATEGORY_PREFERENCES);
   const [centerOpen, setCenterOpenState] = useState(false);
+  const [openUnreadSnapshot, setOpenUnreadSnapshot] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [toastQueue, setToastQueue] = useState([]);
@@ -187,6 +188,7 @@ export function NotificationProvider({ children }) {
 
   const closeCenter = () => {
     setCenterOpenState(false);
+    setOpenUnreadSnapshot([]);
     requestAnimationFrame(() => {
       lastTriggerRef.current?.focus?.();
     });
@@ -196,7 +198,23 @@ export function NotificationProvider({ children }) {
     if (trigger) {
       lastTriggerRef.current = trigger;
     }
+    const unreadAtOpen = notifications.filter((item) => !item.readAt).map((item) => item.id);
+    setOpenUnreadSnapshot(unreadAtOpen);
     setCenterOpenState(true);
+
+    if (unreadAtOpen.length > 0) {
+      queueMicrotask(() => {
+        setNotifications((current) =>
+          current.map((item) => (
+            unreadAtOpen.includes(item.id) ? { ...item, readAt: item.readAt || new Date().toISOString() } : item
+          ))
+        );
+        setUnreadCount((current) => Math.max(0, current - unreadAtOpen.length));
+        notificationService.markManyAsRead(unreadAtOpen).catch((error) => {
+          console.error('Erro ao marcar notificacoes como lidas em lote:', error);
+        });
+      });
+    }
   };
 
   const toggleCenter = (trigger = null) => {
@@ -359,6 +377,30 @@ export function NotificationProvider({ children }) {
     }
   };
 
+  const deleteNotification = async (notificationId) => {
+    const target = notifications.find((item) => item.id === notificationId);
+    if (!target) return false;
+
+    const previousNotifications = notifications;
+    const previousUnreadCount = unreadCount;
+
+    setNotifications((current) => current.filter((item) => item.id !== notificationId));
+    setOpenUnreadSnapshot((current) => current.filter((id) => id !== notificationId));
+    if (!target.readAt) {
+      setUnreadCount((current) => Math.max(0, current - 1));
+    }
+
+    try {
+      await notificationService.deleteNotification(notificationId);
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir notificacao:', error);
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnreadCount);
+      throw error;
+    }
+  };
+
   const persistPreferences = async (nextPopupEnabled, nextCategoryPreferences) => {
     if (!store?.id) return;
 
@@ -465,6 +507,7 @@ export function NotificationProvider({ children }) {
     categoryPreferences,
     centerOpen,
     isDesktop,
+    openUnreadSnapshot,
     openCenter,
     closeCenter,
     toggleCenter,
@@ -473,6 +516,7 @@ export function NotificationProvider({ children }) {
     loadMore,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
     setPopupEnabled: updatePopupPreference,
     setCategoryEnabled: updateCategoryPreference,
     notifyTransientSuccess: (options) => createTransientNotice({ type: 'success', ...options }),
@@ -490,6 +534,7 @@ export function NotificationProvider({ children }) {
     categoryPreferences,
     centerOpen,
     isDesktop,
+    openUnreadSnapshot,
     hasMore,
     loadingMore
   ]);

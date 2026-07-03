@@ -101,6 +101,31 @@ export const notificationService = {
     return Number(data || 0);
   },
 
+  async markManyAsRead(notificationIds = []) {
+    const ids = Array.from(new Set((notificationIds || []).filter(Boolean)));
+    if (ids.length === 0) return 0;
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .in('id', ids)
+      .is('read_at', null)
+      .select('id');
+
+    handleSupabaseError(error, 'Nao foi possivel marcar as notificacoes como lidas.');
+    return Array.isArray(data) ? data.length : 0;
+  },
+
+  async deleteNotification(notificationId) {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId);
+
+    handleSupabaseError(error, 'Nao foi possivel excluir a notificacao.');
+    return true;
+  },
+
   async getPreference(storeId, userId) {
     const { data, error } = await supabase
       .from('notification_preferences')

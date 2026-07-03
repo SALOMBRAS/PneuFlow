@@ -33,6 +33,7 @@ export default function NotificationCenter() {
     closeCenter,
     notifications,
     unreadCount,
+    openUnreadSnapshot,
     historyError,
     popupEnabled,
     categoryPreferences,
@@ -40,13 +41,20 @@ export default function NotificationCenter() {
     setCategoryEnabled,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
     loadMore,
     hasMore,
     loadingMore,
     isDesktop
   } = useNotifications();
   const [activeTab, setActiveTab] = useState('notifications');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('unread');
+
+  useEffect(() => {
+    if (!centerOpen) return;
+    setActiveTab('notifications');
+    setFilter('unread');
+  }, [centerOpen]);
 
   useEffect(() => {
     if (!centerOpen) return undefined;
@@ -63,11 +71,12 @@ export default function NotificationCenter() {
 
   const filteredNotifications = useMemo(() => {
     if (filter === 'unread') {
-      return notifications.filter((item) => !item.readAt);
+      const snapshotIds = new Set(openUnreadSnapshot);
+      return notifications.filter((item) => snapshotIds.has(item.id) || !item.readAt);
     }
 
     return notifications;
-  }, [filter, notifications]);
+  }, [filter, notifications, openUnreadSnapshot]);
 
   if (!centerOpen) {
     return null;
@@ -162,12 +171,16 @@ export default function NotificationCenter() {
                       key={notification.id}
                       notification={notification}
                       interactive
+                      showClose
                       onClick={async () => {
                         await markAsRead(notification.id);
                         if (notification.actionPath) {
                           closeCenter();
                           navigate(notification.actionPath);
                         }
+                      }}
+                      onClose={async () => {
+                        await deleteNotification(notification.id);
                       }}
                     />
                   ))

@@ -1665,6 +1665,9 @@ a {
 }
 
 .pf-notification-card__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
   width: 32px;
   height: 32px;
   border-radius: 12px;
@@ -1674,6 +1677,7 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .pf-notification-card--compact {
@@ -1874,6 +1878,23 @@ a {
   .pf-notification-center__tabs {
     top: 72px;
     padding-bottom: 2px;
+  }
+
+  .pf-notification-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    padding: 14px 14px 16px;
+  }
+
+  .pf-notification-card__content {
+    padding-right: 38px;
+  }
+
+  .pf-notification-card__close {
+    width: 36px;
+    height: 36px;
+    top: 12px;
+    right: 12px;
   }
 }
 

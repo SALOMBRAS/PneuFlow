@@ -63,7 +63,8 @@ export default function NotificationCard({
         <button
           type="button"
           className="pf-notification-card__close"
-          aria-label="Fechar notificacao"
+          aria-label="Excluir notificacao"
+          title="Excluir notificacao"
           onClick={(event) => {
             event.stopPropagation();
             onClose?.();
