@@ -98,6 +98,9 @@ export default function StoreSettings() {
   const [postalCodeLookup, setPostalCodeLookup] = useState({ loading: false, error: '' });
   const [lastLookupPostalCode, setLastLookupPostalCode] = useState('');
   const postalLookupTokenRef = useRef(0);
+  const addressAutosaveTimerRef = useRef(null);
+  const addressAutosaveBusyRef = useRef(false);
+  const addressAutosaveSnapshotRef = useRef('');
 
   useEffect(() => {
     if (store) {
@@ -120,8 +123,128 @@ export default function StoreSettings() {
       setScheduleDraft(normalizeBusinessHours(store.business_hours));
       setScheduleDirty(false);
       setLastLookupPostalCode(String(store.postal_code || '').replace(/\D/g, '').slice(0, 8));
+      addressAutosaveSnapshotRef.current = JSON.stringify({
+        postalCode: String(store.postal_code || '').replace(/\D/g, '').slice(0, 8),
+        address: store.endereco || '',
+        addressNumber: store.address_number || '',
+        addressComplement: store.address_complement || '',
+        neighborhood: store.neighborhood || '',
+        city: store.cidade || '',
+        state: store.estado || ''
+      });
     }
   }, [store]);
+
+  useEffect(() => {
+    if (!store?.id) return undefined;
+
+    const currentSnapshot = buildAddressSnapshot();
+    if (currentSnapshot === addressAutosaveSnapshotRef.current) {
+      return undefined;
+    }
+
+    window.clearTimeout(addressAutosaveTimerRef.current);
+    addressAutosaveTimerRef.current = window.setTimeout(() => {
+      persistAddressFields({ silent: true }).catch(() => {});
+    }, 900);
+
+    return () => window.clearTimeout(addressAutosaveTimerRef.current);
+  }, [store?.id, buildAddressSnapshot, persistAddressFields]);
+
+  const buildAddressSnapshot = useCallback(() => JSON.stringify({
+    postalCode: postalCode.replace(/\D/g, ''),
+    address: address.trim(),
+    addressNumber: addressNumber.trim(),
+    addressComplement: addressComplement.trim(),
+    neighborhood: neighborhood.trim(),
+    city: city.trim(),
+    state: state.trim().toUpperCase()
+  }), [postalCode, address, addressNumber, addressComplement, neighborhood, city, state]);
+
+  const persistAddressFields = useCallback(async ({ silent = false } = {}) => {
+    if (!store?.id || addressAutosaveBusyRef.current) return null;
+
+    addressAutosaveBusyRef.current = true;
+    const cleanPostalCode = postalCode.replace(/\D/g, '');
+
+    try {
+      const updated = await storageService.updateStore(store.id, {
+        name,
+        whatsapp: whatsapp.replace(/\D/g, '').startsWith('55') ? whatsapp.replace(/\D/g, '') : `55${whatsapp.replace(/\D/g, '')}`,
+        phone,
+        postalCode: cleanPostalCode,
+        address,
+        addressNumber,
+        addressComplement,
+        neighborhood,
+        city,
+        state,
+        logo,
+        banner: store.banner,
+        cover: store.foto_capa,
+        description,
+        seoTitle,
+        seoDescription,
+        tipo_vitrine: tipoVitrine,
+        business_hours: businessHours
+      });
+
+      if (updated) {
+        setPostalCode(formatPostalCode(updated.postal_code || cleanPostalCode));
+        setAddress(updated.endereco || address);
+        setAddressNumber(updated.address_number || addressNumber);
+        setAddressComplement(updated.address_complement || addressComplement);
+        setNeighborhood(updated.neighborhood || neighborhood);
+        setCity(updated.cidade || city);
+        setState(updated.estado || state);
+        await refreshStore();
+        addressAutosaveSnapshotRef.current = JSON.stringify({
+          postalCode: updated.postal_code || cleanPostalCode,
+          address: updated.endereco || address,
+          addressNumber: updated.address_number || addressNumber,
+          addressComplement: updated.address_complement || addressComplement,
+          neighborhood: updated.neighborhood || neighborhood,
+          city: updated.cidade || city,
+          state: updated.estado || state
+        });
+        if (!silent) {
+          setMessage('Endereço salvo automaticamente.');
+          setIsSuccess(true);
+          setTimeout(() => setMessage(''), 2200);
+        }
+      }
+
+      return updated;
+    } catch (error) {
+      console.error('Erro ao salvar endereço automaticamente:', error);
+      if (!silent) {
+        setMessage('Não foi possível salvar o endereço automaticamente.');
+        setIsSuccess(false);
+      }
+      return null;
+    } finally {
+      addressAutosaveBusyRef.current = false;
+    }
+  }, [
+    store?.id,
+    postalCode,
+    address,
+    addressNumber,
+    addressComplement,
+    neighborhood,
+    city,
+    state,
+    whatsapp,
+    phone,
+    name,
+    logo,
+    description,
+    seoTitle,
+    seoDescription,
+    tipoVitrine,
+    businessHours,
+    refreshStore
+  ]);
 
   const handleImageUpload = async (e, type) => {
     const file = e.target.files?.[0];
