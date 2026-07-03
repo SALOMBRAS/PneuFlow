@@ -856,8 +856,9 @@ export default function StoreSettings() {
           justify-content: space-between;
           align-items: center;
           gap: 16px;
+          flex-wrap: wrap;
           min-width: 0;
-          padding: 18px 20px;
+          padding: 16px 18px;
           border: 1px solid var(--border);
           border-radius: var(--radius-md);
           background: rgba(255,255,255,0.02);
@@ -879,6 +880,9 @@ export default function StoreSettings() {
         .store-hours-summary-action {
           white-space: nowrap;
           flex: 0 0 auto;
+          width: fit-content;
+          max-width: 100%;
+          padding-inline: 14px;
         }
 
         .store-hours-modal {
@@ -893,16 +897,16 @@ export default function StoreSettings() {
         }
 
         .store-hours-modal__dialog {
-          width: min(1080px, 100%);
-          max-height: min(90vh, 920px);
+          width: min(960px, 100%);
+          max-height: min(88vh, 860px);
           overflow: auto;
           border-radius: 24px;
           border: 1px solid var(--border);
           background: linear-gradient(180deg, rgba(17,24,39,0.98), rgba(10,14,23,0.98));
           box-shadow: 0 30px 80px rgba(0,0,0,0.5);
-          padding: 20px;
+          padding: 18px;
           display: grid;
-          gap: 16px;
+          gap: 14px;
         }
 
         .store-hours-modal__header {
@@ -973,6 +977,7 @@ export default function StoreSettings() {
           gap: 8px;
           flex-wrap: wrap;
           justify-content: flex-end;
+          max-width: 100%;
         }
 
         .store-hours-apply-weekdays {
@@ -1022,13 +1027,13 @@ export default function StoreSettings() {
 
         .store-hours-row {
           display: grid;
-          grid-template-columns: minmax(72px, 0.8fr) minmax(92px, 1fr) minmax(92px, 1fr) 24px minmax(92px, 1fr) 36px;
-          gap: 10px;
+          grid-template-columns: minmax(90px, 1.1fr) minmax(110px, 0.95fr) minmax(120px, 1fr) 24px minmax(120px, 1fr) 36px;
+          gap: 8px;
           align-items: center;
           min-width: 0;
-          padding: 8px 14px;
+          padding: 9px 14px;
           border-bottom: 1px solid rgba(255,255,255,0.06);
-          min-height: 56px;
+          min-height: 60px;
         }
 
         .store-hours-row:last-child {
@@ -1155,6 +1160,14 @@ export default function StoreSettings() {
         @media (max-width: 1024px) {
           .store-settings-seo-grid {
             grid-template-columns: 1fr !important;
+          }
+
+          .store-hours-modal__dialog {
+            width: min(920px, 100%);
+          }
+
+          .store-hours-row {
+            grid-template-columns: minmax(84px, 0.95fr) minmax(92px, 0.9fr) minmax(100px, 1fr) 24px minmax(100px, 1fr) 32px;
           }
         }
 
@@ -1325,6 +1338,27 @@ export default function StoreSettings() {
 
           .store-hours-row {
             grid-template-columns: 1fr;
+          }
+
+          .store-hours-summary-card {
+            gap: 12px;
+          }
+
+          .store-hours-summary-action {
+            width: 100%;
+          }
+
+          .store-hours-modal__dialog {
+            max-height: 92vh;
+            padding: 14px;
+          }
+
+          .store-hours-modal__header h3 {
+            font-size: 18px;
+          }
+
+          .store-hours-modal__header p {
+            font-size: 12px;
           }
 
           .store-hours-cell--status,
