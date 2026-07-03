@@ -245,6 +245,13 @@ export default function StoreSettings() {
       });
 
       if (updated) {
+        setPostalCode(formatPostalCode(updated.postal_code || postalCode));
+        setAddress(updated.endereco || address);
+        setAddressNumber(updated.address_number || addressNumber);
+        setAddressComplement(updated.address_complement || addressComplement);
+        setNeighborhood(updated.neighborhood || neighborhood);
+        setCity(updated.cidade || city);
+        setState(updated.estado || state);
         await refreshStore();
         setMessage('Configurações salvas com sucesso!');
         setIsSuccess(true);
@@ -714,18 +721,17 @@ export default function StoreSettings() {
                     placeholder="Ex.: Sala 02"
                   />
                 </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="store-neighborhood">Bairro</label>
-                <input
-                  id="store-neighborhood"
-                  type="text"
-                  className="form-input"
-                  value={neighborhood}
-                  onChange={(e) => setNeighborhood(e.target.value)}
-                  placeholder="Bairro"
-                />
+                <div className="form-group">
+                  <label className="form-label" htmlFor="store-neighborhood">Bairro</label>
+                  <input
+                    id="store-neighborhood"
+                    type="text"
+                    className="form-input"
+                    value={neighborhood}
+                    onChange={(e) => setNeighborhood(e.target.value)}
+                    placeholder="Bairro"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1056,8 +1062,8 @@ export default function StoreSettings() {
         .store-settings-address-grid__row {
           grid-area: row;
           display: grid;
-          grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr);
-          gap: 16px;
+          grid-template-columns: minmax(90px, 0.55fr) minmax(150px, 1fr) minmax(180px, 1.35fr);
+          gap: 12px;
           min-width: 0;
         }
 
