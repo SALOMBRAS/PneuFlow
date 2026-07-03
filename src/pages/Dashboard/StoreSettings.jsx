@@ -199,6 +199,30 @@ export default function StoreSettings() {
 
         acc[day.key] = { ...source, enabled: source.enabled };
         return acc;
+        }, { ...current })
+    );
+  };
+
+  const getFirstOpenDay = () => WEEK_DAYS.find((day) => businessHours[day.key]?.enabled && businessHours[day.key]?.open && businessHours[day.key]?.close);
+
+  const copyFirstOpenDayToOpenDays = () => {
+    const sourceDay = getFirstOpenDay();
+    if (!sourceDay) return;
+
+    const confirmCopy = window.confirm(`Copiar o horário de ${sourceDay.label} para os demais dias abertos?`);
+    if (!confirmCopy) return;
+
+    const source = businessHours[sourceDay.key];
+    setBusinessHours((current) =>
+      WEEK_DAYS.reduce((acc, day) => {
+        const currentDay = current[day.key] || {};
+        if (!currentDay.enabled) {
+          acc[day.key] = currentDay;
+          return acc;
+        }
+
+        acc[day.key] = { ...source, enabled: true };
+        return acc;
       }, { ...current })
     );
   };
@@ -431,81 +455,102 @@ export default function StoreSettings() {
               <div className="store-hours-panel">
                 <div className="store-hours-panel__toolbar">
                   <div>
-                    <strong>Planejamento semanal</strong>
-                    <p>Organize os dias em uma linha compacta e copie os horários quando precisar.</p>
+                    <strong>Ativar horários</strong>
+                    <p>Use os chips para abrir ou fechar cada dia sem perder os horários já cadastrados.</p>
                   </div>
-                  <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={applyMondayToWeekdays}>
-                    <CalendarDays size={14} />
-                    Aplicar segunda aos dias úteis
-                  </button>
+                  <div className="store-hours-panel__actions">
+                    <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={applyMondayToWeekdays}>
+                      <CalendarDays size={14} />
+                      Aplicar segunda aos dias úteis
+                    </button>
+                    <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={copyFirstOpenDayToOpenDays}>
+                      <Copy size={14} />
+                      Copiar horário para todos
+                    </button>
+                  </div>
                 </div>
 
-                <div className="store-hours-table" role="table" aria-label="Horários de funcionamento">
-                  <div className="store-hours-table__head" role="row">
-                    <span role="columnheader">Dia</span>
-                    <span role="columnheader">Status</span>
-                    <span role="columnheader">Abertura</span>
-                    <span role="columnheader">Fechamento</span>
-                    <span role="columnheader">Ação</span>
-                  </div>
+                <div className="store-hours-chips" aria-label="Dias da semana">
+                  {WEEK_DAYS.map((day) => {
+                    const current = businessHours[day.key] || {};
+                    return (
+                      <button
+                        key={day.key}
+                        type="button"
+                        className={`store-hours-chip ${current.enabled ? 'is-open' : 'is-closed'}`}
+                        onClick={() => updateDayHours(day.key, { enabled: !current.enabled })}
+                        aria-label={day.label}
+                        title={day.label}
+                      >
+                        {day.label.charAt(0)}
+                      </button>
+                    );
+                  })}
+                </div>
 
-                  <div className="store-hours-table__body">
-                    {WEEK_DAYS.map((day) => {
-                      const current = businessHours[day.key] || {};
-                      const dayLabel = day.label;
-
-                      return (
-                        <div key={day.key} className={`store-hours-row ${current.enabled ? '' : 'is-closed'}`} role="row">
-                          <div className="store-hours-cell store-hours-cell--day" role="cell">
-                            <strong>{dayLabel}</strong>
-                          </div>
-                          <div className="store-hours-cell" role="cell">
-                            <label className="store-hours-switch" title={current.enabled ? 'Fechar dia' : 'Abrir dia'}>
-                              <input
-                                type="checkbox"
-                                checked={Boolean(current.enabled)}
-                                onChange={(e) => updateDayHours(day.key, { enabled: e.target.checked })}
-                              />
-                              <span>
-                                <i aria-hidden="true" />
-                                {current.enabled ? 'Aberto' : 'Fechado'}
-                              </span>
-                            </label>
-                          </div>
-                          <div className="store-hours-cell" role="cell">
+                <div className="store-hours-list">
+                  {WEEK_DAYS.map((day) => {
+                    const current = businessHours[day.key] || {};
+                    const isOpen = Boolean(current.enabled);
+                    return (
+                      <div key={day.key} className={`store-hours-row ${isOpen ? '' : 'is-closed'}`}>
+                        <div className="store-hours-cell store-hours-cell--day">
+                          <strong>{day.label}</strong>
+                        </div>
+                        <div className="store-hours-cell store-hours-cell--status">
+                          <button
+                            type="button"
+                            className={`store-hours-switch ${isOpen ? 'is-open' : 'is-closed'}`}
+                            onClick={() => updateDayHours(day.key, { enabled: !isOpen })}
+                            aria-label={`${isOpen ? 'Fechar' : 'Abrir'} ${day.label}`}
+                          >
+                            <span className="store-hours-switch__track" aria-hidden="true">
+                              <span className="store-hours-switch__thumb" />
+                            </span>
+                            <span className="store-hours-switch__label">{isOpen ? 'Aberto' : 'Fechado'}</span>
+                          </button>
+                        </div>
+                        <div className="store-hours-cell store-hours-cell--open">
+                          {isOpen ? (
                             <input
                               type="time"
                               className="form-input store-hours-time-input"
                               value={current.open || ''}
-                              disabled={!current.enabled}
                               onChange={(e) => updateDayHours(day.key, { open: e.target.value })}
                             />
-                          </div>
-                          <div className="store-hours-cell" role="cell">
+                          ) : (
+                            <span className="store-hours-closed-text">Fechado</span>
+                          )}
+                        </div>
+                        <div className="store-hours-cell store-hours-cell--separator">até</div>
+                        <div className="store-hours-cell store-hours-cell--close">
+                          {isOpen ? (
                             <input
                               type="time"
                               className="form-input store-hours-time-input"
                               value={current.close || ''}
-                              disabled={!current.enabled}
                               onChange={(e) => updateDayHours(day.key, { close: e.target.value })}
                             />
-                          </div>
-                          <div className="store-hours-cell store-hours-cell--action" role="cell">
+                          ) : (
+                            <span className="store-hours-closed-text">Fechado</span>
+                          )}
+                        </div>
+                        <div className="store-hours-cell store-hours-cell--action">
+                          {isOpen ? (
                             <button
                               type="button"
                               className="store-hours-icon-btn"
                               onClick={() => copyWeekdayHours(day.key)}
-                              disabled={!current.enabled}
-                              title={`Copiar horários de ${dayLabel} para os outros dias úteis`}
-                              aria-label={`Copiar horários de ${dayLabel}`}
+                              title="Copiar este horário para os dias abertos"
+                              aria-label={`Copiar horário de ${day.label}`}
                             >
                               <Copy size={14} />
                             </button>
-                          </div>
+                          ) : null}
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -662,7 +707,7 @@ export default function StoreSettings() {
 
         .store-hours-panel {
           display: grid;
-          gap: 14px;
+          gap: 12px;
           min-width: 0;
         }
 
@@ -688,6 +733,13 @@ export default function StoreSettings() {
           font-size: 12px;
         }
 
+        .store-hours-panel__actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+
         .store-hours-apply-weekdays {
           min-height: 36px;
           padding: 6px 10px !important;
@@ -695,7 +747,35 @@ export default function StoreSettings() {
           white-space: nowrap;
         }
 
-        .store-hours-table {
+        .store-hours-chips {
+          display: grid;
+          grid-template-columns: repeat(7, minmax(0, 1fr));
+          gap: 8px;
+          min-width: 0;
+        }
+
+        .store-hours-chip {
+          min-width: 0;
+          min-height: 34px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: rgba(255,255,255,0.03);
+          color: var(--text-secondary);
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .store-hours-chip.is-open {
+          background: rgba(245, 158, 11, 0.18);
+          color: #111827;
+          border-color: rgba(245, 158, 11, 0.38);
+        }
+
+        .store-hours-chip.is-closed {
+          background: rgba(255,255,255,0.04);
+        }
+
+        .store-hours-list {
           display: grid;
           gap: 0;
           min-width: 0;
@@ -705,29 +785,18 @@ export default function StoreSettings() {
           background: rgba(255,255,255,0.02);
         }
 
-        .store-hours-table__head,
         .store-hours-row {
           display: grid;
-          grid-template-columns: 140px 130px 1fr 1fr 48px;
-          gap: 12px;
+          grid-template-columns: minmax(72px, 0.8fr) minmax(92px, 1fr) minmax(92px, 1fr) 24px minmax(92px, 1fr) 36px;
+          gap: 10px;
           align-items: center;
           min-width: 0;
         }
 
-        .store-hours-table__head {
-          padding: 12px 16px;
-          background: rgba(255,255,255,0.03);
-          color: var(--text-muted);
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          border-bottom: 1px solid var(--border);
-        }
-
         .store-hours-row {
-          padding: 10px 16px;
+          padding: 8px 14px;
           border-bottom: 1px solid rgba(255,255,255,0.06);
-          min-height: 68px;
+          min-height: 56px;
         }
 
         .store-hours-row:last-child {
@@ -746,6 +815,16 @@ export default function StoreSettings() {
           display: block;
           font-size: 14px;
           line-height: 1.1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .store-hours-cell--separator {
+          color: var(--text-muted);
+          text-align: center;
+          font-size: 12px;
+          white-space: nowrap;
         }
 
         .store-hours-switch {
@@ -756,15 +835,12 @@ export default function StoreSettings() {
           min-width: 0;
           cursor: pointer;
           user-select: none;
+          border: 0;
+          background: transparent;
+          padding: 0;
         }
 
-        .store-hours-switch input {
-          position: absolute;
-          opacity: 0;
-          pointer-events: none;
-        }
-
-        .store-hours-switch span {
+        .store-hours-switch__label {
           display: inline-flex;
           align-items: center;
           gap: 8px;
@@ -773,7 +849,7 @@ export default function StoreSettings() {
           white-space: nowrap;
         }
 
-        .store-hours-switch i {
+        .store-hours-switch__track {
           position: relative;
           width: 38px;
           height: 22px;
@@ -784,7 +860,7 @@ export default function StoreSettings() {
           transition: background 160ms ease, border-color 160ms ease;
         }
 
-        .store-hours-switch i::after {
+        .store-hours-switch__track::after {
           content: '';
           position: absolute;
           top: 2px;
@@ -796,19 +872,25 @@ export default function StoreSettings() {
           transition: transform 160ms ease, background 160ms ease;
         }
 
-        .store-hours-switch input:checked + span i {
+        .store-hours-switch.is-open .store-hours-switch__track {
           background: rgba(245, 158, 11, 0.18);
           border-color: rgba(245, 158, 11, 0.32);
         }
 
-        .store-hours-switch input:checked + span i::after {
+        .store-hours-switch.is-open .store-hours-switch__track::after {
           transform: translateX(16px);
           background: var(--primary);
+        }
+
+        .store-hours-switch.is-closed {
+          opacity: 0.82;
         }
 
         .store-hours-time-input {
           min-height: 40px;
           height: 40px;
+          width: 100%;
+          min-width: 0;
         }
 
         .store-hours-time-input:disabled {
@@ -897,32 +979,44 @@ export default function StoreSettings() {
             align-items: stretch;
           }
 
-          .store-hours-panel__toolbar {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .store-hours-table__head {
-            display: none;
-          }
-
           .store-hours-row {
             grid-template-columns: 1fr 1fr;
-            gap: 10px 12px;
+            gap: 8px 10px;
             min-height: 0;
-            padding: 12px 14px;
+            padding: 10px 12px;
           }
 
           .store-hours-cell--day {
             grid-column: 1 / -1;
           }
 
+          .store-hours-cell--status {
+            justify-self: start;
+          }
+
           .store-hours-cell--action {
             justify-self: end;
           }
 
-          .store-hours-switch span {
-            white-space: normal;
+          .store-hours-cell--separator {
+            display: none;
+          }
+
+          .store-hours-list {
+            border-radius: 14px;
+          }
+
+          .store-hours-panel__toolbar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .store-hours-panel__actions {
+            justify-content: stretch;
+          }
+
+          .store-hours-panel__actions .btn {
+            flex: 1 1 160px;
           }
 
           .store-settings-upload-actions .btn {
@@ -962,6 +1056,26 @@ export default function StoreSettings() {
           .store-settings-upload-preview img {
             width: 100%;
             height: auto;
+          }
+
+          .store-hours-chips {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+          }
+
+          .store-hours-row {
+            grid-template-columns: 1fr;
+          }
+
+          .store-hours-cell--status,
+          .store-hours-cell--open,
+          .store-hours-cell--close,
+          .store-hours-cell--action {
+            grid-column: 1 / -1;
+          }
+
+          .store-hours-cell--status,
+          .store-hours-cell--action {
+            justify-self: start;
           }
         }
       `}</style>
