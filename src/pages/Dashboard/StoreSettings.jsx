@@ -181,7 +181,6 @@ export default function StoreSettings() {
         setNeighborhood(updated.neighborhood || neighborhood);
         setCity(updated.cidade || city);
         setState(updated.estado || state);
-        await refreshStore();
         addressAutosaveSnapshotRef.current = JSON.stringify({
           postalCode: updated.postal_code || cleanPostalCode,
           address: updated.endereco || address,
@@ -227,7 +226,6 @@ export default function StoreSettings() {
     seoDescription,
     tipoVitrine,
     businessHours,
-    refreshStore
   ]);
 
   useEffect(() => {
