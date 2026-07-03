@@ -461,7 +461,7 @@ export default function StoreHome() {
   const primaryColor = '#f59e0b';
   const secondaryColor = '#121214';
   const status = getStoreStatus(store);
-  const businessHourLabel = formatBusinessHourLabel(store?.business_hours, store?.hours || 'Atendimento comercial');
+  const businessHourLabel = formatBusinessHourLabel(store?.business_hours, 'Atendimento comercial');
   const locationText = [store?.endereco, store?.cidade, store?.estado].filter(Boolean).join(', ') || 'Endereco nao informado';
   const primarySoft = hexToRgba(primaryColor, 0.12);
   const primaryMedium = hexToRgba(primaryColor, 0.22);

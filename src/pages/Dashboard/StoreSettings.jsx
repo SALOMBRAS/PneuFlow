@@ -144,8 +144,7 @@ export default function StoreSettings() {
         seoTitle,
         seoDescription,
         tipo_vitrine: tipoVitrine,
-        business_hours: businessHours,
-        hours: store.hours || null
+        business_hours: businessHours
       });
 
       if (updated) {

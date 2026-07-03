@@ -42,7 +42,7 @@ export default function VehicleSearchBox({
   const heroPrice = formatBRLCurrency(heroTire?.preco || 0);
   const inStock = getAvailableOfferCount(heroTire) > 0;
   const heroContactDisabled = !commercialContactEnabled || (Boolean(heroTire) && !inStock);
-  const hoursLabel = formatBusinessHourLabel(store.business_hours, store.hours || 'Atendimento comercial');
+  const hoursLabel = formatBusinessHourLabel(store.business_hours, 'Atendimento comercial');
 
   return (
     <section className="store-hero">

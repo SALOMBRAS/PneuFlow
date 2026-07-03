@@ -11,7 +11,7 @@ export default function PublicStoreHeader({
   commercialContactEnabled = true,
 }) {
   const statusClass = statusTone === 'success' ? 'status-pill--success' : 'status-pill--muted';
-  const hoursLabel = formatBusinessHourLabel(store.business_hours, store.hours || 'Atendimento comercial');
+  const hoursLabel = formatBusinessHourLabel(store.business_hours, 'Atendimento comercial');
 
   return (
     <header className="public-store-header">
