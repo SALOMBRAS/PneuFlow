@@ -369,8 +369,8 @@ export default function StoreSettings() {
       )}
 
       <form onSubmit={handleSave} className="store-settings-form" style={{ textAlign: 'left', maxWidth: '1000px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-        <div className="store-settings-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px' }}>
-          <div className="card store-settings-card" style={{ padding: '24px', minWidth: 0 }}>
+        <div className="store-settings-grid">
+          <div className="card store-settings-card store-settings-card--details" style={{ padding: '24px', minWidth: 0 }}>
             <h3 className="store-settings-section-title" style={{ fontSize: '18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
               <MapPin size={20} style={{ color: 'var(--primary)' }} /> Informações da Loja
             </h3>
@@ -451,111 +451,6 @@ export default function StoreSettings() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Horários de funcionamento</label>
-              <div className="store-hours-panel">
-                <div className="store-hours-panel__toolbar">
-                  <div>
-                    <strong>Ativar horários</strong>
-                    <p>Use os chips para abrir ou fechar cada dia sem perder os horários já cadastrados.</p>
-                  </div>
-                  <div className="store-hours-panel__actions">
-                    <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={applyMondayToWeekdays}>
-                      <CalendarDays size={14} />
-                      Aplicar segunda aos dias úteis
-                    </button>
-                    <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={copyFirstOpenDayToOpenDays}>
-                      <Copy size={14} />
-                      Copiar horário para todos
-                    </button>
-                  </div>
-                </div>
-
-                <div className="store-hours-chips" aria-label="Dias da semana">
-                  {WEEK_DAYS.map((day) => {
-                    const current = businessHours[day.key] || {};
-                    return (
-                      <button
-                        key={day.key}
-                        type="button"
-                        className={`store-hours-chip ${current.enabled ? 'is-open' : 'is-closed'}`}
-                        onClick={() => updateDayHours(day.key, { enabled: !current.enabled })}
-                        aria-label={day.label}
-                        title={day.label}
-                      >
-                        {day.label.charAt(0)}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="store-hours-list">
-                  {WEEK_DAYS.map((day) => {
-                    const current = businessHours[day.key] || {};
-                    const isOpen = Boolean(current.enabled);
-                    return (
-                      <div key={day.key} className={`store-hours-row ${isOpen ? '' : 'is-closed'}`}>
-                        <div className="store-hours-cell store-hours-cell--day">
-                          <strong>{day.label}</strong>
-                        </div>
-                        <div className="store-hours-cell store-hours-cell--status">
-                          <button
-                            type="button"
-                            className={`store-hours-switch ${isOpen ? 'is-open' : 'is-closed'}`}
-                            onClick={() => updateDayHours(day.key, { enabled: !isOpen })}
-                            aria-label={`${isOpen ? 'Fechar' : 'Abrir'} ${day.label}`}
-                          >
-                            <span className="store-hours-switch__track" aria-hidden="true">
-                              <span className="store-hours-switch__thumb" />
-                            </span>
-                            <span className="store-hours-switch__label">{isOpen ? 'Aberto' : 'Fechado'}</span>
-                          </button>
-                        </div>
-                        <div className="store-hours-cell store-hours-cell--open">
-                          {isOpen ? (
-                            <input
-                              type="time"
-                              className="form-input store-hours-time-input"
-                              value={current.open || ''}
-                              onChange={(e) => updateDayHours(day.key, { open: e.target.value })}
-                            />
-                          ) : (
-                            <span className="store-hours-closed-text">Fechado</span>
-                          )}
-                        </div>
-                        <div className="store-hours-cell store-hours-cell--separator">até</div>
-                        <div className="store-hours-cell store-hours-cell--close">
-                          {isOpen ? (
-                            <input
-                              type="time"
-                              className="form-input store-hours-time-input"
-                              value={current.close || ''}
-                              onChange={(e) => updateDayHours(day.key, { close: e.target.value })}
-                            />
-                          ) : (
-                            <span className="store-hours-closed-text">Fechado</span>
-                          )}
-                        </div>
-                        <div className="store-hours-cell store-hours-cell--action">
-                          {isOpen ? (
-                            <button
-                              type="button"
-                              className="store-hours-icon-btn"
-                              onClick={() => copyWeekdayHours(day.key)}
-                              title="Copiar este horário para os dias abertos"
-                              aria-label={`Copiar horário de ${day.label}`}
-                            >
-                              <Copy size={14} />
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="form-group">
               <label className="form-label">Minha loja vende pneus para:</label>
               <select
                 className="form-input"
@@ -569,7 +464,7 @@ export default function StoreSettings() {
             </div>
           </div>
 
-          <div className="card store-settings-card" style={{ padding: '24px', minWidth: 0 }}>
+          <div className="card store-settings-card store-settings-card--identity" style={{ padding: '24px', minWidth: 0 }}>
             <h3 className="store-settings-section-title" style={{ fontSize: '18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
               <Palette size={20} style={{ color: 'var(--primary)' }} /> Identidade da Loja
             </h3>
@@ -593,6 +488,114 @@ export default function StoreSettings() {
                 placeholder="Fale brevemente sobre sua loja..."
                 style={{ resize: 'vertical' }}
               />
+            </div>
+          </div>
+
+          <div className="card store-settings-card store-settings-card--hours" style={{ padding: '24px', minWidth: 0 }}>
+            <h3 className="store-settings-section-title" style={{ fontSize: '18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+              <Clock3 size={20} style={{ color: 'var(--primary)' }} /> Horários de funcionamento
+            </h3>
+
+            <div className="store-hours-panel">
+              <div className="store-hours-panel__toolbar">
+                <div>
+                  <strong>Ativar horários</strong>
+                  <p>Use os chips para abrir ou fechar cada dia sem perder os horários já cadastrados.</p>
+                </div>
+                <div className="store-hours-panel__actions">
+                  <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={applyMondayToWeekdays}>
+                    <CalendarDays size={14} />
+                    Aplicar segunda aos dias úteis
+                  </button>
+                  <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={copyFirstOpenDayToOpenDays}>
+                    <Copy size={14} />
+                    Copiar horário para todos
+                  </button>
+                </div>
+              </div>
+
+              <div className="store-hours-chips" aria-label="Dias da semana">
+                {WEEK_DAYS.map((day) => {
+                  const current = businessHours[day.key] || {};
+                  return (
+                    <button
+                      key={day.key}
+                      type="button"
+                      className={`store-hours-chip ${current.enabled ? 'is-open' : 'is-closed'}`}
+                      onClick={() => updateDayHours(day.key, { enabled: !current.enabled })}
+                      aria-label={day.label}
+                      title={day.label}
+                    >
+                      {day.label.charAt(0)}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="store-hours-list">
+                {WEEK_DAYS.map((day) => {
+                  const current = businessHours[day.key] || {};
+                  const isOpen = Boolean(current.enabled);
+                  return (
+                    <div key={day.key} className={`store-hours-row ${isOpen ? '' : 'is-closed'}`}>
+                      <div className="store-hours-cell store-hours-cell--day">
+                        <strong>{day.label}</strong>
+                      </div>
+                      <div className="store-hours-cell store-hours-cell--status">
+                        <button
+                          type="button"
+                          className={`store-hours-switch ${isOpen ? 'is-open' : 'is-closed'}`}
+                          onClick={() => updateDayHours(day.key, { enabled: !isOpen })}
+                          aria-label={`${isOpen ? 'Fechar' : 'Abrir'} ${day.label}`}
+                        >
+                          <span className="store-hours-switch__track" aria-hidden="true">
+                            <span className="store-hours-switch__thumb" />
+                          </span>
+                          <span className="store-hours-switch__label">{isOpen ? 'Aberto' : 'Fechado'}</span>
+                        </button>
+                      </div>
+                      <div className="store-hours-cell store-hours-cell--open">
+                        {isOpen ? (
+                          <input
+                            type="time"
+                            className="form-input store-hours-time-input"
+                            value={current.open || ''}
+                            onChange={(e) => updateDayHours(day.key, { open: e.target.value })}
+                          />
+                        ) : (
+                          <span className="store-hours-closed-text">Fechado</span>
+                        )}
+                      </div>
+                      <div className="store-hours-cell store-hours-cell--separator">até</div>
+                      <div className="store-hours-cell store-hours-cell--close">
+                        {isOpen ? (
+                          <input
+                            type="time"
+                            className="form-input store-hours-time-input"
+                            value={current.close || ''}
+                            onChange={(e) => updateDayHours(day.key, { close: e.target.value })}
+                          />
+                        ) : (
+                          <span className="store-hours-closed-text">Fechado</span>
+                        )}
+                      </div>
+                      <div className="store-hours-cell store-hours-cell--action">
+                        {isOpen ? (
+                          <button
+                            type="button"
+                            className="store-hours-icon-btn"
+                            onClick={() => copyWeekdayHours(day.key)}
+                            title="Copiar este horário para os dias abertos"
+                            aria-label={`Copiar horário de ${day.label}`}
+                          >
+                            <Copy size={14} />
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -686,6 +689,52 @@ export default function StoreSettings() {
         .store-settings-page .form-group,
         .store-settings-page .store-settings-upload-panel {
           min-width: 0;
+        }
+
+        .store-settings-grid {
+          display: grid;
+          gap: 24px;
+          align-items: stretch;
+        }
+
+        .store-settings-card--details {
+          grid-area: details;
+        }
+
+        .store-settings-card--identity {
+          grid-area: identity;
+        }
+
+        .store-settings-card--hours {
+          grid-area: hours;
+        }
+
+        @media (min-width: 1200px) {
+          .store-settings-grid {
+            grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+            grid-template-areas:
+              'details identity'
+              'details hours';
+          }
+        }
+
+        @media (min-width: 768px) and (max-width: 1199px) {
+          .store-settings-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+              'details details'
+              'identity hours';
+          }
+        }
+
+        @media (max-width: 767px) {
+          .store-settings-grid {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+              'details'
+              'identity'
+              'hours';
+          }
         }
 
         .store-settings-upload-panel {
@@ -791,9 +840,6 @@ export default function StoreSettings() {
           gap: 10px;
           align-items: center;
           min-width: 0;
-        }
-
-        .store-hours-row {
           padding: 8px 14px;
           border-bottom: 1px solid rgba(255,255,255,0.06);
           min-height: 56px;
@@ -921,7 +967,6 @@ export default function StoreSettings() {
         }
 
         @media (max-width: 1024px) {
-          .store-settings-grid,
           .store-settings-seo-grid {
             grid-template-columns: 1fr !important;
           }
@@ -1076,6 +1121,14 @@ export default function StoreSettings() {
           .store-hours-cell--status,
           .store-hours-cell--action {
             justify-self: start;
+          }
+
+          .store-settings-grid {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+              'details'
+              'identity'
+              'hours';
           }
         }
       `}</style>
