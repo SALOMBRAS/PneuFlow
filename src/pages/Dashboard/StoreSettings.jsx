@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
-import { Save, Check, ExternalLink, Zap, MapPin, Palette, Upload, Loader2, Image as ImageIcon, Copy, Clock3, CalendarDays } from 'lucide-react';
+import { Save, Check, ExternalLink, Zap, MapPin, Palette, Upload, Loader2, Image as ImageIcon, Copy, Clock3, CalendarDays, CarFront, Bike } from 'lucide-react';
 
 const WEEK_DAYS = [
   { key: 'monday', label: 'Segunda' },
@@ -20,6 +20,34 @@ const createDefaultBusinessHours = () =>
     if (day.key === 'sunday') acc[day.key] = { enabled: false, open: '08:00', close: '18:00' };
     return acc;
   }, {});
+
+const AllVehiclesIcon = () => (
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} aria-hidden="true">
+    <CarFront size={18} />
+    <Bike size={18} />
+  </span>
+);
+
+const VEHICLE_TYPE_OPTIONS = [
+  {
+    value: 'ambos',
+    label: 'Todos',
+    description: 'Carros e motos',
+    Icon: AllVehiclesIcon
+  },
+  {
+    value: 'carro',
+    label: 'Carros',
+    description: 'Somente carros',
+    Icon: CarFront
+  },
+  {
+    value: 'moto',
+    label: 'Motos',
+    description: 'Somente motos',
+    Icon: Bike
+  }
+];
 
 const normalizeBusinessHours = (value) => {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -601,15 +629,42 @@ export default function StoreSettings() {
 
             <div className="form-group">
               <label className="form-label">Minha loja vende pneus para:</label>
-              <select
-                className="form-input"
-                value={tipoVitrine}
-                onChange={(e) => setTipoVitrine(e.target.value)}
-              >
-                <option value="carro">Apenas Carros</option>
-                <option value="moto">Apenas Motos</option>
-                <option value="ambos">Carros e Motos</option>
-              </select>
+              <p className="form-helper store-settings-vehicle-helper">Escolha quais veículos serão exibidos na sua vitrine.</p>
+              <div className="store-settings-vehicle-select">
+                <select
+                  className="form-input store-settings-vehicle-select__native"
+                  value={tipoVitrine}
+                  onChange={(e) => setTipoVitrine(e.target.value)}
+                >
+                  <option value="ambos">Todos</option>
+                  <option value="carro">Carros</option>
+                  <option value="moto">Motos</option>
+                </select>
+
+                <div className="store-settings-vehicle-cards" role="radiogroup" aria-label="Minha loja vende pneus para">
+                  {VEHICLE_TYPE_OPTIONS.map(({ value, label, description, Icon }) => {
+                    const selected = tipoVitrine === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        className={`store-settings-vehicle-card ${selected ? 'is-selected' : ''}`}
+                        onClick={() => setTipoVitrine(value)}
+                      >
+                        <span className="store-settings-vehicle-card__icon" aria-hidden="true">
+                          <Icon size={28} />
+                        </span>
+                        <span className="store-settings-vehicle-card__content">
+                          <strong>{label}</strong>
+                          <span>{description}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -843,6 +898,87 @@ export default function StoreSettings() {
 
         .store-settings-upload-actions {
           flex-wrap: wrap;
+        }
+
+        .store-settings-vehicle-helper {
+          margin: 6px 0 12px;
+          color: var(--text-muted);
+          font-size: 12px;
+        }
+
+        .store-settings-vehicle-select {
+          display: grid;
+          gap: 12px;
+          min-width: 0;
+        }
+
+        .store-settings-vehicle-cards {
+          display: none;
+          gap: 12px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .store-settings-vehicle-card {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          min-height: 108px;
+          padding: 16px;
+          border-radius: 20px;
+          border: 1px solid var(--border);
+          background: rgba(255,255,255,0.03);
+          color: var(--text-secondary);
+          text-align: left;
+          cursor: pointer;
+          transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+        }
+
+        .store-settings-vehicle-card:hover {
+          transform: translateY(-1px);
+          border-color: rgba(245, 158, 11, 0.24);
+        }
+
+        .store-settings-vehicle-card.is-selected {
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.94), rgba(251, 146, 60, 0.92));
+          color: #111827;
+          border-color: rgba(245, 158, 11, 0.72);
+          box-shadow: 0 12px 28px rgba(245, 158, 11, 0.15);
+        }
+
+        .store-settings-vehicle-card__icon {
+          display: grid;
+          place-items: center;
+          width: 52px;
+          height: 52px;
+          border-radius: 16px;
+          background: rgba(255,255,255,0.08);
+          flex: 0 0 auto;
+        }
+
+        .store-settings-vehicle-card.is-selected .store-settings-vehicle-card__icon {
+          background: rgba(17,24,39,0.12);
+        }
+
+        .store-settings-vehicle-card__content {
+          display: grid;
+          gap: 4px;
+          min-width: 0;
+        }
+
+        .store-settings-vehicle-card__content strong {
+          font-size: 15px;
+          line-height: 1.1;
+        }
+
+        .store-settings-vehicle-card__content span {
+          font-size: 12px;
+          line-height: 1.35;
+          color: inherit;
+          opacity: 0.82;
+        }
+
+        .store-settings-vehicle-select__native {
+          display: block;
         }
 
         .store-hours-panel {
@@ -1171,6 +1307,16 @@ export default function StoreSettings() {
           }
         }
 
+        @media (min-width: 1200px) {
+          .store-settings-vehicle-select__native {
+            display: none;
+          }
+
+          .store-settings-vehicle-cards {
+            display: grid;
+          }
+        }
+
         @media (max-width: 768px) {
           .store-settings-title-row {
             flex-direction: column;
@@ -1270,6 +1416,10 @@ export default function StoreSettings() {
 
           .store-settings-upload-actions span {
             text-align: center;
+          }
+
+          .store-settings-vehicle-helper {
+            margin-bottom: 8px;
           }
 
           .store-settings-footer {
