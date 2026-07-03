@@ -1432,53 +1432,53 @@ export default function Leads() {
 
           .leads-table th,
           .leads-table td {
-            padding-left: 16px !important;
-            padding-right: 16px !important;
+            padding-left: 14px !important;
+            padding-right: 14px !important;
           }
 
           .leads-table th:first-child,
           .leads-table td:first-child {
-            padding-left: 18px !important;
+            padding-left: 16px !important;
           }
 
           .leads-table th:last-child,
           .leads-table td:last-child {
-            padding-right: 18px !important;
+            padding-right: 16px !important;
           }
 
           .leads-table th:nth-child(1),
           .leads-table td:nth-child(1) {
-            width: 14%;
+            width: 12%;
           }
 
           .leads-table th:nth-child(2),
           .leads-table td:nth-child(2) {
-            width: 15%;
+            width: 13%;
           }
 
           .leads-table th:nth-child(3),
           .leads-table td:nth-child(3) {
-            width: 17%;
+            width: 15%;
           }
 
           .leads-table th:nth-child(4),
           .leads-table td:nth-child(4) {
-            width: 30%;
+            width: 33%;
           }
 
           .leads-table th:nth-child(5),
           .leads-table td:nth-child(5) {
-            width: 9%;
+            width: 8%;
           }
 
           .leads-table th:nth-child(6),
           .leads-table td:nth-child(6) {
-            width: 10%;
+            width: 11%;
           }
 
           .leads-table th:nth-child(7),
           .leads-table td:nth-child(7) {
-            width: 5%;
+            width: 8%;
           }
 
           .lead-status-cell {
@@ -1486,7 +1486,7 @@ export default function Leads() {
           }
 
           .lead-status-control {
-            grid-template-columns: minmax(110px, 0.9fr) minmax(132px, 1.1fr);
+            grid-template-columns: minmax(100px, 0.82fr) minmax(120px, 1.18fr);
           }
 
           .lead-status-pill {
@@ -1496,7 +1496,7 @@ export default function Leads() {
           }
 
           .lead-sale-quantity-field {
-            grid-template-columns: 32px minmax(64px, 84px) 32px;
+            grid-template-columns: 30px minmax(60px, 76px) 30px;
           }
 
           .lead-sale-quantity-summary {
@@ -1514,6 +1514,27 @@ export default function Leads() {
 
           .leads-table td:nth-child(7) > div {
             justify-content: center;
+          }
+
+          .leads-table th:nth-child(7) {
+            text-align: center;
+          }
+
+          .leads-table td:nth-child(7) .btn {
+            width: 42px;
+            min-width: 42px;
+            height: 42px;
+            min-height: 42px;
+            padding: 0;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+          }
+
+          .leads-table td:nth-child(7) .btn svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
           }
         }
 
