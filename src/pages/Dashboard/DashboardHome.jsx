@@ -776,9 +776,10 @@ export default function DashboardHome() {
 
   return (
     <div className="animate-fade">
-      {/* Welcome Header */}
-      <div className="flex-between" style={{ marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
+      <div className="dashboard-home-header-shell">
+        {/* Welcome Header */}
+        <div className="dashboard-home-header-inner">
+          <div className="dashboard-home-header-left">
           <h1 style={{ fontSize: '32px', margin: 0, textAlign: 'left' }}>Olá, {user?.user_metadata?.full_name?.split(' ')[0] || 'Usuário'}!</h1>
           <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -885,92 +886,93 @@ export default function DashboardHome() {
           </div>
         </div>
         
-        {/* Public Store Link Card */}
-        <div className="dashboard-store-link-card">
-          <div className="dashboard-store-link-content">
-            <span className="dashboard-store-link-label">Link da loja</span>
-            {editingSlug ? (
-              <div className="dashboard-store-link-editor">
-                <span className="dashboard-store-link-prefix">/store/</span>
-                <input
-                  type="text"
-                  className="form-input dashboard-store-link-input"
-                  value={tempSlug}
-                  onChange={(e) => setTempSlug(normalizeSlugPreview(e.target.value))}
-                  placeholder="minha-loja"
-                  aria-label="Editar link da loja"
-                  autoFocus
-                />
-              </div>
-            ) : (
-              <code className="dashboard-store-link-code">{store.slug}</code>
-            )}
-            {slugMessage && (
-              <small className={`dashboard-store-link-message ${slugMessageType === 'error' ? 'is-error' : 'is-success'}`}>
-                {slugMessage}
-              </small>
-            )}
-          </div>
+        <div className="dashboard-home-header-center">
+          <div className="dashboard-store-link-card">
+            <div className="dashboard-store-link-content">
+              <span className="dashboard-store-link-label">Link da loja</span>
+              {editingSlug ? (
+                <div className="dashboard-store-link-editor">
+                  <span className="dashboard-store-link-prefix">/store/</span>
+                  <input
+                    type="text"
+                    className="form-input dashboard-store-link-input"
+                    value={tempSlug}
+                    onChange={(e) => setTempSlug(normalizeSlugPreview(e.target.value))}
+                    placeholder="minha-loja"
+                    aria-label="Editar link da loja"
+                    autoFocus
+                  />
+                </div>
+              ) : (
+                <code className="dashboard-store-link-code">{store.slug}</code>
+              )}
+              {slugMessage && (
+                <small className={`dashboard-store-link-message ${slugMessageType === 'error' ? 'is-error' : 'is-success'}`}>
+                  {slugMessage}
+                </small>
+              )}
+            </div>
 
-          <div className="dashboard-store-link-actions">
-            {editingSlug ? (
-              <>
-                <button
-                  type="button"
-                  onClick={handleSaveSlug}
-                  className="btn btn-primary dashboard-store-link-action"
-                  disabled={savingSlug}
-                >
-                  {savingSlug ? <Clock size={14} /> : <Check size={14} />}
-                  {savingSlug ? 'Salvando' : 'Salvar'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelSlugEdit}
-                  className="btn btn-secondary dashboard-store-link-action"
-                  disabled={savingSlug}
-                  aria-label="Cancelar edicao do link da loja"
-                >
-                  <X size={14} />
-                  Cancelar
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="btn btn-secondary dashboard-store-link-action"
-                >
-                  {copied ? <Check size={14} style={{ color: 'var(--success)' }} /> : <Copy size={14} />}
-                  {copied ? 'Copiado!' : 'Copiar'}
-                </button>
-                {!isSeller && (
+            <div className="dashboard-store-link-actions">
+              {editingSlug ? (
+                <>
                   <button
                     type="button"
-                    onClick={handleStartSlugEdit}
-                    className="btn btn-outline dashboard-store-link-action"
+                    onClick={handleSaveSlug}
+                    className="btn btn-primary dashboard-store-link-action"
+                    disabled={savingSlug}
                   >
-                    <Edit3 size={14} />
-                    Editar
+                    {savingSlug ? <Clock size={14} /> : <Check size={14} />}
+                    {savingSlug ? 'Salvando' : 'Salvar'}
                   </button>
-                )}
-              </>
-            )}
+                  <button
+                    type="button"
+                    onClick={handleCancelSlugEdit}
+                    className="btn btn-secondary dashboard-store-link-action"
+                    disabled={savingSlug}
+                    aria-label="Cancelar edicao do link da loja"
+                  >
+                    <X size={14} />
+                    Cancelar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="btn btn-secondary dashboard-store-link-action"
+                  >
+                    {copied ? <Check size={14} style={{ color: 'var(--success)' }} /> : <Copy size={14} />}
+                    {copied ? 'Copiado!' : 'Copiar'}
+                  </button>
+                  {!isSeller && (
+                    <button
+                      type="button"
+                      onClick={handleStartSlugEdit}
+                      className="btn btn-outline dashboard-store-link-action"
+                    >
+                      <Edit3 size={14} />
+                      Editar
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
-        </div>
 
-        {!isSeller && (
-          <button
-            type="button"
-            onClick={handleOpenReportModal}
-            className="btn btn-primary"
-            style={{ minHeight: '44px', gap: '8px' }}
-          >
-            <FileText size={16} />
-            Gerar relatorio
-          </button>
-        )}
+          {!isSeller && (
+            <button
+              type="button"
+              onClick={handleOpenReportModal}
+              className="btn btn-primary dashboard-report-action"
+            >
+              <FileText size={16} />
+              Gerar relatorio
+            </button>
+          )}
+        </div>
+        </div>
       </div>
 
       {((showInitialMetricsLoading || metricsLoading) || metricsError) && (
@@ -1814,6 +1816,38 @@ export default function DashboardHome() {
           font-size: 12px !important;
         }
 
+        .dashboard-home-header-shell {
+          width: 100%;
+          margin-bottom: 32px;
+        }
+
+        .dashboard-home-header-inner {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 18px;
+          width: 100%;
+          margin: 0;
+        }
+
+        .dashboard-home-header-center {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          min-width: 0;
+          align-items: flex-end;
+        }
+
+        .dashboard-home-header-right {
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .dashboard-report-action {
+          min-height: 44px;
+          gap: 8px;
+          align-self: flex-end;
+        }
+
         .dashboard-store-link-card {
           display: flex;
           align-items: center;
@@ -1921,6 +1955,25 @@ export default function DashboardHome() {
           }
         }
 
+        @media (min-width: 1280px) {
+          .dashboard-home-header-inner {
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: start;
+          }
+
+          .dashboard-home-header-center {
+            align-items: flex-end;
+          }
+
+          .dashboard-home-header-right {
+            align-self: start;
+          }
+
+          .dashboard-home-header-left {
+            min-width: 0;
+          }
+        }
+
         @media (max-width: 768px) {
           .dashboard-metric-grid {
             grid-template-columns: 1fr;
@@ -2017,6 +2070,14 @@ export default function DashboardHome() {
 
           .dashboard-store-link-action {
             flex: 1 1 130px;
+          }
+
+          .dashboard-home-header-inner {
+            width: 100%;
+          }
+
+          .dashboard-home-header-right {
+            justify-content: flex-start;
           }
         }
 

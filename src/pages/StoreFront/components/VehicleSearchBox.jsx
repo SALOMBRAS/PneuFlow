@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, ArrowRight, MapPin, Clock3, MessageSquare, Sparkles } from 'lucide-react';
 import { formatBRLCurrency } from '../../../utils/currency';
 import { getAvailabilityLabel, getAvailableOfferCount, getOfferDescriptor, getOfferTitle, isKitOffer } from '../../../utils/tireOffer';
+import { formatBusinessHourLabel } from '../../../utils/storeHours';
 
 export default function VehicleSearchBox({
   store,
@@ -41,6 +42,7 @@ export default function VehicleSearchBox({
   const heroPrice = formatBRLCurrency(heroTire?.preco || 0);
   const inStock = getAvailableOfferCount(heroTire) > 0;
   const heroContactDisabled = !commercialContactEnabled || (Boolean(heroTire) && !inStock);
+  const hoursLabel = formatBusinessHourLabel(store.business_hours, 'Atendimento comercial');
 
   return (
     <section className="store-hero">
@@ -56,7 +58,7 @@ export default function VehicleSearchBox({
           </span>
           <span className="store-hero__meta">
             <Clock3 size={13} />
-            {store.hours || 'Atendimento comercial'}
+            {hoursLabel}
           </span>
         </div>
 

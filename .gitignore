@@ -62,3 +62,4 @@ res.end('ok')).listen(5566)
 backups/supabase/
 backups/kit-mcp-before-install/
 backups/vercel-before-clean-deploy/
+.env*
