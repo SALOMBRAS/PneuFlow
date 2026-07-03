@@ -1,8 +1,22 @@
-import { supabase } from '../lib/supabase';
+import { supabase as defaultSupabase } from '../lib/supabase';
 import { optimizeImageToWebp } from '../utils/imageOptimizer';
 
-const STORE_COLUMNS = 'id, owner_id, nome, whatsapp, telefone, endereco, cidade, estado, logo, banner, foto_capa, cor_principal, cor_secundaria, seo_titulo, seo_descricao, plano, plan_due_date, subscription_status, trial_started_at, trial_ends_at, subscription_started_at, current_period_end, payment_provider, payment_subscription_id, created_at, slug, tipo_vitrine, template_vitrine';
-const PUBLIC_STORE_COLUMNS = 'id, nome, whatsapp, telefone, endereco, cidade, estado, logo, banner, foto_capa, cor_principal, cor_secundaria, seo_titulo, seo_descricao, plano, subscription_status, trial_ends_at, current_period_end, created_at, slug, tipo_vitrine, template_vitrine';
+let activeSupabaseClient = defaultSupabase;
+
+const supabase = new Proxy({}, {
+  get: (_, property) => Reflect.get(activeSupabaseClient, property),
+});
+
+export const setStorageServiceClient = (client) => {
+  activeSupabaseClient = client || defaultSupabase;
+};
+
+export const resetStorageServiceClient = () => {
+  activeSupabaseClient = defaultSupabase;
+};
+
+const STORE_COLUMNS = 'id, owner_id, nome, whatsapp, telefone, postal_code, endereco, address_number, address_complement, neighborhood, cidade, estado, logo, banner, foto_capa, cor_principal, cor_secundaria, seo_titulo, seo_descricao, business_hours, plano, plan_due_date, subscription_status, trial_started_at, trial_ends_at, subscription_started_at, current_period_end, payment_provider, payment_subscription_id, created_at, slug, tipo_vitrine, template_vitrine';
+const PUBLIC_STORE_COLUMNS = 'id, nome, whatsapp, telefone, postal_code, endereco, address_number, address_complement, neighborhood, cidade, estado, logo, banner, foto_capa, cor_principal, cor_secundaria, seo_titulo, seo_descricao, business_hours, plano, subscription_status, trial_ends_at, current_period_end, created_at, slug, tipo_vitrine, template_vitrine';
 const STORE_MEMBER_COLUMNS = 'id, store_id, user_id, email, nome, role, status, invited_by, invited_at, accepted_at, created_at, updated_at, ref_code, disabled_at, removed_at, auth_deleted_at, removed_by, senha_inicial, whatsapp';
 const PNEU_COLUMNS = 'id, loja_id, marca, modelo, titulo_anuncio, medida, preco, quantidade_por_anuncio, estoque, descricao, status, compatibilidade, foto_principal_url, fotos, created_at, updated_at, tipo_veiculo, created_by, updated_by';
 const PNEU_COLUMNS_LEGACY = 'id, loja_id, marca, modelo, medida, preco, estoque, descricao, status, compatibilidade, foto_principal_url, fotos, created_at, updated_at, tipo_veiculo, created_by, updated_by';
@@ -408,6 +422,84 @@ export const storageService = {
     return data;
   },
 
+  createSellerAccess: async (memberId) => {
+    const { data, error } = await supabase.functions.invoke('create-seller-access', {
+      body: {
+        member_id: memberId
+      }
+    });
+
+    if (error) {
+      let message = error.message || 'Erro ao iniciar acesso temporario.';
+
+      try {
+        if (error.context) {
+          const errorBody = await error.context.json();
+          message = errorBody?.error || errorBody?.message || message;
+        }
+      } catch {}
+
+      throw new Error(message);
+    }
+
+    if (data?.error) throw new Error(data.error);
+
+    return data;
+  },
+
+  redeemSellerAccess: async ({ ownerAccessToken, ticket }) => {
+    const { data, error } = await supabase.functions.invoke('redeem-seller-access', {
+      headers: {
+        Authorization: `Bearer ${ownerAccessToken}`
+      },
+      body: {
+        ticket
+      }
+    });
+
+    if (error) {
+      let message = error.message || 'Erro ao resgatar acesso temporario.';
+
+      try {
+        if (error.context) {
+          const errorBody = await error.context.json();
+          message = errorBody?.error || errorBody?.message || message;
+        }
+      } catch {}
+
+      throw new Error(message);
+    }
+
+    if (data?.error) throw new Error(data.error);
+
+    return data;
+  },
+
+  endSellerAccess: async (auditId) => {
+    const { data, error } = await supabase.functions.invoke('end-seller-access', {
+      body: {
+        audit_id: auditId
+      }
+    });
+
+    if (error) {
+      let message = error.message || 'Erro ao encerrar acesso temporario.';
+
+      try {
+        if (error.context) {
+          const errorBody = await error.context.json();
+          message = errorBody?.error || errorBody?.message || message;
+        }
+      } catch {}
+
+      throw new Error(message);
+    }
+
+    if (data?.error) throw new Error(data.error);
+
+    return data;
+  },
+
   getSellerByRefCode: async (storeId, refCode) => {
     const { data, error } = await supabase.rpc('get_public_referral_seller', {
       p_store_id: storeId,
@@ -557,7 +649,11 @@ export const storageService = {
       nome: updateData.name ?? updateData.nome,
       whatsapp: updateData.whatsapp,
       telefone: updateData.phone ?? updateData.telefone,
+      postal_code: updateData.postal_code ?? updateData.postalCode,
       endereco: updateData.address ?? updateData.endereco,
+      address_number: updateData.address_number ?? updateData.addressNumber,
+      address_complement: updateData.address_complement ?? updateData.addressComplement,
+      neighborhood: updateData.neighborhood ?? updateData.neighborhoodName,
       cidade: updateData.city ?? updateData.cidade,
       estado: updateData.state ?? updateData.estado,
       logo: updateData.logo,
@@ -567,6 +663,7 @@ export const storageService = {
       cor_secundaria: updateData.cor_secundaria ?? updateData.secondaryColor,
       seo_titulo: updateData.seoTitle ?? updateData.seo_titulo,
       seo_descricao: updateData.seoDescription ?? updateData.seo_descricao,
+      business_hours: updateData.business_hours ?? updateData.businessHours,
       slug: updateData.slug ? normalizeStoreSlug(updateData.slug) : undefined,
       tipo_vitrine: updateData.tipo_vitrine ?? updateData.tipoVitrine ?? 'carro'
     };

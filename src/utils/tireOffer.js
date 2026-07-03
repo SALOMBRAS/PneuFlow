@@ -1,6 +1,7 @@
 export const MAX_TIRES_PER_OFFER = 20;
 
 const isReliableAmount = (value) => Number.isFinite(value) && value >= 0;
+const isPositiveAmount = (value) => Number.isFinite(value) && value > 0;
 
 const resolveItemHistoricalValue = (items) => {
   if (!Array.isArray(items) || items.length === 0) {
@@ -119,13 +120,22 @@ export const getOfferTotalPrice = (offerQuantity, price) => {
   return Number(price || 0) * safeOfferQuantity;
 };
 
-export const getLeadItems = (lead) => {
+const getRawLeadItems = (lead) => {
   if (Array.isArray(lead?.items)) {
     return lead.items;
   }
 
   if (Array.isArray(lead?.itens)) {
     return lead.itens;
+  }
+
+  return null;
+};
+
+export const getLeadItems = (lead) => {
+  const rawItems = getRawLeadItems(lead);
+  if (rawItems) {
+    return rawItems;
   }
 
   const quantityPerOffer = getLeadQuantityPerOffer(lead);
@@ -153,7 +163,18 @@ export const getLeadItems = (lead) => {
   }];
 };
 
-export const isMultiItemLead = (lead) => getLeadItems(lead).length > 1;
+export const isMultiItemLead = (lead) => {
+  const rawItems = getRawLeadItems(lead);
+  if (rawItems) {
+    return rawItems.length > 1;
+  }
+
+  if (lead?.item_count != null) {
+    return Number.parseInt(lead.item_count, 10) > 1;
+  }
+
+  return false;
+};
 
 export const getLeadDistinctItemCount = (lead) => getLeadItems(lead).length;
 
@@ -211,7 +232,7 @@ export const getLeadOfferPrice = (lead) => {
     return getLeadTotalValue(lead);
   }
 
-  const price = Number(lead?.preco_anuncio ?? lead?.produto_preco ?? 0);
+  const price = Number(lead?.preco_anuncio ?? lead?.produto_preco);
   return Number.isFinite(price) ? price : 0;
 };
 

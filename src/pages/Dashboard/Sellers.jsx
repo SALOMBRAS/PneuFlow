@@ -5,15 +5,13 @@ import { useNotifications } from '../../hooks/useNotifications';
 import {
   Users,
   UserPlus,
-  Mail,
+  DoorOpen,
   Clock,
   CheckCircle2,
   XCircle,
-  MoreVertical,
   Search,
   Loader2,
   X,
-  Link as LinkIcon,
   Copy,
   Check,
   Edit3,
@@ -21,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function Sellers() {
-  const { store, isOwner } = useStore();
+  const { store, isOwner, session } = useStore();
   const {
     createPersistentNotification,
     notifyTransientError,
@@ -43,6 +41,10 @@ export default function Sellers() {
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [newPasswordData, setNewPasswordData] = useState({ password: '', confirmPassword: '' });
+  const [sellerAccessModalOpen, setSellerAccessModalOpen] = useState(false);
+  const [sellerAccessTarget, setSellerAccessTarget] = useState(null);
+  const [sellerAccessSubmitting, setSellerAccessSubmitting] = useState(false);
+  const [blockedSellerAccess, setBlockedSellerAccess] = useState(null);
 
   const getPasswordRules = (password) => {
     return {
@@ -94,6 +96,102 @@ export default function Sellers() {
   useEffect(() => {
     loadMembers();
   }, [loadMembers]);
+
+  const closeSellerAccessModal = (force = false) => {
+    if (sellerAccessSubmitting && !force) return;
+    setSellerAccessModalOpen(false);
+    setSellerAccessTarget(null);
+    setBlockedSellerAccess(null);
+  };
+
+  const openSellerAccessWindow = (payload) => {
+    const popup = window.open('about:blank', '_blank');
+    if (!popup) return false;
+
+    popup.name = JSON.stringify({
+      type: 'pneuflow:seller-access',
+      ticket: payload.ticket,
+      ownerAccessToken: payload.ownerAccessToken,
+      auditId: payload.auditId,
+      hashedToken: payload.hashedToken,
+      verificationType: payload.verificationType
+    });
+    popup.location.replace(`${window.location.origin}/seller-access`);
+    return true;
+  };
+
+  const handleConfirmSellerAccess = async () => {
+    if (!sellerAccessTarget || sellerAccessSubmitting) return;
+    if (!session?.access_token) {
+      notifyTransientError({
+        title: 'Sessao expirada',
+        message: 'Faca login novamente para iniciar o acesso temporario.',
+        category: 'vendedores'
+      });
+      return;
+    }
+
+    setSellerAccessSubmitting(true);
+    setBlockedSellerAccess(null);
+
+    try {
+      const result = await storageService.createSellerAccess(sellerAccessTarget.id);
+      const payload = {
+        ticket: result.ticket,
+        ownerAccessToken: session.access_token,
+        auditId: result.audit_id,
+        hashedToken: result.hashed_token,
+        verificationType: result.verification_type
+      };
+
+      const opened = openSellerAccessWindow(payload);
+
+      if (!opened) {
+        setBlockedSellerAccess(payload);
+        notifyTransientWarning({
+          title: 'Nova guia bloqueada',
+          message: 'O navegador bloqueou a nova guia. Clique em "Abrir sessao temporaria" para continuar.',
+          category: 'vendedores'
+        });
+        return;
+      }
+
+      await createPersistentNotification({
+        type: 'info',
+        title: 'Sessao temporaria pronta',
+        message: `Uma nova guia foi aberta para acessar ${sellerAccessTarget.nome || sellerAccessTarget.email || 'o vendedor'}.`,
+        category: 'general',
+        actionPath: '/dashboard/sellers'
+      });
+
+      closeSellerAccessModal(true);
+    } catch (err) {
+      await createPersistentNotification({
+        type: 'error',
+        title: 'Nao foi possivel iniciar',
+        message: err.message || 'Nao foi possivel iniciar o acesso temporario.',
+        category: 'operation_errors'
+      });
+    } finally {
+      setSellerAccessSubmitting(false);
+    }
+  };
+
+  const handleResumeBlockedSellerAccess = () => {
+    if (!blockedSellerAccess) return;
+
+    const opened = openSellerAccessWindow(blockedSellerAccess);
+    if (!opened) {
+      notifyTransientWarning({
+        title: 'Nova guia bloqueada',
+        message: 'Permita pop-ups para este site e tente novamente.',
+        category: 'vendedores'
+      });
+      return;
+    }
+
+    closeSellerAccessModal(true);
+  };
 
   const handleInvite = async (e) => {
     e.preventDefault();
@@ -458,20 +556,38 @@ export default function Sellers() {
                   <tr key={member.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '16px 24px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--secondary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 'bold',
-                            color: 'var(--primary)'
-                          }}
-                        >
-                          {(member.nome || member.email || '?').charAt(0).toUpperCase()}
+                        <div style={{ position: 'relative', width: '36px', height: '36px', overflow: 'visible' }}>
+                          <div
+                            style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              backgroundColor: 'var(--secondary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 'bold',
+                              color: 'var(--primary)'
+                            }}
+                          >
+                            {(member.nome || member.email || '?').charAt(0).toUpperCase()}
+                          </div>
+                          {isOwner && member.role !== 'owner' && member.status === 'active' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSellerAccessTarget(member);
+                                setBlockedSellerAccess(null);
+                                setSellerAccessModalOpen(true);
+                              }}
+                              data-testid="seller-access-button"
+                              className="seller-access-avatar-button"
+                              title="Acessar como vendedor"
+                              aria-label={`Acessar como vendedor ${member.nome || member.email || 'vendedor'}`}
+                            >
+                              <DoorOpen size={13} />
+                            </button>
+                          )}
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -714,6 +830,70 @@ export default function Sellers() {
         )}
       </div>
 
+      {sellerAccessModalOpen && sellerAccessTarget && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-slide" style={{ maxWidth: '440px', textAlign: 'left' }}>
+            <button className="modal-close" onClick={closeSellerAccessModal} disabled={sellerAccessSubmitting}>
+              <X size={20} />
+            </button>
+            <h3 style={{ fontSize: '20px', marginBottom: '10px' }}>Acessar como vendedor?</h3>
+            <p style={{ color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
+              Voce abrira uma sessao temporaria como <strong style={{ color: 'var(--text-primary)' }}>{sellerAccessTarget.nome || 'Vendedor'}</strong>.
+              A acao ficara registrada no historico de seguranca.
+            </p>
+
+            <div
+              style={{
+                marginTop: '18px',
+                padding: '14px',
+                borderRadius: '14px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid var(--border)',
+                display: 'grid',
+                gap: '6px'
+              }}
+            >
+              <span style={{ color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Vendedor selecionado
+              </span>
+              <strong style={{ fontSize: '15px' }}>{sellerAccessTarget.nome || 'Sem nome'}</strong>
+              <span style={{ color: 'var(--text-secondary)', wordBreak: 'break-word' }}>{sellerAccessTarget.email}</span>
+            </div>
+
+            {blockedSellerAccess && (
+              <div
+                style={{
+                  marginTop: '16px',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  background: 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid rgba(245, 158, 11, 0.24)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '13px',
+                  lineHeight: 1.5
+                }}
+              >
+                O navegador bloqueou a nova guia. Use o botao abaixo para abrir a sessao temporaria manualmente.
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '28px', flexWrap: 'wrap' }}>
+              {blockedSellerAccess && (
+                <button type="button" className="btn btn-outline" onClick={handleResumeBlockedSellerAccess}>
+                  Abrir sessao temporaria
+                </button>
+              )}
+              <button type="button" className="btn btn-secondary" onClick={closeSellerAccessModal} disabled={sellerAccessSubmitting}>
+                Cancelar
+              </button>
+              <button type="button" className="btn btn-primary" onClick={handleConfirmSellerAccess} disabled={sellerAccessSubmitting}>
+                {sellerAccessSubmitting ? 'Preparando...' : 'Acessar como vendedor'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Invite Modal */}
       {inviteModalOpen && (
         <div className="modal-overlay">
@@ -933,6 +1113,29 @@ export default function Sellers() {
           background: rgba(245, 158, 11, 0.035);
         }
 
+        .seller-access-avatar-button {
+          position: absolute;
+          right: -4px;
+          bottom: -4px;
+          width: 22px;
+          height: 22px;
+          border-radius: 999px;
+          border: 1px solid rgba(245, 158, 11, 0.35);
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(15, 18, 27, 0.96));
+          color: var(--primary);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          z-index: 1;
+          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+        }
+
+        .seller-access-avatar-button:focus-visible {
+          outline: 2px solid rgba(245, 158, 11, 0.88);
+          outline-offset: 2px;
+        }
+
         @media (max-width: 768px) {
           .sellers-page-header {
             display: grid;
@@ -946,6 +1149,11 @@ export default function Sellers() {
           .sellers-summary-grid {
             grid-template-columns: 1fr;
             margin-top: -6px;
+          }
+
+          .seller-access-avatar-button {
+            width: 24px;
+            height: 24px;
           }
         }
       `}</style>

@@ -226,6 +226,28 @@ function MetricButton({ metric, isSelected, onClick }) {
   );
 }
 
+function MetricSkeleton({ index }) {
+  return (
+    <div
+      className="dashboard-metric-card"
+      aria-hidden="true"
+      style={{
+        opacity: 0.78,
+        pointerEvents: 'none'
+      }}
+    >
+      <div className="dashboard-metric-card__top">
+        <span>Carregando...</span>
+        <div className="dashboard-metric-card__icon dashboard-metric-card__icon--amber">
+          <Clock size={20} />
+        </div>
+      </div>
+      <strong>--</strong>
+      <small>{index === 0 ? 'Preparando periodo salvo' : 'Buscando metricas do dashboard'}</small>
+    </div>
+  );
+}
+
 export default function DashboardHome() {
   const navigate = useNavigate();
   const { store, role, isSeller, user, refreshStore } = useStore();
@@ -251,10 +273,12 @@ export default function DashboardHome() {
   const [reportPreview, setReportPreview] = useState(null);
   const [dashboardPeriod, setDashboardPeriod] = useState('current_month');
   const [dashboardPeriodHydrated, setDashboardPeriodHydrated] = useState(false);
+  const [metricsInitialized, setMetricsInitialized] = useState(false);
   const dashboardPeriodStorageKey = useMemo(
     () => getDashboardPeriodStorageKey(user?.id, store?.id),
     [store?.id, user?.id]
   );
+  const dashboardPeriodReady = dashboardPeriodHydrated && isValidDashboardPeriod(dashboardPeriod);
 
   const handleMouseEnter = () => {
     if (tooltipTimeout) {
@@ -272,7 +296,7 @@ export default function DashboardHome() {
   };
 
   const loadData = useCallback(async () => {
-    if (!store) return;
+    if (!store?.id || !dashboardPeriodReady) return;
     setMetricsLoading(true);
     setMetricsError('');
     try {
@@ -297,13 +321,31 @@ export default function DashboardHome() {
       setLeads([]);
       setMetricsError('Algumas metricas nao puderam ser carregadas agora.');
     } finally {
+      setMetricsInitialized(true);
       setMetricsLoading(false);
     }
-  }, [dashboardPeriod, store]);
+  }, [dashboardPeriod, dashboardPeriodReady, store]);
 
   useEffect(() => {
+    if (!dashboardPeriodReady) return;
     loadData();
-  }, [loadData]);
+  }, [dashboardPeriodReady, loadData]);
+
+  useEffect(() => {
+    setMetricsInitialized(false);
+    setDashboardPeriodHydrated(false);
+    if (!dashboardPeriodStorageKey) return;
+    setDashboardPeriod(readStoredDashboardPeriod(dashboardPeriodStorageKey));
+    setDashboardPeriodHydrated(true);
+  }, [dashboardPeriodStorageKey]);
+
+  useEffect(() => {
+    if (!dashboardPeriodStorageKey || typeof window === 'undefined') return;
+    if (!dashboardPeriodHydrated) return;
+    if (!isValidDashboardPeriod(dashboardPeriod)) return;
+
+    window.localStorage.setItem(dashboardPeriodStorageKey, dashboardPeriod);
+  }, [dashboardPeriod, dashboardPeriodHydrated, dashboardPeriodStorageKey]);
 
   useEffect(() => {
     setDashboardPeriodHydrated(false);
@@ -348,6 +390,7 @@ export default function DashboardHome() {
 
   const publicLink = `${window.location.origin}/store/${store.slug}`;
   const selectedDashboardPeriod = DASHBOARD_PERIOD_PRESETS.find((option) => option.id === dashboardPeriod) || DASHBOARD_PERIOD_PRESETS[0];
+  const showInitialMetricsLoading = !dashboardPeriodReady || !metricsInitialized;
   const normalizeSlugPreview = (value) =>
     String(value || '')
       .normalize('NFD')
@@ -747,9 +790,10 @@ export default function DashboardHome() {
 
   return (
     <div className="animate-fade">
-      {/* Welcome Header */}
-      <div className="flex-between" style={{ marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
+      <div className="dashboard-home-header-shell">
+        {/* Welcome Header */}
+        <div className="dashboard-home-header-inner">
+          <div className="dashboard-home-header-left">
           <h1 style={{ fontSize: '32px', margin: 0, textAlign: 'left' }}>Olá, {user?.user_metadata?.full_name?.split(' ')[0] || 'Usuário'}!</h1>
           <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -856,95 +900,96 @@ export default function DashboardHome() {
           </div>
         </div>
         
-        {/* Public Store Link Card */}
-        <div className="dashboard-store-link-card">
-          <div className="dashboard-store-link-content">
-            <span className="dashboard-store-link-label">Link da loja</span>
-            {editingSlug ? (
-              <div className="dashboard-store-link-editor">
-                <span className="dashboard-store-link-prefix">/store/</span>
-                <input
-                  type="text"
-                  className="form-input dashboard-store-link-input"
-                  value={tempSlug}
-                  onChange={(e) => setTempSlug(normalizeSlugPreview(e.target.value))}
-                  placeholder="minha-loja"
-                  aria-label="Editar link da loja"
-                  autoFocus
-                />
-              </div>
-            ) : (
-              <code className="dashboard-store-link-code">{store.slug}</code>
-            )}
-            {slugMessage && (
-              <small className={`dashboard-store-link-message ${slugMessageType === 'error' ? 'is-error' : 'is-success'}`}>
-                {slugMessage}
-              </small>
-            )}
-          </div>
+        <div className="dashboard-home-header-center">
+          <div className="dashboard-store-link-card">
+            <div className="dashboard-store-link-content">
+              <span className="dashboard-store-link-label">Link da loja</span>
+              {editingSlug ? (
+                <div className="dashboard-store-link-editor">
+                  <span className="dashboard-store-link-prefix">/store/</span>
+                  <input
+                    type="text"
+                    className="form-input dashboard-store-link-input"
+                    value={tempSlug}
+                    onChange={(e) => setTempSlug(normalizeSlugPreview(e.target.value))}
+                    placeholder="minha-loja"
+                    aria-label="Editar link da loja"
+                    autoFocus
+                  />
+                </div>
+              ) : (
+                <code className="dashboard-store-link-code">{store.slug}</code>
+              )}
+              {slugMessage && (
+                <small className={`dashboard-store-link-message ${slugMessageType === 'error' ? 'is-error' : 'is-success'}`}>
+                  {slugMessage}
+                </small>
+              )}
+            </div>
 
-          <div className="dashboard-store-link-actions">
-            {editingSlug ? (
-              <>
-                <button
-                  type="button"
-                  onClick={handleSaveSlug}
-                  className="btn btn-primary dashboard-store-link-action"
-                  disabled={savingSlug}
-                >
-                  {savingSlug ? <Clock size={14} /> : <Check size={14} />}
-                  {savingSlug ? 'Salvando' : 'Salvar'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelSlugEdit}
-                  className="btn btn-secondary dashboard-store-link-action"
-                  disabled={savingSlug}
-                  aria-label="Cancelar edicao do link da loja"
-                >
-                  <X size={14} />
-                  Cancelar
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="btn btn-secondary dashboard-store-link-action"
-                >
-                  {copied ? <Check size={14} style={{ color: 'var(--success)' }} /> : <Copy size={14} />}
-                  {copied ? 'Copiado!' : 'Copiar'}
-                </button>
-                {!isSeller && (
+            <div className="dashboard-store-link-actions">
+              {editingSlug ? (
+                <>
                   <button
                     type="button"
-                    onClick={handleStartSlugEdit}
-                    className="btn btn-outline dashboard-store-link-action"
+                    onClick={handleSaveSlug}
+                    className="btn btn-primary dashboard-store-link-action"
+                    disabled={savingSlug}
                   >
-                    <Edit3 size={14} />
-                    Editar
+                    {savingSlug ? <Clock size={14} /> : <Check size={14} />}
+                    {savingSlug ? 'Salvando' : 'Salvar'}
                   </button>
-                )}
-              </>
-            )}
+                  <button
+                    type="button"
+                    onClick={handleCancelSlugEdit}
+                    className="btn btn-secondary dashboard-store-link-action"
+                    disabled={savingSlug}
+                    aria-label="Cancelar edicao do link da loja"
+                  >
+                    <X size={14} />
+                    Cancelar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="btn btn-secondary dashboard-store-link-action"
+                  >
+                    {copied ? <Check size={14} style={{ color: 'var(--success)' }} /> : <Copy size={14} />}
+                    {copied ? 'Copiado!' : 'Copiar'}
+                  </button>
+                  {!isSeller && (
+                    <button
+                      type="button"
+                      onClick={handleStartSlugEdit}
+                      className="btn btn-outline dashboard-store-link-action"
+                    >
+                      <Edit3 size={14} />
+                      Editar
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
-        </div>
 
-        {!isSeller && (
-          <button
-            type="button"
-            onClick={handleOpenReportModal}
-            className="btn btn-primary"
-            style={{ minHeight: '44px', gap: '8px' }}
-          >
-            <FileText size={16} />
-            Gerar relatorio
-          </button>
-        )}
+          {!isSeller && (
+            <button
+              type="button"
+              onClick={handleOpenReportModal}
+              className="btn btn-primary dashboard-report-action"
+            >
+              <FileText size={16} />
+              Gerar relatorio
+            </button>
+          )}
+        </div>
+        </div>
       </div>
 
-      {(metricsLoading || metricsError) && (
+      {((showInitialMetricsLoading || metricsLoading) || metricsError) && (
         <div
           style={{
             marginBottom: '20px',
@@ -957,22 +1002,28 @@ export default function DashboardHome() {
             textAlign: 'left'
           }}
         >
-          {metricsLoading ? 'Carregando métricas comerciais...' : metricsError}
+          {showInitialMetricsLoading
+            ? 'Recuperando seu periodo salvo antes de carregar as metricas...'
+            : metricsLoading
+              ? 'Atualizando metricas comerciais...'
+              : metricsError}
         </div>
       )}
 
       <div className="dashboard-metric-grid">
-        {metricCards.map((metric) => (
-          <MetricButton
-            key={metric.id}
-            metric={metric}
-            isSelected={selectedMetric === metric.id}
-            onClick={() => openMetricDetail(metric.id)}
-          />
-        ))}
+        {showInitialMetricsLoading
+          ? metricCards.map((metric, index) => <MetricSkeleton key={metric.id} index={index} />)
+          : metricCards.map((metric) => (
+            <MetricButton
+              key={metric.id}
+              metric={metric}
+              isSelected={selectedMetric === metric.id}
+              onClick={() => openMetricDetail(metric.id)}
+            />
+          ))}
       </div>
 
-      {activeMetric && !mobileDetailOpen && (
+      {!showInitialMetricsLoading && activeMetric && !mobileDetailOpen && (
         <section id="dashboard-metric-details" className="dashboard-detail-panel" aria-live="polite">
           <MetricDetailsPanel
             metric={activeMetric}
@@ -982,7 +1033,7 @@ export default function DashboardHome() {
         </section>
       )}
 
-      {mobileDetailOpen && activeMetric && (
+      {!showInitialMetricsLoading && mobileDetailOpen && activeMetric && (
         <div className="dashboard-mobile-detail-backdrop" onClick={closeMetricDetail}>
           <div
             className="dashboard-mobile-detail-sheet"
@@ -1014,7 +1065,11 @@ export default function DashboardHome() {
             </button>
           </div>
 
-          {leads.length === 0 ? (
+          {showInitialMetricsLoading ? (
+            <div className="dashboard-empty-block">
+              Carregando os contatos do periodo salvo...
+            </div>
+          ) : leads.length === 0 ? (
             <div className="dashboard-empty-block">
               Nenhum lead gerado ainda. Divulgue sua vitrine para começar a receber contatos.
             </div>
@@ -1775,6 +1830,38 @@ export default function DashboardHome() {
           font-size: 12px !important;
         }
 
+        .dashboard-home-header-shell {
+          width: 100%;
+          margin-bottom: 32px;
+        }
+
+        .dashboard-home-header-inner {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 18px;
+          width: 100%;
+          margin: 0;
+        }
+
+        .dashboard-home-header-center {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          min-width: 0;
+          align-items: flex-end;
+        }
+
+        .dashboard-home-header-right {
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .dashboard-report-action {
+          min-height: 44px;
+          gap: 8px;
+          align-self: flex-end;
+        }
+
         .dashboard-store-link-card {
           display: flex;
           align-items: center;
@@ -1882,6 +1969,25 @@ export default function DashboardHome() {
           }
         }
 
+        @media (min-width: 1280px) {
+          .dashboard-home-header-inner {
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: start;
+          }
+
+          .dashboard-home-header-center {
+            align-items: flex-end;
+          }
+
+          .dashboard-home-header-right {
+            align-self: start;
+          }
+
+          .dashboard-home-header-left {
+            min-width: 0;
+          }
+        }
+
         @media (max-width: 768px) {
           .dashboard-metric-grid {
             grid-template-columns: 1fr;
@@ -1978,6 +2084,14 @@ export default function DashboardHome() {
 
           .dashboard-store-link-action {
             flex: 1 1 130px;
+          }
+
+          .dashboard-home-header-inner {
+            width: 100%;
+          }
+
+          .dashboard-home-header-right {
+            justify-content: flex-start;
           }
         }
 

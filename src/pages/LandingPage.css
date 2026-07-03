@@ -581,6 +581,93 @@
   line-height: 1.4;
 }
 
+.landing-pricing-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.landing-pricing-offerbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 14px 18px;
+  border: 1px solid rgba(251, 191, 36, 0.22);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(251, 191, 36, 0.14), rgba(245, 158, 11, 0.03)),
+    rgba(15, 18, 25, 0.86);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.landing-pricing-offerbar strong {
+  color: var(--text-primary);
+}
+
+.landing-pricing-slotpill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 8px 12px;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #ffd37a;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.landing-pricing-slotpill--waitlist {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+.landing-pricing-card--featured {
+  position: relative;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  background:
+    radial-gradient(circle at top right, rgba(251, 191, 36, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02)),
+    rgba(12, 15, 21, 0.96);
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(251, 191, 36, 0.08),
+    0 0 42px rgba(245, 158, 11, 0.14);
+}
+
+.landing-pricing-main,
+.landing-pricing-side {
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-pricing-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.landing-pricing-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #11131a;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .landing-pricing-price {
   display: flex;
   align-items: baseline;
@@ -610,6 +697,13 @@
   margin: 0;
   max-width: 31ch;
   line-height: 1.5;
+}
+
+.landing-pricing-trial {
+  margin-top: 12px;
+  color: #f9d27f;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .landing-pricing-list {
@@ -670,6 +764,48 @@
   }
 }
 
+.landing-pricing-side {
+  gap: 14px;
+  align-self: stretch;
+  justify-content: center;
+}
+
+.landing-pricing-urgency {
+  padding: 14px 16px;
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  border-radius: 18px;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.landing-pricing-urgency__label {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: #ffd37a;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.landing-pricing-urgency p {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.landing-pricing-cta--featured {
+  min-height: 56px;
+  justify-content: center;
+  border-color: rgba(255, 217, 102, 0.36);
+  box-shadow: 0 14px 30px rgba(245, 158, 11, 0.22);
+}
+
+.landing-pricing-reassurance {
+  color: var(--text-description);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 @media (max-width: 992px) {
   .hero-grid {
     grid-template-columns: 1fr;
@@ -708,6 +844,9 @@
 
   .landing-pricing-column--benefits {
     padding-top: 0;
+  .landing-pricing-offerbar {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .landing-pricing-cta {
@@ -770,6 +909,8 @@
 
   .landing-pricing-column--cta {
     gap: 12px;
+  .landing-pricing-heading {
+    align-items: flex-start;
   }
 
   .landing-pricing-price {

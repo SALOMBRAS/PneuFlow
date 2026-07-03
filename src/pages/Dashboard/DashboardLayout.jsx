@@ -19,13 +19,18 @@ import {
 } from 'lucide-react';
 import { formatSubscriptionDate, getSubscriptionAccess, getTrialMessage } from '../../utils/subscriptionAccess';
 
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout({ children, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { store, role, loading, error, session, member } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+      return;
+    }
+
     storageService.logout();
     navigate('/login');
   };
@@ -497,8 +502,8 @@ export default function DashboardLayout({ children }) {
         )}
         <div
           style={{
-            width: 'min(1120px, calc(100% - 32px))',
-            margin: trialMessage ? '0 auto 18px' : '0 auto 18px',
+            width: '100%',
+            margin: trialMessage ? '0 0 18px' : '0 0 18px',
             display: 'flex',
             justifyContent: 'flex-end'
           }}
@@ -558,6 +563,10 @@ export default function DashboardLayout({ children }) {
             margin-left: 240px !important;
             min-width: 0 !important;
             width: calc(100% - 240px) !important;
+          }
+
+          .dashboard-topbar {
+            width: 100% !important;
           }
         }
 

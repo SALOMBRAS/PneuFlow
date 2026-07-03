@@ -264,6 +264,48 @@ const HeroTypewriter = ({ isMobile }) => {
   );
 };
 
+const PRICING_CONFIG = {
+  urgencyEnabled: true,
+  onboardingSlots: null,
+  offerEndDate: '',
+  launchOfferLabel: 'Oferta de lançamento para novas lojas.',
+  trialDays: 7,
+};
+
+const PRICING_PLAN = {
+  name: 'Plano PRO',
+  badge: 'Mais escolhido',
+  price: '39,00',
+  description: 'Uma assinatura simples para manter vitrine, dashboard, leads e vendedores em um so lugar.',
+  ctaLabel: `Comecar meus ${PRICING_CONFIG.trialDays} dias gratis`,
+  waitlistCtaLabel: 'Entrar na lista de espera',
+  trialLabel: `Teste gratis por ${PRICING_CONFIG.trialDays} dias. Cancele quando quiser.`,
+  reassurance: 'Sem compromisso durante o periodo de teste.',
+  urgencyTitle: 'Condicao de lancamento',
+  urgencyFallback: 'Onboarding prioritario disponivel por tempo limitado.',
+  benefits: [
+    'Vitrine publica com catalogo de pneus',
+    'Leads com destino para WhatsApp',
+    'Dashboard comercial e ranking',
+    'Controle de vendedores e links referral',
+  ],
+};
+
+const formatOfferDeadline = (value) => {
+  if (!value) return null;
+
+  const parsedDate = new Date(`${value}T23:59:59`);
+
+  if (Number.isNaN(parsedDate.getTime()) || parsedDate.getTime() < Date.now()) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+  }).format(parsedDate);
+};
+
 export default function LandingPage() {
   const navigate = useNavigate();
   const [activeFaq, setActiveFaq] = useState(null);
@@ -312,6 +354,19 @@ export default function LandingPage() {
   const toggleFaq = (index) => {
     setActiveFaq(activeFaq === index ? null : index);
   };
+
+  const offerDeadline = formatOfferDeadline(PRICING_CONFIG.offerEndDate);
+  const hasRealSlots = Number.isInteger(PRICING_CONFIG.onboardingSlots) && PRICING_CONFIG.onboardingSlots > 0;
+  const isWaitlistOpen = PRICING_CONFIG.onboardingSlots === 0;
+  const showOfferBar = PRICING_CONFIG.urgencyEnabled && (PRICING_CONFIG.launchOfferLabel || hasRealSlots || offerDeadline);
+  const urgencyCopy = hasRealSlots
+    ? `Restam ${PRICING_CONFIG.onboardingSlots} vagas para onboarding prioritario neste ciclo.`
+    : PRICING_PLAN.urgencyFallback;
+  const slotIndicatorLabel = hasRealSlots
+    ? `${PRICING_CONFIG.onboardingSlots} vagas disponiveis para onboarding`
+    : 'Entre na lista de espera';
+  const offerBarSuffix = offerDeadline ? ` Ate ${offerDeadline}.` : '';
+  const primaryCtaLabel = isWaitlistOpen ? PRICING_PLAN.waitlistCtaLabel : PRICING_PLAN.ctaLabel;
 
   return (
     <div className="landing-page landing-page--snap" style={{ backgroundColor: 'var(--bg-dark)', minHeight: '100vh' }}>
@@ -485,51 +540,65 @@ export default function LandingPage() {
 
       <section id="preco" className="section-padding landing-pricing-section landing-snap-section">
         <div className="container">
-          <RevealOnScroll className="landing-pricing-card pf-card-premium landing-pricing-card--featured" delay={60} duration={640} distance={22}>
-            <div className="landing-pricing-column landing-pricing-column--summary">
-              <span className="pf-kicker">Plano PRO</span>
-              <h2 className="landing-pricing-price" aria-label="R$ 39,00 por mes">
-                <span className="landing-pricing-price__currency">R$</span>
-                <span className="landing-pricing-price__amount">39,00</span>
-                <span className="landing-pricing-price__period">/mês</span>
-              </h2>
-              <p>
-                Uma assinatura simples para manter vitrine, dashboard, leads e vendedores em um só lugar.
-              </p>
-            </div>
-
-            <div className="landing-pricing-column landing-pricing-column--benefits">
-              <ul className="landing-pricing-list">
-                <li><CheckCircle size={16} /> Vitrine pública com catálogo de pneus</li>
-                <li><CheckCircle size={16} /> Leads com destino para WhatsApp</li>
-                <li><CheckCircle size={16} /> Dashboard comercial e ranking</li>
-                <li><CheckCircle size={16} /> Controle de vendedores e links referral</li>
-              </ul>
-            </div>
-
-            <div className="landing-pricing-column landing-pricing-column--cta">
-              {pricingLaunchConfig.urgencyEnabled ? (
-                <div className="landing-pricing-urgency" aria-live="polite">
-                  <span className="landing-pricing-urgency__label">{pricingLaunchConfig.launchOfferLabel}</span>
-                  {typeof pricingLaunchConfig.onboardingSlots === 'number' && pricingLaunchConfig.onboardingSlots > 0 ? (
-                    <p>{pricingLaunchConfig.onboardingSlots} vagas disponíveis para onboarding prioritário neste ciclo.</p>
-                  ) : (
-                    <p>Onboarding prioritário disponível por tempo limitado.</p>
-                  )}
-                  {pricingLaunchConfig.offerEndDate ? (
-                    <small>Oferta válida até {pricingLaunchConfig.offerEndDate}.</small>
-                  ) : (
-                    <small>Sem compromisso durante o período de teste.</small>
-                  )}
+          <div className="landing-pricing-stack">
+            {showOfferBar && (
+              <div className="landing-pricing-offerbar" role="status">
+                <div>
+                  <strong>{PRICING_CONFIG.launchOfferLabel}</strong>
+                  <span> Comece agora e tenha acesso ao onboarding prioritario.{offerBarSuffix}</span>
                 </div>
-              ) : null}
+                {(hasRealSlots || isWaitlistOpen) && (
+                  <span className={`landing-pricing-slotpill${isWaitlistOpen ? ' landing-pricing-slotpill--waitlist' : ''}`}>
+                    {slotIndicatorLabel}
+                  </span>
+                )}
+              </div>
+            )}
 
-              <button type="button" onClick={() => navigate('/register')} className="btn btn-primary landing-pricing-cta">
-                <CreditCard size={18} />
-                Começar teste grátis
-              </button>
+            <div className="landing-pricing-card landing-pricing-card--featured pf-card-premium">
+              <div className="landing-pricing-main">
+                <div className="landing-pricing-heading">
+                  <span className="pf-kicker">{PRICING_PLAN.name}</span>
+                  <span className="landing-pricing-badge">{PRICING_PLAN.badge}</span>
+                </div>
+                <h2 className="landing-pricing-price" aria-label="R$ 39,00 por mes">
+                  <span className="landing-pricing-price__currency">R$</span>
+                  <span className="landing-pricing-price__amount">{PRICING_PLAN.price}</span>
+                  <span className="landing-pricing-price__period">/mês</span>
+                </h2>
+                <p>{PRICING_PLAN.description}</p>
+                <p className="landing-pricing-trial">{PRICING_PLAN.trialLabel}</p>
+              </div>
+
+              <ul className="landing-pricing-list">
+                {PRICING_PLAN.benefits.map((benefit) => (
+                  <li key={benefit}>
+                    <CheckCircle size={16} />
+                    {benefit}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="landing-pricing-side">
+                {PRICING_CONFIG.urgencyEnabled && (
+                  <div className="landing-pricing-urgency">
+                    <span className="landing-pricing-urgency__label">{PRICING_PLAN.urgencyTitle}</span>
+                    <p>{urgencyCopy}</p>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/register')}
+                  className="btn btn-primary landing-pricing-cta landing-pricing-cta--featured"
+                >
+                  <CreditCard size={18} />
+                  {primaryCtaLabel}
+                </button>
+                <span className="landing-pricing-reassurance">{PRICING_PLAN.reassurance}</span>
+              </div>
             </div>
-          </RevealOnScroll>
+          </div>
         </div>
       </section>
 

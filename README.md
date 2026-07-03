@@ -225,11 +225,10 @@ Projeto funcional para demonstração, estudo e apresentação acadêmica.
 
 Algumas melhorias futuras recomendadas:
 
-- Adicionar prints reais ao README.
-- Melhorar cobertura de lint.
-- Remover backend legado caso o projeto fique 100% Supabase.
-- Adicionar paginação em consultas grandes.
-- Documentar scripts SQL finais do Supabase.
+- 
+- 
+- 
+  
 
 ## Autor
 
