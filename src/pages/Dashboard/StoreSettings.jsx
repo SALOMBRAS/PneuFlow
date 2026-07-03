@@ -135,22 +135,6 @@ export default function StoreSettings() {
     }
   }, [store]);
 
-  useEffect(() => {
-    if (!store?.id) return undefined;
-
-    const currentSnapshot = buildAddressSnapshot();
-    if (currentSnapshot === addressAutosaveSnapshotRef.current) {
-      return undefined;
-    }
-
-    window.clearTimeout(addressAutosaveTimerRef.current);
-    addressAutosaveTimerRef.current = window.setTimeout(() => {
-      persistAddressFields({ silent: true }).catch(() => {});
-    }, 900);
-
-    return () => window.clearTimeout(addressAutosaveTimerRef.current);
-  }, [store?.id, buildAddressSnapshot, persistAddressFields]);
-
   const buildAddressSnapshot = useCallback(() => JSON.stringify({
     postalCode: postalCode.replace(/\D/g, ''),
     address: address.trim(),
@@ -245,6 +229,22 @@ export default function StoreSettings() {
     businessHours,
     refreshStore
   ]);
+
+  useEffect(() => {
+    if (!store?.id) return undefined;
+
+    const currentSnapshot = buildAddressSnapshot();
+    if (currentSnapshot === addressAutosaveSnapshotRef.current) {
+      return undefined;
+    }
+
+    window.clearTimeout(addressAutosaveTimerRef.current);
+    addressAutosaveTimerRef.current = window.setTimeout(() => {
+      persistAddressFields({ silent: true }).catch(() => {});
+    }, 900);
+
+    return () => window.clearTimeout(addressAutosaveTimerRef.current);
+  }, [store?.id, buildAddressSnapshot, persistAddressFields]);
 
   const handleImageUpload = async (e, type) => {
     const file = e.target.files?.[0];
