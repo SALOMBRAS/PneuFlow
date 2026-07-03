@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
-import { Save, Check, ExternalLink, Zap, MapPin, Palette, Upload, Loader2, Image as ImageIcon, Copy, Clock3 } from 'lucide-react';
+import { Save, Check, ExternalLink, Zap, MapPin, Palette, Upload, Loader2, Image as ImageIcon, Copy, Clock3, CalendarDays } from 'lucide-react';
 
 const WEEK_DAYS = [
   { key: 'monday', label: 'Segunda' },
@@ -181,6 +181,23 @@ export default function StoreSettings() {
         acc[day.key] = day.key === 'sunday'
           ? current[day.key]
           : { ...source, enabled: day.key === 'saturday' ? false : source.enabled };
+        return acc;
+      }, { ...current })
+    );
+  };
+
+  const applyMondayToWeekdays = () => {
+    const source = businessHours.monday;
+    if (!source) return;
+
+    setBusinessHours((current) =>
+      WEEK_DAYS.reduce((acc, day) => {
+        if (day.key === 'saturday' || day.key === 'sunday') {
+          acc[day.key] = current[day.key];
+          return acc;
+        }
+
+        acc[day.key] = { ...source, enabled: source.enabled };
         return acc;
       }, { ...current })
     );
@@ -411,41 +428,85 @@ export default function StoreSettings() {
 
             <div className="form-group">
               <label className="form-label">Horários de funcionamento</label>
-              <div className="store-hours-grid">
-                {WEEK_DAYS.map((day) => {
-                  const current = businessHours[day.key] || {};
-                  return (
-                    <div key={day.key} className="store-hours-row">
-                      <div className="store-hours-row__top">
-                        <strong>{day.label}</strong>
-                        <button type="button" className="btn btn-secondary store-hours-copy" onClick={() => copyWeekdayHours(day.key)} disabled={!current.enabled}>
-                          <Copy size={14} />
-                          Copiar
-                        </button>
-                      </div>
-                      <label className="store-hours-toggle">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(current.enabled)}
-                          onChange={(e) => updateDayHours(day.key, { enabled: e.target.checked })}
-                        />
-                        <span>{current.enabled ? 'Aberto' : 'Fechado'}</span>
-                      </label>
-                      {current.enabled && (
-                        <div className="store-hours-time-grid">
-                          <label>
-                            <span>Abertura</span>
-                            <input type="time" className="form-input" value={current.open || ''} onChange={(e) => updateDayHours(day.key, { open: e.target.value })} />
-                          </label>
-                          <label>
-                            <span>Fechamento</span>
-                            <input type="time" className="form-input" value={current.close || ''} onChange={(e) => updateDayHours(day.key, { close: e.target.value })} />
-                          </label>
+              <div className="store-hours-panel">
+                <div className="store-hours-panel__toolbar">
+                  <div>
+                    <strong>Planejamento semanal</strong>
+                    <p>Organize os dias em uma linha compacta e copie os horários quando precisar.</p>
+                  </div>
+                  <button type="button" className="btn btn-secondary store-hours-apply-weekdays" onClick={applyMondayToWeekdays}>
+                    <CalendarDays size={14} />
+                    Aplicar segunda aos dias úteis
+                  </button>
+                </div>
+
+                <div className="store-hours-table" role="table" aria-label="Horários de funcionamento">
+                  <div className="store-hours-table__head" role="row">
+                    <span role="columnheader">Dia</span>
+                    <span role="columnheader">Status</span>
+                    <span role="columnheader">Abertura</span>
+                    <span role="columnheader">Fechamento</span>
+                    <span role="columnheader">Ação</span>
+                  </div>
+
+                  <div className="store-hours-table__body">
+                    {WEEK_DAYS.map((day) => {
+                      const current = businessHours[day.key] || {};
+                      const dayLabel = day.label;
+
+                      return (
+                        <div key={day.key} className={`store-hours-row ${current.enabled ? '' : 'is-closed'}`} role="row">
+                          <div className="store-hours-cell store-hours-cell--day" role="cell">
+                            <strong>{dayLabel}</strong>
+                          </div>
+                          <div className="store-hours-cell" role="cell">
+                            <label className="store-hours-switch" title={current.enabled ? 'Fechar dia' : 'Abrir dia'}>
+                              <input
+                                type="checkbox"
+                                checked={Boolean(current.enabled)}
+                                onChange={(e) => updateDayHours(day.key, { enabled: e.target.checked })}
+                              />
+                              <span>
+                                <i aria-hidden="true" />
+                                {current.enabled ? 'Aberto' : 'Fechado'}
+                              </span>
+                            </label>
+                          </div>
+                          <div className="store-hours-cell" role="cell">
+                            <input
+                              type="time"
+                              className="form-input store-hours-time-input"
+                              value={current.open || ''}
+                              disabled={!current.enabled}
+                              onChange={(e) => updateDayHours(day.key, { open: e.target.value })}
+                            />
+                          </div>
+                          <div className="store-hours-cell" role="cell">
+                            <input
+                              type="time"
+                              className="form-input store-hours-time-input"
+                              value={current.close || ''}
+                              disabled={!current.enabled}
+                              onChange={(e) => updateDayHours(day.key, { close: e.target.value })}
+                            />
+                          </div>
+                          <div className="store-hours-cell store-hours-cell--action" role="cell">
+                            <button
+                              type="button"
+                              className="store-hours-icon-btn"
+                              onClick={() => copyWeekdayHours(day.key)}
+                              disabled={!current.enabled}
+                              title={`Copiar horários de ${dayLabel} para os outros dias úteis`}
+                              aria-label={`Copiar horários de ${dayLabel}`}
+                            >
+                              <Copy size={14} />
+                            </button>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -599,51 +660,182 @@ export default function StoreSettings() {
           flex-wrap: wrap;
         }
 
-        .store-hours-grid {
+        .store-hours-panel {
           display: grid;
-          gap: 12px;
+          gap: 14px;
+          min-width: 0;
         }
 
-        .store-hours-row {
-          padding: 14px;
+        .store-hours-panel__toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
           border: 1px solid var(--border);
           border-radius: var(--radius-md);
           background: rgba(255,255,255,0.02);
-          display: grid;
-          gap: 10px;
         }
 
-        .store-hours-row__top {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          align-items: center;
-        }
-
-        .store-hours-toggle {
-          display: inline-flex;
-          gap: 8px;
-          align-items: center;
-          color: var(--text-secondary);
-        }
-
-        .store-hours-time-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 12px;
-        }
-
-        .store-hours-time-grid span {
+        .store-hours-panel__toolbar strong {
           display: block;
-          margin-bottom: 6px;
-          font-size: 12px;
-          color: var(--text-muted);
+          font-size: 14px;
         }
 
-        .store-hours-copy {
-          min-height: 34px;
+        .store-hours-panel__toolbar p {
+          margin: 4px 0 0;
+          color: var(--text-muted);
+          font-size: 12px;
+        }
+
+        .store-hours-apply-weekdays {
+          min-height: 36px;
           padding: 6px 10px !important;
-          gap: 6px;
+          gap: 8px;
+          white-space: nowrap;
+        }
+
+        .store-hours-table {
+          display: grid;
+          gap: 0;
+          min-width: 0;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          overflow: hidden;
+          background: rgba(255,255,255,0.02);
+        }
+
+        .store-hours-table__head,
+        .store-hours-row {
+          display: grid;
+          grid-template-columns: 140px 130px 1fr 1fr 48px;
+          gap: 12px;
+          align-items: center;
+          min-width: 0;
+        }
+
+        .store-hours-table__head {
+          padding: 12px 16px;
+          background: rgba(255,255,255,0.03);
+          color: var(--text-muted);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .store-hours-row {
+          padding: 10px 16px;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+          min-height: 68px;
+        }
+
+        .store-hours-row:last-child {
+          border-bottom: 0;
+        }
+
+        .store-hours-row.is-closed {
+          opacity: 0.72;
+        }
+
+        .store-hours-cell {
+          min-width: 0;
+        }
+
+        .store-hours-cell--day strong {
+          display: block;
+          font-size: 14px;
+          line-height: 1.1;
+        }
+
+        .store-hours-switch {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--text-secondary);
+          min-width: 0;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .store-hours-switch input {
+          position: absolute;
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .store-hours-switch span {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+          font-size: 13px;
+          white-space: nowrap;
+        }
+
+        .store-hours-switch i {
+          position: relative;
+          width: 38px;
+          height: 22px;
+          flex: 0 0 auto;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid var(--border);
+          transition: background 160ms ease, border-color 160ms ease;
+        }
+
+        .store-hours-switch i::after {
+          content: '';
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: var(--text-secondary);
+          transition: transform 160ms ease, background 160ms ease;
+        }
+
+        .store-hours-switch input:checked + span i {
+          background: rgba(245, 158, 11, 0.18);
+          border-color: rgba(245, 158, 11, 0.32);
+        }
+
+        .store-hours-switch input:checked + span i::after {
+          transform: translateX(16px);
+          background: var(--primary);
+        }
+
+        .store-hours-time-input {
+          min-height: 40px;
+          height: 40px;
+        }
+
+        .store-hours-time-input:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
+        }
+
+        .store-hours-icon-btn {
+          width: 32px;
+          height: 32px;
+          display: grid;
+          place-items: center;
+          border-radius: 10px;
+          border: 1px solid var(--border);
+          background: rgba(255,255,255,0.03);
+          color: var(--text-secondary);
+          cursor: pointer;
+        }
+
+        .store-hours-icon-btn:hover:not(:disabled) {
+          color: var(--text-primary);
+          border-color: rgba(245, 158, 11, 0.28);
+        }
+
+        .store-hours-icon-btn:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
         }
 
         @media (max-width: 1024px) {
@@ -705,8 +897,32 @@ export default function StoreSettings() {
             align-items: stretch;
           }
 
-          .store-hours-time-grid {
-            grid-template-columns: 1fr;
+          .store-hours-panel__toolbar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .store-hours-table__head {
+            display: none;
+          }
+
+          .store-hours-row {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 12px;
+            min-height: 0;
+            padding: 12px 14px;
+          }
+
+          .store-hours-cell--day {
+            grid-column: 1 / -1;
+          }
+
+          .store-hours-cell--action {
+            justify-self: end;
+          }
+
+          .store-hours-switch span {
+            white-space: normal;
           }
 
           .store-settings-upload-actions .btn {
