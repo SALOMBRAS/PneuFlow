@@ -5,6 +5,7 @@ import { formatBRLCurrency } from '../../../utils/currency';
 import {
   getAvailabilityLabel,
   getAvailableOfferCount,
+  getCompatibilitySummary,
   getOfferBadgeLabel,
   getOfferDescriptor,
   getOfferQuantityLabel,
@@ -20,7 +21,7 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
   const [desiredQuantity, setDesiredQuantity] = useState(1);
   const image = tire.foto_principal_url || tire.image || 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=800';
   const vehicleLabel = tire.tipo_veiculo === 'moto' ? 'Moto' : 'Carro';
-  const compatibility = tire.compatibilidade || tire.compatibility || tire.version || tire.descricao || 'Compatibilidade sob consulta';
+  const compatibility = getCompatibilitySummary(tire, 2);
   const contactDisabled = !commercialContactEnabled || !isStock;
   const quantityPerOffer = getQuantityPerOffer(tire);
   const physicalTotal = getPhysicalTireTotal(desiredQuantity, quantityPerOffer);

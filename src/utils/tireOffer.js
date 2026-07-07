@@ -57,6 +57,32 @@ export const getOfferDescriptor = (item) => {
     : 'Pneu unitario';
 };
 
+const splitCompatibilityValues = (value) =>
+  String(value || '')
+    .split(/[,\n;|]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+export const getCompatibilitySummary = (item, maxItems = 2) => {
+  const raw = String(item?.compatibilidade || item?.compatibility || item?.version || item?.descricao || item?.description || '').trim();
+  if (!raw) {
+    return 'Compatibilidade sob consulta';
+  }
+
+  const values = splitCompatibilityValues(raw);
+  const isLikelyList = values.length >= 3 || raw.length > 80;
+
+  if (!isLikelyList) {
+    return raw.length > 120 ? `${raw.slice(0, 117).trim()}...` : raw;
+  }
+
+  const visibleValues = values.slice(0, Math.max(1, maxItems));
+  const remaining = values.length - visibleValues.length;
+  return remaining > 0
+    ? `${visibleValues.join(', ')} e mais ${remaining}`
+    : visibleValues.join(', ');
+};
+
 export const isKitOffer = (item) => getQuantityPerOffer(item) > 1;
 
 export const getOfferBadgeLabel = (item) => {

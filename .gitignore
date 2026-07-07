@@ -63,3 +63,4 @@ backups/supabase/
 backups/kit-mcp-before-install/
 backups/vercel-before-clean-deploy/
 .env*
+env.local

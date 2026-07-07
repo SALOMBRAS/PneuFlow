@@ -425,6 +425,32 @@ export default function DashboardReportModal(props) {
           color: #111827;
         }
 
+        .dashboard-report-sheet--preview .dashboard-report-sheet__header,
+        .dashboard-report-sheet--preview .dashboard-report-sheet__actions {
+          color: #111827;
+          background: rgba(255, 255, 255, 0.88);
+          backdrop-filter: blur(10px);
+          border-color: #e5e7eb;
+        }
+
+        .dashboard-report-sheet--preview .dashboard-report-sheet__header p,
+        .dashboard-report-sheet--preview .dashboard-report-card p,
+        .dashboard-report-sheet--preview .dashboard-report-section-row span,
+        .dashboard-report-sheet--preview .dashboard-report-meta,
+        .dashboard-report-sheet--preview .dashboard-report-total span,
+        .dashboard-report-sheet--preview .dashboard-report-empty {
+          color: #475569;
+        }
+
+        .dashboard-report-sheet--preview .dashboard-report-sheet__header h2,
+        .dashboard-report-sheet--preview .dashboard-report-card h3,
+        .dashboard-report-sheet--preview .dashboard-report-preview-section h3,
+        .dashboard-report-sheet--preview .dashboard-report-summary-card strong,
+        .dashboard-report-sheet--preview .dashboard-report-inline-summary strong,
+        .dashboard-report-sheet--preview .dashboard-report-total strong {
+          color: #0f172a;
+        }
+
         .dashboard-report-sheet__header,
         .dashboard-report-sheet__actions {
           position: relative;
@@ -451,6 +477,30 @@ export default function DashboardReportModal(props) {
         .dashboard-report-sheet--preview .dashboard-report-sheet__header,
         .dashboard-report-sheet--preview .dashboard-report-sheet__actions {
           border-color: #e5e7eb;
+        }
+
+        .dashboard-report-sheet--preview .dashboard-report-close {
+          border-color: #cbd5e1;
+          background: rgba(255, 255, 255, 0.92);
+          color: #0f172a;
+        }
+
+        .dashboard-report-sheet--preview .dashboard-report-sheet__actions .btn-secondary {
+          background: #e2e8f0;
+          color: #0f172a;
+          border-color: #cbd5e1;
+          box-shadow: none;
+        }
+
+        .dashboard-report-sheet--preview .dashboard-report-sheet__actions .btn-secondary:hover {
+          background: #cbd5e1;
+          border-color: #94a3b8;
+          transform: translateY(-1px);
+        }
+
+        .dashboard-report-sheet--preview .dashboard-report-sheet__actions .btn-primary {
+          color: #111827;
+          box-shadow: 0 10px 24px rgba(245, 158, 11, 0.18);
         }
 
         .dashboard-report-sheet__body {
@@ -669,13 +719,16 @@ export default function DashboardReportModal(props) {
         }
 
         .dashboard-report-preview {
-          width: min(100%, 960px);
+          width: min(100%, 210mm);
+          max-width: 210mm;
           margin: 0 auto;
           background: #ffffff;
           color: #111827;
           border-radius: 22px;
-          padding: 32px;
+          padding: 12mm;
           box-sizing: border-box;
+          box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+          min-width: 0;
         }
 
         .dashboard-report-preview__header,
@@ -743,11 +796,12 @@ export default function DashboardReportModal(props) {
 
         .dashboard-report-summary-card,
         .dashboard-report-inline-summary div {
-          border: 1px solid #e5e7eb;
+          border: 1px solid #dbe3ee;
           border-radius: 18px;
           padding: 16px;
-          background: #f9fafb;
+          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
           min-width: 0;
+          overflow-wrap: anywhere;
         }
 
         .dashboard-report-inline-summary div {
@@ -779,21 +833,25 @@ export default function DashboardReportModal(props) {
         .dashboard-report-preview-section {
           break-inside: avoid;
           page-break-inside: avoid;
-          border: 1px solid #e5e7eb;
+          border: 1px solid #dbe3ee;
           border-radius: 20px;
           padding: 18px;
+          background: linear-gradient(180deg, #ffffff 0%, #fafcff 100%);
+          min-width: 0;
         }
 
         .dashboard-report-table-wrap {
           overflow-x: auto;
           overflow-y: visible;
+          min-width: 0;
         }
 
         .dashboard-report-table {
           width: 100%;
           border-collapse: collapse;
           font-size: 13px;
-          min-width: 640px;
+          min-width: 0;
+          table-layout: fixed;
         }
 
         .dashboard-report-table thead {
@@ -803,14 +861,15 @@ export default function DashboardReportModal(props) {
         .dashboard-report-table th,
         .dashboard-report-table td {
           padding: 10px 12px;
-          border-bottom: 1px solid #e5e7eb;
+          border-bottom: 1px solid #e2e8f0;
           text-align: left;
           vertical-align: top;
+          overflow-wrap: anywhere;
         }
 
         .dashboard-report-table th {
-          color: #374151;
-          background: #f3f4f6;
+          color: #1f2937;
+          background: #eef2f7;
           font-size: 12px;
           text-transform: uppercase;
           letter-spacing: 0.04em;
@@ -908,7 +967,8 @@ export default function DashboardReportModal(props) {
 
           .dashboard-report-preview {
             width: 100%;
-            padding: 20px;
+            max-width: 100%;
+            padding: 18px;
           }
         }
 
@@ -1004,8 +1064,64 @@ export default function DashboardReportModal(props) {
         }
 
         @media print {
+          html,
+          body {
+            background: #ffffff !important;
+          }
+
           body * {
             visibility: hidden;
+          }
+
+          .dashboard-report-overlay,
+          .dashboard-report-container,
+          .dashboard-report-sheet,
+          .dashboard-report-sheet__body,
+          .dashboard-report-sheet__body--preview,
+          .dashboard-report-preview,
+          .print-surface,
+          .print-surface * {
+            visibility: visible;
+          }
+
+          .dashboard-report-overlay {
+            display: block;
+            position: static;
+            padding: 0;
+            width: 100%;
+            height: auto;
+          }
+
+          .dashboard-report-backdrop,
+          .dashboard-report-sheet__header.no-print,
+          .dashboard-report-sheet__actions.no-print {
+            display: none !important;
+          }
+
+          .dashboard-report-container {
+            position: static;
+            width: 100%;
+            max-width: none;
+            max-height: none;
+            border: none;
+            box-shadow: none;
+            overflow: visible;
+            background: transparent;
+          }
+
+          .dashboard-report-sheet {
+            display: block;
+            max-height: none;
+            color: #111827;
+          }
+
+          .dashboard-report-sheet__body {
+            overflow: visible;
+            padding: 0;
+          }
+
+          .dashboard-report-sheet__body--preview {
+            padding: 0;
           }
 
           .print-surface,
@@ -1020,6 +1136,7 @@ export default function DashboardReportModal(props) {
             width: 100%;
             border-radius: 0;
             padding: 0;
+            overflow: visible;
           }
 
           .no-print {
@@ -1035,6 +1152,27 @@ export default function DashboardReportModal(props) {
           .dashboard-report-table tr {
             break-inside: avoid;
             page-break-inside: avoid;
+          }
+
+          .dashboard-report-summary-grid,
+          .dashboard-report-inline-summary {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+
+          .dashboard-report-table-wrap {
+            overflow: visible;
+          }
+
+          .dashboard-report-table {
+            min-width: 0;
+            width: 100%;
+            table-layout: fixed;
+            font-size: 10.5px;
+          }
+
+          .dashboard-report-table th,
+          .dashboard-report-table td {
+            word-break: break-word;
           }
         }
       `}</style>

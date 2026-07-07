@@ -80,6 +80,363 @@ const formatPercent = (value) => {
   });
 };
 
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+const buildPrintableReportHtml = (report) => {
+  const summaryCards = [
+    { label: 'Visualizacoes', value: report.summary.totalViews },
+    { label: 'Clientes interessados', value: report.summary.totalLeads },
+    { label: 'Vendas confirmadas', value: report.summary.confirmedSales },
+    { label: 'Faturamento confirmado', value: formatCurrency(report.summary.confirmedRevenue) },
+    { label: 'Taxa de conversao', value: `${formatPercent(report.summary.conversionRate)}%` },
+    { label: 'Ticket medio', value: report.summary.confirmedSales > 0 ? formatCurrency(report.summary.averageTicket) : 'Sem dados' }
+  ];
+
+  const renderSummaryCard = (item) => `
+    <article class="report-summary-card">
+      <span>${escapeHtml(item.label)}</span>
+      <strong>${escapeHtml(item.value)}</strong>
+    </article>
+  `;
+
+  const renderSummarySection = (section) => `
+    <section class="report-section">
+      <h2>${escapeHtml(section.title)}</h2>
+      <div class="report-summary-inline">
+        ${section.items
+          .map((item) => `
+            <article class="report-summary-card report-summary-card--compact">
+              <span>${escapeHtml(item.label)}</span>
+              <strong>${escapeHtml(item.value)}</strong>
+            </article>
+          `)
+          .join('')}
+      </div>
+    </section>
+  `;
+
+  const renderTableSection = (section) => `
+    <section class="report-section${section.id === 'sales' ? ' report-section--emphasized' : ''}">
+      <h2>${escapeHtml(section.title)}</h2>
+      ${
+        section.rows?.length
+          ? `
+            <div class="report-table-wrap">
+              <table class="report-table">
+                <thead>
+                  <tr>${section.columns.map((column) => `<th>${escapeHtml(column)}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                  ${section.rows
+                    .map(
+                      (row) => `
+                        <tr>
+                          ${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}
+                        </tr>
+                      `
+                    )
+                    .join('')}
+                </tbody>
+              </table>
+            </div>
+          `
+          : '<p class="report-empty">Nenhum dado encontrado para esta secao no periodo selecionado.</p>'
+      }
+      ${
+        section.totalLabel
+          ? `
+            <div class="report-total">
+              <span>${escapeHtml(section.totalLabel)}</span>
+              <strong>${escapeHtml(section.totalValue)}</strong>
+            </div>
+          `
+          : ''
+      }
+    </section>
+  `;
+
+  const sectionsHtml = report.sections
+    .map((section) => (section.kind === 'summary' ? renderSummarySection(section) : renderTableSection(section)))
+    .join('');
+
+  const missingDataHtml = report.missingData?.length
+    ? `
+      <section class="report-missing">
+        ${report.missingData.map((item) => `<p>${escapeHtml(item)}</p>`).join('')}
+      </section>
+    `
+    : '';
+
+  return `<!doctype html>
+  <html lang="pt-BR">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>${escapeHtml(`${report.header.storeName} | ${report.header.title}`)}</title>
+      <style>
+        @page {
+          size: A4 portrait;
+          margin: 12mm;
+        }
+
+        :root {
+          color-scheme: light;
+        }
+
+        * {
+          box-sizing: border-box;
+        }
+
+        html,
+        body {
+          margin: 0;
+          padding: 0;
+          background: #ffffff;
+          color: #111827;
+          font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .report-page {
+          width: 100%;
+          max-width: 186mm;
+          margin: 0 auto;
+        }
+
+        .report-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .report-brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+
+        .report-brand img,
+        .report-brand-fallback {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          object-fit: cover;
+          background: #111827;
+          color: #f59e0b;
+          display: grid;
+          place-items: center;
+          font-weight: 800;
+          font-size: 11px;
+          flex: 0 0 auto;
+        }
+
+        .report-brand span {
+          display: block;
+          margin-bottom: 2px;
+          color: #64748b;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .report-brand h1 {
+          margin: 0;
+          font-size: 18px;
+          line-height: 1.15;
+          overflow-wrap: anywhere;
+        }
+
+        .report-meta {
+          text-align: right;
+          color: #475569;
+          font-size: 10.5px;
+          line-height: 1.5;
+        }
+
+        .report-summary-grid,
+        .report-summary-inline {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          margin: 12px 0;
+        }
+
+        .report-summary-card {
+          border: 1px solid #dbe3ee;
+          border-radius: 12px;
+          padding: 10px 11px;
+          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+          min-width: 0;
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+
+        .report-summary-card span,
+        .report-empty,
+        .report-total span {
+          color: #64748b;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+
+        .report-summary-card strong,
+        .report-total strong {
+          display: block;
+          margin-top: 4px;
+          color: #0f172a;
+          font-size: 13px;
+          overflow-wrap: anywhere;
+        }
+
+        .report-section {
+          margin-top: 12px;
+          padding: 12px;
+          border: 1px solid #dbe3ee;
+          border-radius: 14px;
+          background: #ffffff;
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+
+        .report-section--emphasized {
+          border-color: #cbd5e1;
+          background: linear-gradient(180deg, #ffffff 0%, #fafcff 100%);
+        }
+
+        .report-section h2 {
+          margin: 0 0 8px;
+          font-size: 14px;
+          line-height: 1.2;
+        }
+
+        .report-table-wrap {
+          width: 100%;
+          overflow: visible;
+        }
+
+        .report-table {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+          font-size: 9.5px;
+        }
+
+        .report-table th,
+        .report-table td {
+          padding: 6px 7px;
+          border-bottom: 1px solid #e2e8f0;
+          text-align: left;
+          vertical-align: top;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+        }
+
+        .report-table th {
+          background: #eef2f7;
+          color: #1f2937;
+          text-transform: uppercase;
+          font-size: 8px;
+          letter-spacing: 0.04em;
+        }
+
+        .report-total {
+          margin-top: 8px;
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          align-items: baseline;
+          font-size: 10px;
+        }
+
+        .report-missing {
+          margin-top: 12px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(245, 158, 11, 0.3);
+          background: #fff7ed;
+          color: #9a3412;
+          font-size: 10.5px;
+          line-height: 1.5;
+        }
+
+        .report-footer {
+          margin-top: 12px;
+          padding-top: 10px;
+          border-top: 1px solid #e5e7eb;
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          color: #64748b;
+          font-size: 9.5px;
+        }
+
+        @media print {
+          .report-section,
+          .report-summary-card,
+          .report-total,
+          .report-missing {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <main class="report-page">
+        <header class="report-header">
+          <div class="report-brand">
+            ${
+              report.header.storeLogo
+                ? `<img src="${escapeHtml(report.header.storeLogo)}" alt="Logo da loja ${escapeHtml(report.header.storeName)}" />`
+                : '<div class="report-brand-fallback">PneuFlow</div>'
+            }
+            <div>
+              <span>${escapeHtml(report.header.storeName)}</span>
+              <h1>${escapeHtml(report.header.title)}</h1>
+            </div>
+          </div>
+          <div class="report-meta">
+            <div>Periodo: ${escapeHtml(report.header.rangeLabel)}</div>
+            <div>Gerado em: ${escapeHtml(report.header.generatedAt)}</div>
+          </div>
+        </header>
+
+        <section class="report-summary-grid">
+          ${summaryCards.map(renderSummaryCard).join('')}
+        </section>
+
+        ${missingDataHtml}
+
+        ${sectionsHtml}
+
+        <footer class="report-footer">
+          <span>${escapeHtml(report.header.storeName)}</span>
+          <span>Relatorio gerado pelo PneuFlow</span>
+        </footer>
+      </main>
+    </body>
+  </html>`;
+};
+
 const createMetricTheme = (accent, accentRgb, iconBackground) => ({
   accent,
   accentRgb,
@@ -773,9 +1130,69 @@ export default function DashboardHome() {
     }
   };
 
-  const handlePrintReport = () => {
-    if (typeof window === 'undefined') return;
-    window.print();
+  const handlePrintReport = async () => {
+    if (typeof window === 'undefined' || !reportPreview) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.opacity = '0';
+
+    const cleanup = () => {
+      setTimeout(() => {
+        iframe.remove();
+      }, 500);
+    };
+
+    try {
+      document.body.appendChild(iframe);
+      iframe.srcdoc = buildPrintableReportHtml(reportPreview);
+
+      await new Promise((resolve) => {
+        iframe.onload = resolve;
+      });
+
+      const frameWindow = iframe.contentWindow;
+      const frameDocument = iframe.contentDocument;
+
+      if (!frameWindow || !frameDocument) {
+        cleanup();
+        window.print();
+        return;
+      }
+
+      await Promise.all(
+        Array.from(frameDocument.images || []).map(
+          (image) =>
+            image.complete
+              ? Promise.resolve()
+              : new Promise((resolve) => {
+                  image.onload = resolve;
+                  image.onerror = resolve;
+                })
+        )
+      );
+
+      frameWindow.focus();
+      frameWindow.onafterprint = cleanup;
+      setTimeout(() => {
+        try {
+          frameWindow.print();
+        } catch (error) {
+          console.error('Nao foi possivel abrir a impressao:', error);
+          cleanup();
+        }
+      }, 250);
+    } catch (error) {
+      console.error('Nao foi possivel preparar a impressao:', error);
+      cleanup();
+      window.print();
+    }
   };
 
   const openMetricDetail = (metricId) => {
@@ -3027,6 +3444,7 @@ export default function DashboardHome() {
           min-height: 100%;
           border-radius: 22px;
           padding: 32px;
+          min-width: 0;
         }
 
         .dashboard-report-preview__header,
@@ -3080,7 +3498,7 @@ export default function DashboardHome() {
 
         .dashboard-report-summary-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
           gap: 12px;
           margin: 24px 0;
         }
@@ -3090,6 +3508,8 @@ export default function DashboardHome() {
           border-radius: 18px;
           padding: 16px;
           background: #f9fafb;
+          min-width: 0;
+          overflow-wrap: anywhere;
         }
 
         .dashboard-report-summary-card span,
@@ -3127,7 +3547,7 @@ export default function DashboardHome() {
 
         .dashboard-report-inline-summary {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
           gap: 12px;
         }
 
@@ -3136,16 +3556,21 @@ export default function DashboardHome() {
           border-radius: 14px;
           padding: 12px;
           background: #f9fafb;
+          min-width: 0;
+          overflow-wrap: anywhere;
         }
 
         .dashboard-report-table-wrap {
-          overflow: auto;
+          overflow-x: auto;
+          overflow-y: visible;
+          min-width: 0;
         }
 
         .dashboard-report-table {
           width: 100%;
           border-collapse: collapse;
           font-size: 13px;
+          min-width: 640px;
         }
 
         .dashboard-report-table thead {
@@ -3158,6 +3583,7 @@ export default function DashboardHome() {
           border-bottom: 1px solid #e5e7eb;
           text-align: left;
           vertical-align: top;
+          overflow-wrap: anywhere;
         }
 
         .dashboard-report-table th {
@@ -3230,8 +3656,64 @@ export default function DashboardHome() {
         }
 
         @media print {
+          html,
+          body {
+            background: #ffffff !important;
+          }
+
           body * {
             visibility: hidden;
+          }
+
+          .dashboard-report-overlay,
+          .dashboard-report-container,
+          .dashboard-report-sheet,
+          .dashboard-report-sheet__body,
+          .dashboard-report-sheet__body--preview,
+          .dashboard-report-preview,
+          .print-surface,
+          .print-surface * {
+            visibility: visible;
+          }
+
+          .dashboard-report-overlay {
+            display: block;
+            position: static;
+            padding: 0;
+            width: 100%;
+            height: auto;
+          }
+
+          .dashboard-report-backdrop,
+          .dashboard-report-sheet__header.no-print,
+          .dashboard-report-sheet__actions.no-print {
+            display: none !important;
+          }
+
+          .dashboard-report-container {
+            position: static;
+            width: 100%;
+            max-width: none;
+            max-height: none;
+            border: none;
+            box-shadow: none;
+            overflow: visible;
+            background: transparent;
+          }
+
+          .dashboard-report-sheet {
+            display: block;
+            max-height: none;
+            color: #111827;
+          }
+
+          .dashboard-report-sheet__body {
+            overflow: visible;
+            padding: 0;
+          }
+
+          .dashboard-report-sheet__body--preview {
+            padding: 0;
           }
 
           .print-surface,
@@ -3246,6 +3728,7 @@ export default function DashboardHome() {
             width: 100%;
             border-radius: 0;
             padding: 0;
+            overflow: visible;
           }
 
           .no-print {
@@ -3261,6 +3744,27 @@ export default function DashboardHome() {
           .dashboard-report-table tr {
             break-inside: avoid;
             page-break-inside: avoid;
+          }
+
+          .dashboard-report-summary-grid,
+          .dashboard-report-inline-summary {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          }
+
+          .dashboard-report-table-wrap {
+            overflow: visible;
+          }
+
+          .dashboard-report-table {
+            min-width: 0;
+            width: 100%;
+            table-layout: fixed;
+            font-size: 10.5px;
+          }
+
+          .dashboard-report-table th,
+          .dashboard-report-table td {
+            word-break: break-word;
           }
         }
       `}</style>
