@@ -1604,9 +1604,9 @@
 }
 
 .store-section-grid--final {
-  gap: 24px;
+  gap: 18px;
   align-items: stretch;
-  padding: 32px 0 56px;
+  padding: 24px 0 40px;
 }
 
 .info-card {
@@ -1618,8 +1618,8 @@
   display: flex;
   min-height: 100%;
   flex-direction: column;
-  gap: 18px;
-  padding: 22px;
+  gap: 14px;
+  padding: 18px;
   justify-content: space-between;
 }
 
@@ -1643,11 +1643,11 @@
 }
 
 .store-section-grid--final .info-card__title {
-  min-height: 2.3rem;
+  min-height: 0;
 }
 
 .store-section-grid--final .info-card__copy {
-  min-height: 5.2rem;
+  min-height: 0;
 }
 
 .info-card__copy--wide {
@@ -1676,11 +1676,11 @@
 .store-section-grid--final .quick-contact__list {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 14px;
+  gap: 10px;
 }
 
 .store-section-grid--final .payments-list {
-  gap: 14px;
+  gap: 10px;
 }
 
 .highlight-item,
@@ -1688,20 +1688,21 @@
 .payment-item {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 14px;
+  gap: 7px;
+  padding: 8px 11px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: #f8fafc;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .store-section-grid--final .highlight-item,
 .store-section-grid--final .hours-item,
 .store-section-grid--final .payment-item {
-  min-height: 56px;
-  border-radius: 16px;
+  min-height: 46px;
+  border-radius: 14px;
 }
 
 .highlight-item svg,
@@ -1736,9 +1737,9 @@
 }
 
 .contact-band {
-  margin-top: 18px;
-  padding: 14px;
-  border-radius: 22px;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 18px;
   background: linear-gradient(145deg, rgba(245, 158, 11, 0.16), rgba(249, 115, 22, 0.08));
   border: 1px solid rgba(245, 158, 11, 0.18);
 }
@@ -1748,8 +1749,8 @@
 }
 
 .contact-band--final-card {
-  padding: 16px;
-  border-radius: 20px;
+  padding: 12px;
+  border-radius: 16px;
   background: linear-gradient(145deg, rgba(245, 158, 11, 0.13), rgba(249, 115, 22, 0.06));
   border-color: rgba(245, 158, 11, 0.15);
 }
@@ -1766,15 +1767,16 @@
 .contact-band__title {
   margin: 0;
   color: #fff;
-  font-size: 1rem;
+  font-size: 0.94rem;
   font-weight: 900;
   letter-spacing: 0.03em;
   line-height: 1.1;
 }
 
 .contact-band__text {
-  margin: 8px 0 0;
-  line-height: 1.7;
+  margin: 6px 0 0;
+  line-height: 1.45;
+  font-size: 0.9rem;
 }
 
 .contact-band--final-cta {
@@ -1785,14 +1787,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .final-section-button {
-  min-width: 156px;
-  min-height: 52px;
-  padding: 0 22px;
+  min-width: 136px;
+  min-height: 44px;
+  padding: 0 16px;
   flex: 0 0 auto;
+  font-size: 0.95rem;
 }
 
 .public-footer {
