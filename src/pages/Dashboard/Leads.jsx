@@ -45,9 +45,54 @@ const LEAD_STATUS = {
 
 const STATUS_FILTERS = ['todos', 'em_atendimento', 'vendido', 'desistencia'];
 const QUANTITY_SAVE_DEBOUNCE_MS = 650;
+const SALE_CONFIRMATION_INITIAL_STATE = {
+  open: false,
+  lead: null,
+  phone: '',
+  summaryLabel: '',
+  quantity: 1,
+  totalValue: 0,
+  error: '',
+  saving: false
+};
 
 const normalizeQuantity = (value, fallback = 1) =>
   Math.max(1, Number.parseInt(value ?? fallback, 10) || 1);
+
+const normalizeBrazilPhoneDigits = (value) => {
+  let digits = String(value || '').replace(/\D/g, '');
+
+  if (digits.startsWith('55') && digits.length > 11) {
+    digits = digits.slice(2);
+  }
+
+  return digits.slice(0, 11);
+};
+
+const isValidBrazilPhoneDigits = (value) => {
+  const digits = normalizeBrazilPhoneDigits(value);
+  return digits.length === 10 || digits.length === 11;
+};
+
+const formatBrazilPhone = (value) => {
+  const digits = normalizeBrazilPhoneDigits(value);
+
+  if (digits.length === 0) return '';
+  if (digits.length <= 2) return `(${digits}`;
+
+  const ddd = digits.slice(0, 2);
+  const rest = digits.slice(2);
+
+  if (digits.length <= 6) {
+    return `(${ddd}) ${rest}`;
+  }
+
+  if (digits.length <= 10) {
+    return `(${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`;
+  }
+
+  return `(${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`;
+};
 
 const getLeadAvailableStock = (lead) => {
   const stock = Number(lead?.estoque_disponivel);
@@ -127,6 +172,7 @@ export default function Leads() {
   const [quantityDrafts, setQuantityDrafts] = useState({});
   const [quantitySaveStates, setQuantitySaveStates] = useState({});
   const [expandedLeadIds, setExpandedLeadIds] = useState({});
+  const [saleConfirmationModal, setSaleConfirmationModal] = useState(SALE_CONFIRMATION_INITIAL_STATE);
 
   const leadsRef = useRef([]);
   const quantityDraftsRef = useRef({});
@@ -476,6 +522,23 @@ export default function Leads() {
     }));
   }, []);
 
+  const closeSaleConfirmationModal = useCallback(() => {
+    setSaleConfirmationModal(SALE_CONFIRMATION_INITIAL_STATE);
+  }, []);
+
+  const openSaleConfirmationModal = useCallback((lead, payload) => {
+    setSaleConfirmationModal({
+      open: true,
+      lead,
+      phone: formatBrazilPhone(lead.telefone_cliente || ''),
+      summaryLabel: payload.summaryLabel,
+      quantity: payload.quantity,
+      totalValue: payload.totalValue,
+      error: '',
+      saving: false
+    });
+  }, []);
+
   const handleUpdateLeadStatus = async (lead, nextStatus) => {
     const hasPendingQuantitySave =
       dirtyQuantityIdsRef.current.has(lead.id) ||
@@ -523,8 +586,12 @@ export default function Leads() {
         return;
       }
 
-      const confirmed = window.confirm(`Confirmar a venda de ${summaryLabel}?`);
-      if (!confirmed) return;
+      openSaleConfirmationModal(currentLead, {
+        summaryLabel,
+        quantity,
+        totalValue
+      });
+      return;
     }
 
     if (currentStatus === 'vendido' && nextStatus === 'em_atendimento') {
@@ -577,6 +644,76 @@ export default function Leads() {
         message: err.message || 'Nao foi possivel atualizar o status do lead.',
         category: 'operation_errors'
       });
+      setFeedbackMessage({
+        type: 'error',
+        text: err.message || 'Não foi possível atualizar o status do lead.'
+      });
+      await loadData({ silent: true });
+    } finally {
+      setUpdatingLeadId(null);
+    }
+  };
+
+  const handleConfirmSale = async () => {
+    const currentLead = saleConfirmationModal.lead;
+    if (!currentLead) return;
+
+    const customerPhoneDigits = normalizeBrazilPhoneDigits(saleConfirmationModal.phone);
+    if (!isValidBrazilPhoneDigits(customerPhoneDigits)) {
+      setSaleConfirmationModal((current) => ({
+        ...current,
+        error: 'Informe um telefone válido com 10 ou 11 dígitos.'
+      }));
+      return;
+    }
+
+    setSaleConfirmationModal((current) => ({
+      ...current,
+      saving: true,
+      error: ''
+    }));
+
+    setUpdatingLeadId(currentLead.id);
+    setFeedbackMessage(null);
+
+    try {
+      const lead = leadsRef.current.find((item) => item.id === currentLead.id) || currentLead;
+      const quantity = saleConfirmationModal.quantity;
+      await storageService.updateLeadAttendanceStatus(currentLead.id, 'vendido', quantity, quantity, {
+        titulo_anuncio: lead.titulo_anuncio || null,
+        preco_anuncio: getLeadOfferPrice(lead),
+        quantidade_por_anuncio: getLeadQuantityPerOffer(lead),
+        valor_total: saleConfirmationModal.totalValue,
+        telefone_cliente: customerPhoneDigits
+      });
+      await createPersistentNotification({
+        type: 'success',
+        title: 'Venda finalizada',
+        message: `Venda de ${saleConfirmationModal.summaryLabel} confirmada para ${lead.nome_cliente}.`,
+        category: 'sales',
+        actionPath: '/dashboard/leads',
+        entityType: 'lead',
+        entityId: currentLead.id
+      });
+      setFeedbackMessage({
+        type: 'success',
+        text: 'Venda confirmada com sucesso.'
+      });
+      closeSaleConfirmationModal();
+      await loadData({ silent: true });
+    } catch (err) {
+      console.error('Erro ao confirmar venda com telefone:', err);
+      await createPersistentNotification({
+        type: 'error',
+        title: 'Nao foi possivel concluir',
+        message: err.message || 'Nao foi possivel atualizar o status do lead.',
+        category: 'operation_errors'
+      });
+      setSaleConfirmationModal((current) => ({
+        ...current,
+        saving: false,
+        error: err.message || 'Não foi possível atualizar o status do lead.'
+      }));
       setFeedbackMessage({
         type: 'error',
         text: err.message || 'Não foi possível atualizar o status do lead.'
@@ -780,11 +917,20 @@ export default function Leads() {
                         className={`lead-row ${statusMeta.rowClass}`}
                       >
                         <td style={{ padding: '16px 24px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div className="lead-icon-box lead-icon-box--client" aria-hidden="true">
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                            <div className="lead-icon-box lead-icon-box--client" aria-hidden="true" style={{ marginTop: '1px' }}>
                               <ClientIcon className="lead-icon" />
                             </div>
-                            <span style={{ fontWeight: 600, fontSize: '14px' }}>{lead.nome_cliente || 'Cliente Interessado'}</span>
+                            <div style={{ minWidth: 0 }}>
+                              <span style={{ display: 'block', fontWeight: 600, fontSize: '14px', lineHeight: 1.25 }}>
+                                {lead.nome_cliente || 'Cliente Interessado'}
+                              </span>
+                              {lead.telefone_cliente ? (
+                                <span style={{ display: 'block', marginTop: '3px', color: 'var(--text-muted)', fontSize: '12px', lineHeight: 1.2 }}>
+                                  {formatBrazilPhone(lead.telefone_cliente)}
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
                         </td>
 
@@ -1023,11 +1169,12 @@ export default function Leads() {
                                     {getLeadSummaryLabel(lead, isSold ? 'sold' : 'desired')}
                                   </span>
                                 </div>
-                                {lead.telefone_cliente && (
-                                  <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                                    Telefone: <strong style={{ color: 'var(--text-primary)' }}>{lead.telefone_cliente}</strong>
-                                  </div>
-                                )}
+                                <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                                  Telefone:{' '}
+                                  <strong style={{ color: 'var(--text-primary)' }}>
+                                    {lead.telefone_cliente ? formatBrazilPhone(lead.telefone_cliente) : 'Telefone não informado'}
+                                  </strong>
+                                </div>
                               </div>
 
                               {lead.observacao_cliente && (
@@ -1121,6 +1268,102 @@ export default function Leads() {
           </>
         )}
       </div>
+
+      {saleConfirmationModal.open && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sale-confirmation-title"
+        >
+          <div className="modal-content animate-slide leads-sale-modal" style={{ maxWidth: '520px', textAlign: 'left' }}>
+            <button
+              type="button"
+              className="modal-close"
+              onClick={closeSaleConfirmationModal}
+              aria-label="Fechar confirmação de venda"
+            >
+              <XCircle size={18} />
+            </button>
+
+            <form
+              className="leads-sale-modal__form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleConfirmSale();
+              }}
+            >
+              <div>
+                <span className="pf-kicker">Confirmar venda</span>
+                <h3 id="sale-confirmation-title" className="leads-sale-modal__title">
+                  Informe o telefone do cliente
+                </h3>
+                <p className="leads-sale-modal__copy">
+                  {saleConfirmationModal.summaryLabel}
+                </p>
+              </div>
+
+              <div className="leads-sale-modal__summary">
+                <div>
+                  <span>Cliente</span>
+                  <strong>{saleConfirmationModal.lead?.nome_cliente || 'Cliente Interessado'}</strong>
+                </div>
+                <div>
+                  <span>Quantidade</span>
+                  <strong>{saleConfirmationModal.quantity}</strong>
+                </div>
+                <div>
+                  <span>Valor</span>
+                  <strong>{formatHistoricalCurrency(saleConfirmationModal.totalValue)}</strong>
+                </div>
+              </div>
+
+              <label className="leads-sale-modal__field" htmlFor="customer-phone">
+                <span>Telefone do cliente</span>
+                <input
+                  id="customer-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  className="form-input"
+                  placeholder="(85) 99999-9999"
+                  value={saleConfirmationModal.phone}
+                  onChange={(event) => {
+                    const formattedPhone = formatBrazilPhone(event.target.value);
+                    setSaleConfirmationModal((current) => ({
+                      ...current,
+                      phone: formattedPhone,
+                      error: ''
+                    }));
+                  }}
+                />
+              </label>
+
+              <p className={`leads-sale-modal__error ${saleConfirmationModal.error ? 'leads-sale-modal__error--visible' : ''}`}>
+                {saleConfirmationModal.error || 'Digite um número com 10 ou 11 dígitos para concluir a venda.'}
+              </p>
+
+              <div className="leads-sale-modal__footer">
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={closeSaleConfirmationModal}
+                  disabled={saleConfirmationModal.saving}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={saleConfirmationModal.saving}
+                >
+                  {saleConfirmationModal.saving ? 'Confirmando...' : 'Confirmar venda'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .lead-row {
@@ -1588,6 +1831,85 @@ export default function Leads() {
           color: var(--text-muted);
           padding: 0 2px;
           font-weight: 700;
+        }
+
+        .leads-sale-modal {
+          width: min(520px, calc(100vw - 32px));
+        }
+
+        .leads-sale-modal__form {
+          display: grid;
+          gap: 18px;
+        }
+
+        .leads-sale-modal__title {
+          margin: 6px 0 8px;
+          font-size: 24px;
+          line-height: 1.15;
+        }
+
+        .leads-sale-modal__copy {
+          color: var(--text-secondary);
+          font-size: 14px;
+          line-height: 1.6;
+        }
+
+        .leads-sale-modal__summary {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+          padding: 14px;
+          border-radius: var(--radius-lg);
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .leads-sale-modal__summary div {
+          display: grid;
+          gap: 4px;
+        }
+
+        .leads-sale-modal__summary span,
+        .leads-sale-modal__field span {
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+
+        .leads-sale-modal__summary strong {
+          color: var(--text-primary);
+          font-size: 14px;
+          line-height: 1.35;
+        }
+
+        .leads-sale-modal__field {
+          display: grid;
+          gap: 8px;
+        }
+
+        .leads-sale-modal__error {
+          min-height: 20px;
+          margin: 0;
+          color: #fca5a5;
+          font-size: 13px;
+          line-height: 1.5;
+          opacity: 0;
+          transform: translateY(-2px);
+          transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .leads-sale-modal__error--visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .leads-sale-modal__footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          flex-wrap: wrap;
         }
 
         @media (max-width: 768px) {
