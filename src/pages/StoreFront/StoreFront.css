@@ -1948,6 +1948,10 @@
   margin-top: 14px;
 }
 
+.contact-band--detail .contact-band__row {
+  gap: 12px;
+}
+
 .storefront-photo-viewer {
   padding: 12px;
 }
@@ -2692,30 +2696,40 @@
     gap: 10px;
   }
 
+  .contact-band--detail {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 16px;
+  }
+
+  .contact-band--detail .contact-band__title {
+    font-size: 1.02rem;
+  }
+
+  .contact-band--detail .info-card__copy {
+    margin-top: 4px !important;
+    font-size: 0.82rem;
+    line-height: 1.38;
+  }
+
   .quantity-selector--detail {
     margin-top: 0;
     padding: 8px 9px;
   }
 
   .product-detail-actions {
-    position: sticky;
-    bottom: 0;
-    z-index: 1;
     display: grid !important;
     grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
     align-items: stretch;
-    margin-top: 4px !important;
+    margin-top: 2px !important;
     gap: 8px !important;
-    padding: 10px 0 calc(8px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(180deg, rgba(7, 10, 15, 0), rgba(7, 10, 15, 0.88) 26%);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 2px 0 calc(6px + env(safe-area-inset-bottom, 0px));
   }
 
   .product-detail-actions .button {
-    min-height: 44px;
+    min-height: 50px;
     width: 100%;
-    font-size: 0.86rem;
+    font-size: 0.88rem;
     padding-inline: 12px;
   }
 

@@ -1411,7 +1411,7 @@ export default function StoreHome() {
                 <span className="product-badge product-badge--spec">{selectedTire.medida}</span>
               </div>
 
-              <div className="contact-band contact-band--detail" style={{ marginTop: '18px' }}>
+              <div className="contact-band contact-band--detail">
                 <div className="contact-band__row">
                   <div>
                     <p className="section-kicker" style={{ marginBottom: '6px' }}>{isKitOffer(selectedTire) ? 'Preço do kit' : 'Preço à vista'}</p>
@@ -1440,7 +1440,7 @@ export default function StoreHome() {
                 className="quantity-selector--detail"
               />
 
-              <div className="product-detail-actions" style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+              <div className="product-detail-actions" style={{ display: 'flex', gap: '12px' }}>
                 <button type="button" className="button button--ghost button--xl" style={{ flex: 1 }} onClick={() => setSelectedTire(null)}>
                   Voltar
                 </button>
