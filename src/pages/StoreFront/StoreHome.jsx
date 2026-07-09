@@ -177,6 +177,7 @@ export default function StoreHome() {
 
   const [selectedTire, setSelectedTire] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [photoViewer, setPhotoViewer] = useState({ open: false, index: 0, scale: 1 });
   const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [targetTire, setTargetTire] = useState(null);
   const [leadQuantity, setLeadQuantity] = useState(1);
@@ -228,6 +229,19 @@ export default function StoreHome() {
       console.warn('Nao foi possivel persistir o carrinho:', error);
     }
   }, [cartItems, cartStorageKey]);
+
+  useEffect(() => {
+    if (!photoViewer.open) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closePhotoViewer();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [photoViewer.open]);
 
   useEffect(() => {
     if (!tires.length) return;
@@ -470,6 +484,27 @@ export default function StoreHome() {
   const galleryImages = useMemo(() => {
     return getTireImages(selectedTire);
   }, [selectedTire]);
+
+  const clampPhotoScale = (value) => Math.min(3, Math.max(1, Number(value) || 1));
+
+  const openPhotoViewer = (index = activeImageIndex) => {
+    setPhotoViewer({
+      open: true,
+      index: Math.max(0, Math.min(index, Math.max(galleryImages.length - 1, 0))),
+      scale: 1
+    });
+  };
+
+  const closePhotoViewer = () => {
+    setPhotoViewer({ open: false, index: 0, scale: 1 });
+  };
+
+  const shiftPhotoViewer = (delta) => {
+    setPhotoViewer((current) => ({
+      ...current,
+      scale: clampPhotoScale(current.scale + delta)
+    }));
+  };
 
   const placeholderImage = 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=800';
   const primaryColor = '#f59e0b';
@@ -1261,7 +1296,7 @@ export default function StoreHome() {
       )}
 
       {selectedTire && (
-        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+        <div className="modal-overlay modal-overlay--detail" style={{ zIndex: 1000 }}>
           <div
             className="modal-content-new modal-content-new--detail animate-slide"
             style={{ textAlign: 'left', maxWidth: '760px', width: 'min(100%, 760px)' }}
@@ -1271,17 +1306,24 @@ export default function StoreHome() {
             </button>
 
             <div className="product-detail-hero">
-              <div
-                className="product-detail-hero__image"
-                style={{
-                  minHeight: '220px',
-                  maxHeight: '260px',
-                  backgroundImage: `linear-gradient(180deg, rgba(5,7,12,0.02), rgba(5,7,12,0.72)), url(${galleryImages.length > 0 ? galleryImages[activeImageIndex] : placeholderImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  transition: 'background-image 0.3s ease-in-out'
-                }}
-              />
+              <button
+                type="button"
+                className="product-detail-hero__button"
+                onClick={() => openPhotoViewer(activeImageIndex)}
+                aria-label="Abrir imagem ampliada do anúncio"
+              >
+                <div
+                  className="product-detail-hero__image"
+                  style={{
+                    minHeight: '220px',
+                    maxHeight: '260px',
+                    backgroundImage: `linear-gradient(180deg, rgba(5,7,12,0.02), rgba(5,7,12,0.72)), url(${galleryImages.length > 0 ? galleryImages[activeImageIndex] : placeholderImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    transition: 'background-image 0.3s ease-in-out'
+                  }}
+                />
+              </button>
               
               {galleryImages.length > 1 && (
                 <>
@@ -1369,7 +1411,7 @@ export default function StoreHome() {
                 <span className="product-badge product-badge--spec">{selectedTire.medida}</span>
               </div>
 
-              <div className="contact-band" style={{ marginTop: '18px' }}>
+              <div className="contact-band contact-band--detail" style={{ marginTop: '18px' }}>
                 <div className="contact-band__row">
                   <div>
                     <p className="section-kicker" style={{ marginBottom: '6px' }}>{isKitOffer(selectedTire) ? 'Preço do kit' : 'Preço à vista'}</p>
@@ -1394,6 +1436,7 @@ export default function StoreHome() {
                     : ''
                 }
                 disabled={!commercialContactEnabled}
+                compact
                 className="quantity-selector--detail"
               />
 
@@ -1415,6 +1458,94 @@ export default function StoreHome() {
                   <ShoppingCart size={16} />
                     {getAvailableStock(selectedTire) > 0 ? 'Comprar agora' : 'Indisponivel'}
                   </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {photoViewer.open && selectedTire && (
+        <div
+          className="modal-overlay storefront-photo-viewer"
+          style={{ zIndex: 1200 }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Visualizador ampliado da imagem do anúncio"
+          onClick={closePhotoViewer}
+        >
+          <div className="storefront-photo-viewer__sheet" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="modal-close storefront-photo-viewer__close" onClick={closePhotoViewer} aria-label="Fechar imagem">
+              <X size={18} />
+            </button>
+            <div
+              className="storefront-photo-viewer__stage"
+              onWheel={(event) => {
+                event.preventDefault();
+                shiftPhotoViewer(event.deltaY < 0 ? 0.15 : -0.15);
+              }}
+            >
+              <img
+                className="storefront-photo-viewer__image"
+                src={galleryImages[photoViewer.index] || placeholderImage}
+                alt={getOfferTitle(selectedTire)}
+                style={{ width: `${photoViewer.scale * 100}%` }}
+              />
+            </div>
+            <div className="storefront-photo-viewer__footer">
+              {galleryImages.length > 1 && (
+                <div className="storefront-photo-viewer__dots" aria-hidden="true">
+                  {galleryImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`storefront-photo-viewer__dot ${photoViewer.index === idx ? 'is-active' : ''}`}
+                      onClick={() => setPhotoViewer((current) => ({ ...current, index: idx, scale: 1 }))}
+                      aria-label={`Ver foto ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <div className="storefront-photo-viewer__controls">
+                {galleryImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="button button--ghost storefront-photo-viewer__nav"
+                      onClick={() =>
+                        setPhotoViewer((current) => ({
+                          ...current,
+                          index: current.index === 0 ? galleryImages.length - 1 : current.index - 1,
+                          scale: 1
+                        }))
+                      }
+                    >
+                      <ArrowRight size={16} style={{ transform: 'rotate(180deg)' }} />
+                    </button>
+                    <button
+                      type="button"
+                      className="button button--ghost storefront-photo-viewer__nav"
+                      onClick={() =>
+                        setPhotoViewer((current) => ({
+                          ...current,
+                          index: current.index === galleryImages.length - 1 ? 0 : current.index + 1,
+                          scale: 1
+                        }))
+                      }
+                    >
+                      <ArrowRight size={16} />
+                    </button>
+                  </>
+                )}
+                <button type="button" className="button button--ghost storefront-photo-viewer__zoom" onClick={() => shiftPhotoViewer(-0.2)}>
+                  -
+                </button>
+                <button type="button" className="button button--ghost storefront-photo-viewer__zoom" onClick={() => setPhotoViewer((current) => ({ ...current, scale: 1 }))}>
+                  1x
+                </button>
+                <button type="button" className="button button--ghost storefront-photo-viewer__zoom" onClick={() => shiftPhotoViewer(0.2)}>
+                  +
+                </button>
               </div>
             </div>
           </div>
