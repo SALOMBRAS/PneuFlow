@@ -2260,25 +2260,34 @@
   }
 
   .modal-content-new--detail {
-    max-height: 92dvh;
+    max-height: 96dvh;
   }
 
   .modal-content-new__body--detail {
-    padding: 18px;
+    padding: 14px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+    gap: 10px;
   }
 
   .modal-title--detail {
     max-width: none;
-    font-size: clamp(1.4rem, 6vw, 1.8rem);
+    font-size: clamp(1.22rem, 5.4vw, 1.58rem);
+    line-height: 1.05;
   }
 
   .info-card__copy--detail {
     max-width: none;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .modal-detail-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 8px;
   }
 
   .product-badge--spec {
@@ -2532,30 +2541,59 @@
   }
 
   .product-detail-hero__image {
-    min-height: 40vh !important;
-    max-height: 44vh !important;
+    min-height: clamp(170px, 26vh, 220px) !important;
+    max-height: clamp(170px, 26vh, 220px) !important;
   }
 
   .modal-content-new__body--detail {
-    padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-    gap: 14px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
   }
 
   .quantity-selector--detail {
     margin-top: 0;
+    padding: 8px;
   }
 
   .product-detail-actions {
-    flex-direction: column;
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
     align-items: stretch;
-    margin-top: 8px !important;
-    gap: 10px !important;
+    margin-top: 4px !important;
+    gap: 8px !important;
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .product-detail-actions .button {
-    min-height: 48px;
+    min-height: 42px;
     width: 100%;
+    font-size: 0.88rem;
+    padding-inline: 12px;
+  }
+
+  .quantity-selector__header {
+    gap: 6px;
+    font-size: 0.7rem;
+  }
+
+  .quantity-selector__header small {
+    font-size: 0.64rem;
+  }
+
+  .quantity-selector__control {
+    grid-template-columns: 38px minmax(46px, 1fr) 38px;
+    gap: 6px;
+  }
+
+  .quantity-selector__control button,
+  .quantity-selector__control input {
+    min-height: 36px;
+    border-radius: 12px;
+  }
+
+  .quantity-selector__helper {
+    font-size: 0.72rem;
+    line-height: 1.28;
   }
 
   .product-top-badges {
@@ -2611,5 +2649,39 @@
 
   .hero-stat {
     padding: 10px;
+  }
+}
+
+@media (max-width: 768px) and (max-height: 700px) {
+  .product-detail-hero__image {
+    min-height: 150px !important;
+    max-height: 190px !important;
+  }
+
+  .modal-content-new__body--detail {
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+    gap: 6px;
+  }
+
+  .modal-title--detail {
+    font-size: clamp(1.1rem, 5vw, 1.35rem);
+  }
+
+  .info-card__copy--detail {
+    -webkit-line-clamp: 1;
+  }
+
+  .quantity-selector__control button,
+  .quantity-selector__control input {
+    min-height: 34px;
+  }
+
+  .product-detail-actions {
+    gap: 6px !important;
+  }
+
+  .product-detail-actions .button {
+    min-height: 40px;
+    font-size: 0.82rem;
   }
 }
