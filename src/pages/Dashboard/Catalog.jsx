@@ -678,31 +678,34 @@ export default function Catalog() {
       {/* MODAL: ADD/EDIT TIRE */}
       {tireModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content animate-slide" style={{ maxWidth: '700px', textAlign: 'left', maxHeight: '90vh', overflowY: 'auto' }}>
-            <button className="modal-close" onClick={() => setTireModalOpen(false)}>
-              <X size={20} />
-            </button>
-            <h3 style={{ fontSize: '20px', marginBottom: '24px' }}>
-              {formData.id ? 'Editar Pneu' : 'Cadastrar Novo Pneu'}
-            </h3>
+          <div className="modal-content animate-slide catalog-tire-modal" style={{ maxWidth: '700px', textAlign: 'left' }}>
+            <div className="catalog-tire-modal__header">
+              <h3 style={{ fontSize: '20px', margin: 0 }}>
+                {formData.id ? 'Editar Pneu' : 'Cadastrar Novo Pneu'}
+              </h3>
+              <button className="modal-close catalog-tire-modal__close" onClick={() => setTireModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
 
-            {Object.keys(fieldErrors).length > 0 && (
-              <div
-                style={{
-                  marginBottom: '20px',
-                  padding: '12px 14px',
-                  borderRadius: '14px',
-                  border: '1px solid rgba(239, 68, 68, 0.22)',
-                  background: 'rgba(239, 68, 68, 0.08)',
-                  color: '#fecaca'
-                }}
-              >
-                Revise os campos destacados antes de salvar.
-              </div>
-            )}
+            <form onSubmit={handleSaveTire} className="catalog-tire-modal__form">
+              <div className="catalog-tire-modal__body">
+                {Object.keys(fieldErrors).length > 0 && (
+                  <div
+                    style={{
+                      marginBottom: '20px',
+                      padding: '12px 14px',
+                      borderRadius: '14px',
+                      border: '1px solid rgba(239, 68, 68, 0.22)',
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      color: '#fecaca'
+                    }}
+                  >
+                    Revise os campos destacados antes de salvar.
+                  </div>
+                )}
 
-            <form onSubmit={handleSaveTire}>
-              <div className="grid-cols-2" style={{ gap: '16px' }}>
+                <div className="grid-cols-2" style={{ gap: '16px' }}>
                 <div className="form-group">
                   <label className="form-label">Marca *</label>
                   <input 
@@ -1038,7 +1041,9 @@ export default function Catalog() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '32px' }}>
+              </div>
+
+              <div className="catalog-tire-modal__footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setTireModalOpen(false)} disabled={submitting}>
                   Cancelar
                 </button>
@@ -1057,6 +1062,76 @@ export default function Catalog() {
 
         .catalog-page-header .btn {
           flex: 0 0 auto;
+        }
+
+        .catalog-tire-modal {
+          max-height: min(90vh, 860px);
+          padding: 0;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .catalog-tire-modal__header {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 28px 32px 20px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          flex-shrink: 0;
+        }
+
+        .catalog-tire-modal__close {
+          position: static;
+          flex: 0 0 auto;
+        }
+
+        .catalog-tire-modal__form {
+          min-height: 0;
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+        }
+
+        .catalog-tire-modal__body {
+          min-height: 0;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 24px 24px 0 32px;
+          scrollbar-gutter: stable;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+        }
+
+        .catalog-tire-modal__body::-webkit-scrollbar {
+          width: 10px;
+        }
+
+        .catalog-tire-modal__body::-webkit-scrollbar-track {
+          background: transparent;
+          margin: 10px 0 14px;
+        }
+
+        .catalog-tire-modal__body::-webkit-scrollbar-thumb {
+          background: rgba(148, 163, 184, 0.34);
+          border-radius: 999px;
+          border: 2px solid rgba(15, 23, 42, 0.22);
+        }
+
+        .catalog-tire-modal__body::-webkit-scrollbar-thumb:hover {
+          background: rgba(148, 163, 184, 0.5);
+        }
+
+        .catalog-tire-modal__footer {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+          padding: 20px 32px 28px;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          background: linear-gradient(180deg, rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.38));
+          flex-shrink: 0;
         }
 
         .catalog-summary-grid {
@@ -1191,6 +1266,22 @@ export default function Catalog() {
         }
 
         @media (max-width: 768px) {
+          .catalog-tire-modal {
+            max-height: calc(100dvh - 24px);
+          }
+
+          .catalog-tire-modal__header {
+            padding: 24px 20px 18px;
+          }
+
+          .catalog-tire-modal__body {
+            padding: 20px 14px 0 20px;
+          }
+
+          .catalog-tire-modal__footer {
+            padding: 18px 20px 24px;
+          }
+
           .catalog-page-header {
             display: grid;
             gap: 16px;
@@ -1215,6 +1306,15 @@ export default function Catalog() {
         }
 
         @media (max-width: 480px) {
+          .catalog-tire-modal__footer {
+            flex-direction: column-reverse;
+          }
+
+          .catalog-tire-modal__footer .btn {
+            width: 100%;
+            justify-content: center;
+          }
+
           .catalog-stock-badge {
             max-width: calc(100% - 20px);
             font-size: 10px;

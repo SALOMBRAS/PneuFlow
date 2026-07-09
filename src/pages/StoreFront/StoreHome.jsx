@@ -10,6 +10,7 @@ import { MOTORCYCLE_MODELS } from '../../data/motorcycleModels';
 import {
   getAvailabilityLabel,
   getAvailableOfferCount,
+  getCompatibilitySummary,
   getLeadSummaryLabel,
   getOfferDescriptor,
   getOfferQuantityLabel,
@@ -30,8 +31,6 @@ import {
   Clock3,
   ShieldCheck,
   CreditCard,
-  PhoneCall,
-  Truck,
   Filter,
   Sparkles,
   Search,
@@ -132,6 +131,8 @@ const INACTIVE_STOREFRONT_MESSAGE = 'Esta vitrine está temporariamente inativa.
 
 const getCompatibilitySnippet = (tire) =>
   tire.compatibilidade || tire.compatibility || tire.descricao || tire.description || 'Compatibilidade premium sob consulta';
+
+const getCompatibilityDisplay = (tire) => getCompatibilitySummary(tire, 2);
 
 const formatPublicAddress = (store) => {
   const street = store?.endereco || '';
@@ -701,8 +702,8 @@ export default function StoreHome() {
     const leadPayload = {
       loja_id: store.id,
       nome_cliente: customerName.trim(),
-      telefone_cliente: customerPhone.trim(),
-      observacao_cliente: customerNote.trim(),
+      telefone_cliente: null,
+      observacao_cliente: null,
       items: cartItems.map((item) => ({
         product_id: item.product_id,
         quantidade: item.quantidade
@@ -896,9 +897,8 @@ export default function StoreHome() {
             )}
           </div>
         </section>
-
-        <section className="store-section-grid">
-          <article className="info-card">
+        <section className="store-section-grid store-section-grid--final">
+          <article className="info-card info-card--final">
             <p className="section-kicker">Operacao</p>
             <h3 className="info-card__title">Horário e endereço</h3>
             <p className="info-card__copy">
@@ -918,27 +918,9 @@ export default function StoreHome() {
                 {status.label}
               </span>
             </div>
-            <div className="contact-band">
-              <div className="contact-band__row">
-                <div>
-                  <h4 className="contact-band__title">Contato rápido</h4>
-                  <p className="contact-band__text">Clique para abrir o WhatsApp e falar com a loja em poucos segundos.</p>
-                </div>
-                <button
-                  type="button"
-                  className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
-                  onClick={handleGeneralWhatsapp}
-                  disabled={!commercialContactEnabled}
-                  aria-disabled={!commercialContactEnabled}
-                >
-                  <MessageSquare size={18} />
-                  WhatsApp
-                </button>
-              </div>
-            </div>
           </article>
 
-          <article className="info-card">
+          <article className="info-card info-card--final">
             <p className="section-kicker">Pagamento</p>
             <h3 className="info-card__title">Formas aceitas</h3>
             <p className="info-card__copy">Mostre facilidade de compra e reduza a fricção no fechamento.</p>
@@ -950,13 +932,13 @@ export default function StoreHome() {
                 </span>
               ))}
             </div>
-            <div className="contact-band" style={{ marginTop: '18px' }}>
-              <div className="contact-band__row">
+            <div className="contact-band contact-band--final-card" style={{ marginTop: '18px' }}>
+              <div className="contact-band__row contact-band__row--final">
                 <div>
                   <h4 className="contact-band__title">{store.nome}</h4>
                   <p className="contact-band__text">{store.description || 'Uma vitrine feita para vender mais.'}</p>
                 </div>
-                <button type="button" className="button button--primary button--xl" onClick={scrollToCatalog}>
+                <button type="button" className="button button--primary button--xl final-section-button" onClick={scrollToCatalog}>
                   <ArrowRight size={18} />
                   Ver catálogo
                 </button>
@@ -964,21 +946,39 @@ export default function StoreHome() {
             </div>
           </article>
 
-          <article className="info-card">
-            <p className="section-kicker">Contato direto</p>
-            <h3 className="info-card__title">Atendimento com foco em conversão</h3>
+          <article className="info-card info-card--final info-card--accent">
+            <p className="section-kicker">Atendimento</p>
+            <h3 className="info-card__title">Contato rápido</h3>
             <p className="info-card__copy">
-              Deixe o acesso ao WhatsApp sempre visível. Esse é o atalho principal para fechar a venda.
+              Abra o WhatsApp da loja em poucos segundos e continue o atendimento sem sair da vitrine.
             </p>
-            <div className="quick-contact__list">
+            <div className="quick-contact__list quick-contact__list--single">
               <span className="highlight-item">
-                <PhoneCall size={14} />
-                WhatsApp comercial
+                <MessageSquare size={14} />
+                Resposta direta no WhatsApp
               </span>
               <span className="highlight-item">
-                <Truck size={14} />
-                Entrega e instalação
+                <ShieldCheck size={14} />
+                Atendimento com os dados da loja
               </span>
+            </div>
+            <div className="contact-band contact-band--final-card contact-band--final-cta">
+              <div className="contact-band__row contact-band__row--final">
+                <div>
+                  <h4 className="contact-band__title">{store.nome}</h4>
+                  <p className="contact-band__text">Clique para chamar a loja e acelerar sua compra.</p>
+                </div>
+                <button
+                  type="button"
+                  className={`button button--primary button--xl final-section-button ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+                  onClick={handleGeneralWhatsapp}
+                  disabled={!commercialContactEnabled}
+                  aria-disabled={!commercialContactEnabled}
+                >
+                  <MessageSquare size={18} />
+                  WhatsApp
+                </button>
+              </div>
             </div>
           </article>
         </section>
@@ -1262,7 +1262,10 @@ export default function StoreHome() {
 
       {selectedTire && (
         <div className="modal-overlay" style={{ zIndex: 1000 }}>
-          <div className="modal-content-new animate-slide" style={{ textAlign: 'left', maxWidth: '500px' }}>
+          <div
+            className="modal-content-new modal-content-new--detail animate-slide"
+            style={{ textAlign: 'left', maxWidth: '760px', width: 'min(100%, 760px)' }}
+          >
             <button className="modal-close" onClick={() => setSelectedTire(null)} type="button" aria-label="Fechar">
               <X size={18} />
             </button>
@@ -1270,7 +1273,8 @@ export default function StoreHome() {
             <div style={{ position: 'relative' }}>
               <div
                 style={{
-                  minHeight: '300px',
+                  minHeight: '220px',
+                  maxHeight: '260px',
                   backgroundImage: `linear-gradient(180deg, rgba(5,7,12,0.02), rgba(5,7,12,0.72)), url(${galleryImages.length > 0 ? galleryImages[activeImageIndex] : placeholderImage})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
@@ -1354,12 +1358,12 @@ export default function StoreHome() {
               )}
             </div>
 
-            <div style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
-                <div>
+            <div className="modal-content-new__body modal-content-new__body--detail">
+              <div className="modal-detail-header">
+                <div style={{ minWidth: 0, flex: '1 1 auto' }}>
                   <p className="section-kicker" style={{ marginBottom: '6px' }}>{selectedTire.marca}</p>
-                  <h3 className="modal-title" style={{ fontSize: '2rem' }}>{getOfferTitle(selectedTire)}</h3>
-                  <p className="info-card__copy" style={{ marginTop: '10px' }}>{getCompatibilitySnippet(selectedTire)}</p>
+                  <h3 className="modal-title modal-title--detail">{getOfferTitle(selectedTire)}</h3>
+                  <p className="info-card__copy info-card__copy--detail" style={{ marginTop: '10px' }}>{getCompatibilityDisplay(selectedTire)}</p>
                 </div>
                 <span className="product-badge product-badge--spec">{selectedTire.medida}</span>
               </div>
@@ -1400,15 +1404,15 @@ export default function StoreHome() {
                   type="button"
                   className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
                   style={{ flex: 2 }}
-                  disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
-                  aria-disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
-                  onClick={() => {
-                    handleInterest(selectedTire, detailQuantity);
-                    setSelectedTire(null);
-                  }}
-                >
-                  <ShoppingCart size={16} />
-                  {getAvailableStock(selectedTire) > 0 ? 'Adicionar ao carrinho' : 'Indisponivel'}
+                disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
+                aria-disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
+                onClick={() => {
+                  handleInterest(selectedTire, detailQuantity);
+                  setSelectedTire(null);
+                }}
+              >
+                <ShoppingCart size={16} />
+                  {getAvailableStock(selectedTire) > 0 ? 'Comprar agora' : 'Indisponivel'}
                 </button>
               </div>
             </div>
@@ -1527,19 +1531,11 @@ export default function StoreHome() {
                       <label className="filter-label" htmlFor="cart-customer-name">Seu nome *</label>
                       <input id="cart-customer-name" type="text" required className="search-card__input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
                     </div>
-                    <div>
-                      <label className="filter-label" htmlFor="cart-customer-phone">Telefone ou WhatsApp *</label>
-                      <input id="cart-customer-phone" type="tel" required className="search-card__input" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="filter-label" htmlFor="cart-customer-note">Observacao (opcional)</label>
-                      <textarea id="cart-customer-note" className="search-card__input" rows="3" value={customerNote} onChange={(e) => setCustomerNote(e.target.value)} style={{ resize: 'vertical', minHeight: '96px' }} />
-                    </div>
                     <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between' }}>
                       <button type="button" className="button button--ghost button--xl" onClick={() => setCartItems([])}>
                         Limpar carrinho
                       </button>
-                      <button type="submit" className="button button--primary button--xl" disabled={savingLead || !customerName.trim() || !customerPhone.trim() || cartItems.length === 0}>
+                      <button type="submit" className="button button--primary button--xl" disabled={savingLead || !customerName.trim() || cartItems.length === 0}>
                         {savingLead ? 'Enviando...' : 'Enviar orcamento'}
                       </button>
                     </div>
