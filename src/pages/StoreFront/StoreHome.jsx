@@ -897,9 +897,8 @@ export default function StoreHome() {
             )}
           </div>
         </section>
-
-        <section className="store-section-grid">
-          <article className="info-card">
+        <section className="store-section-grid store-section-grid--final">
+          <article className="info-card info-card--final">
             <p className="section-kicker">Operacao</p>
             <h3 className="info-card__title">Horário e endereço</h3>
             <p className="info-card__copy">
@@ -919,27 +918,9 @@ export default function StoreHome() {
                 {status.label}
               </span>
             </div>
-            <div className="contact-band">
-              <div className="contact-band__row">
-                <div>
-                  <h4 className="contact-band__title">Contato rápido</h4>
-                  <p className="contact-band__text">Clique para abrir o WhatsApp e falar com a loja em poucos segundos.</p>
-                </div>
-                <button
-                  type="button"
-                  className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
-                  onClick={handleGeneralWhatsapp}
-                  disabled={!commercialContactEnabled}
-                  aria-disabled={!commercialContactEnabled}
-                >
-                  <MessageSquare size={18} />
-                  WhatsApp
-                </button>
-              </div>
-            </div>
           </article>
 
-          <article className="info-card">
+          <article className="info-card info-card--final">
             <p className="section-kicker">Pagamento</p>
             <h3 className="info-card__title">Formas aceitas</h3>
             <p className="info-card__copy">Mostre facilidade de compra e reduza a fricção no fechamento.</p>
@@ -965,6 +946,41 @@ export default function StoreHome() {
             </div>
           </article>
 
+          <article className="info-card info-card--final info-card--accent">
+            <p className="section-kicker">Atendimento</p>
+            <h3 className="info-card__title">Contato rápido</h3>
+            <p className="info-card__copy">
+              Abra o WhatsApp da loja em poucos segundos e continue o atendimento sem sair da vitrine.
+            </p>
+            <div className="quick-contact__list quick-contact__list--single">
+              <span className="highlight-item">
+                <MessageSquare size={14} />
+                Resposta direta no WhatsApp
+              </span>
+              <span className="highlight-item">
+                <ShieldCheck size={14} />
+                Atendimento com os dados da loja
+              </span>
+            </div>
+            <div className="contact-band contact-band--final-cta">
+              <div className="contact-band__row">
+                <div>
+                  <h4 className="contact-band__title">{store.nome}</h4>
+                  <p className="contact-band__text">Clique para chamar a loja e acelerar sua compra.</p>
+                </div>
+                <button
+                  type="button"
+                  className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+                  onClick={handleGeneralWhatsapp}
+                  disabled={!commercialContactEnabled}
+                  aria-disabled={!commercialContactEnabled}
+                >
+                  <MessageSquare size={18} />
+                  WhatsApp
+                </button>
+              </div>
+            </div>
+          </article>
         </section>
       </main>
 
