@@ -932,13 +932,13 @@ export default function StoreHome() {
                 </span>
               ))}
             </div>
-            <div className="contact-band" style={{ marginTop: '18px' }}>
-              <div className="contact-band__row">
+            <div className="contact-band contact-band--final-card" style={{ marginTop: '18px' }}>
+              <div className="contact-band__row contact-band__row--final">
                 <div>
                   <h4 className="contact-band__title">{store.nome}</h4>
                   <p className="contact-band__text">{store.description || 'Uma vitrine feita para vender mais.'}</p>
                 </div>
-                <button type="button" className="button button--primary button--xl" onClick={scrollToCatalog}>
+                <button type="button" className="button button--primary button--xl final-section-button" onClick={scrollToCatalog}>
                   <ArrowRight size={18} />
                   Ver catálogo
                 </button>
@@ -962,15 +962,15 @@ export default function StoreHome() {
                 Atendimento com os dados da loja
               </span>
             </div>
-            <div className="contact-band contact-band--final-cta">
-              <div className="contact-band__row">
+            <div className="contact-band contact-band--final-card contact-band--final-cta">
+              <div className="contact-band__row contact-band__row--final">
                 <div>
                   <h4 className="contact-band__title">{store.nome}</h4>
                   <p className="contact-band__text">Clique para chamar a loja e acelerar sua compra.</p>
                 </div>
                 <button
                   type="button"
-                  className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+                  className={`button button--primary button--xl final-section-button ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
                   onClick={handleGeneralWhatsapp}
                   disabled={!commercialContactEnabled}
                   aria-disabled={!commercialContactEnabled}
