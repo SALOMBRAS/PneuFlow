@@ -28,12 +28,31 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
   const helperText = isKitOffer(tire)
     ? `${getOfferQuantityLabel(desiredQuantity, tire)} = ${physicalTotal} pneus.`
     : '';
+  const openDetail = () => onDetail(tire);
+  const stopCardClick = (event) => event.stopPropagation();
+
+  const handleCardKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openDetail();
+    }
+  };
 
   return (
-    <article className="product-card">
+    <article
+      className="product-card"
+      role="button"
+      tabIndex={0}
+      aria-label={`Abrir detalhes do pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
+      onClick={openDetail}
+      onKeyDown={handleCardKeyDown}
+    >
       <button
         className="product-image-container"
-        onClick={() => onDetail(tire)}
+        onClick={(event) => {
+          stopCardClick(event);
+          openDetail();
+        }}
         type="button"
         aria-label={`Ver detalhes do pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
       >
@@ -109,19 +128,25 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
               <div className="product-price" style={{ color: primaryColor }}>{formatBRLCurrency(tire.preco)}</div>
               <small className="product-price-note">{getOfferDescriptor(tire)}</small>
             </div>
-            <button
-              onClick={() => onDetail(tire)}
-              type="button"
-              className="product-detail-link"
-              aria-label={`Ver detalhes do pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
-            >
+          <button
+            onClick={(event) => {
+              stopCardClick(event);
+              openDetail();
+            }}
+            type="button"
+            className="product-detail-link"
+            aria-label={`Ver detalhes do pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
+          >
               <Info size={14} />
               Ver
             </button>
           </div>
 
           <button
-            onClick={() => onInterest(tire, desiredQuantity)}
+            onClick={(event) => {
+              stopCardClick(event);
+              onInterest(tire, desiredQuantity);
+            }}
             type="button"
             className={`btn-whatsapp-card ${contactDisabled ? 'commercial-disabled' : ''}`}
             aria-label={`Adicionar ao carrinho o pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}

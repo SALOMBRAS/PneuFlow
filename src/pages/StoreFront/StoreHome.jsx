@@ -1270,8 +1270,9 @@ export default function StoreHome() {
               <X size={18} />
             </button>
 
-            <div style={{ position: 'relative' }}>
+            <div className="product-detail-hero">
               <div
+                className="product-detail-hero__image"
                 style={{
                   minHeight: '220px',
                   maxHeight: '260px',
@@ -1396,7 +1397,7 @@ export default function StoreHome() {
                 className="quantity-selector--detail"
               />
 
-              <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+              <div className="product-detail-actions" style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
                 <button type="button" className="button button--ghost button--xl" style={{ flex: 1 }} onClick={() => setSelectedTire(null)}>
                   Voltar
                 </button>
@@ -1404,16 +1405,16 @@ export default function StoreHome() {
                   type="button"
                   className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
                   style={{ flex: 2 }}
-                disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
-                aria-disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
-                onClick={() => {
-                  handleInterest(selectedTire, detailQuantity);
-                  setSelectedTire(null);
-                }}
-              >
-                <ShoppingCart size={16} />
-                  {getAvailableStock(selectedTire) > 0 ? 'Comprar agora' : 'Indisponivel'}
-                </button>
+                  disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
+                  aria-disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
+                  onClick={() => {
+                    handleInterest(selectedTire, detailQuantity);
+                    setSelectedTire(null);
+                  }}
+                >
+                  <ShoppingCart size={16} />
+                    {getAvailableStock(selectedTire) > 0 ? 'Comprar agora' : 'Indisponivel'}
+                  </button>
               </div>
             </div>
           </div>
