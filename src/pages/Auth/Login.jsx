@@ -256,9 +256,9 @@ export default function Login() {
           fontSize: '12px',
           color: 'var(--text-secondary)'
         }}>
-          <p style={{ fontWeight: 'bold', color: 'var(--primary)', marginBottom: '4px' }}>?? Acesso R?pido para Teste:</p>
-          <p>?? E-mail: <strong>demo@pneus.com</strong></p>
-          <p>?? Senha: <strong>password123</strong></p>
+          <p style={{ fontWeight: 'bold', color: 'var(--primary)', marginBottom: '4px' }}>💡 Acesso rápido para teste:</p>
+          <p>📧 E-mail: <strong>demo@pneus.com</strong></p>
+          <p>🔑 Senha: <strong>password123</strong></p>
         </div>
         )}
       </div>

@@ -785,7 +785,7 @@ export default function StoreHome() {
         text += `Fui atendido por: ${referralSeller.nome || 'vendedor'}\n\n`;
       }
 
-      text += 'Poderia me passar mais informa??es?';
+      text += 'Poderia me passar mais informações?';
 
       window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 
@@ -829,29 +829,29 @@ export default function StoreHome() {
     try {
       await storageService.createLeadCart(leadPayload);
 
-      let text = `Ol?!\n\nMeu nome ? ${customerName.trim()}.\n`;
+      let text = `Olá!\n\nMeu nome é ${customerName.trim()}.\n`;
       if (customerPhone.trim()) {
-        text += `Meu telefone/WhatsApp ? ${customerPhone.trim()}.\n`;
+        text += `Meu telefone/WhatsApp é ${customerPhone.trim()}.\n`;
       }
-      text += '\nGostaria de solicitar o seguinte or?amento:\n\n';
+      text += '\nGostaria de solicitar o seguinte orçamento:\n\n';
 
       cartItems.forEach((item, index) => {
         text += `${index + 1}. ${item.titulo_anuncio}\n`;
         text += `Medida: ${item.medida || 'N/A'}\n`;
-        text += `Quantidade: ${item.quantidade} ${item.quantidade === 1 ? 'anuncio' : 'anuncios'}\n`;
+        text += `Quantidade: ${item.quantidade} ${item.quantidade === 1 ? 'anúncio' : 'anúncios'}\n`;
         text += `Pneus f?sicos: ${item.quantidade_total_pneus}\n`;
         text += `Subtotal: ${formatBRLCurrency(item.valor_total)}\n\n`;
       });
 
       text += `Resumo do carrinho:\n`;
       text += `Itens distintos: ${cartSummary.distinctItems}\n`;
-      text += `Total de anuncios/kits: ${cartSummary.totalOffers}\n`;
+      text += `Total de anúncios/kits: ${cartSummary.totalOffers}\n`;
       text += `Total de pneus: ${cartSummary.totalPhysicalTires}\n`;
       text += `Valor total estimado: ${formatBRLCurrency(cartSummary.totalValue)}\n\n`;
 
       if (vehicleSearchApplied) {
         const carInfo = vehicleBrand ? `${vehicleBrand} ${vehicleModel}` : vehicleModel;
-        text += `Meu carro ? um ${carInfo}. `;
+        text += `Meu carro é um ${carInfo}. `;
       }
 
       if (hasReferralSeller) {
@@ -859,10 +859,10 @@ export default function StoreHome() {
       }
 
       if (customerNote.trim()) {
-        text += `Observa??o: ${customerNote.trim()}\n\n`;
+        text += `Observação: ${customerNote.trim()}\n\n`;
       }
 
-      text += 'Poderia me passar mais informa??es?';
+      text += 'Poderia me passar mais informações?';
 
       window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 
@@ -873,7 +873,7 @@ export default function StoreHome() {
       setCustomerNote('');
     } catch (error) {
       console.error('Erro ao registrar lead:', error);
-      setLeadError('N?o foi poss?vel enviar seu or?amento. Tente novamente.');
+      setLeadError('Não foi possível enviar seu orçamento. Tente novamente.');
     } finally {
       setSavingLead(false);
     }
@@ -1164,7 +1164,7 @@ export default function StoreHome() {
         aria-label={
           cartSummary.totalOffers > 0
             ? `Abrir carrinho com ${cartSummary.totalOffers} anuncio(s)`
-            : 'Abrir carrinho de or?amento'
+            : 'Abrir carrinho de orçamento'
         }
       >
         <ShoppingCart size={22} />
@@ -1730,7 +1730,7 @@ export default function StoreHome() {
             </button>
 
             <div style={{ marginBottom: '16px' }}>
-              <p className="section-kicker">Seu or?amento</p>
+              <p className="section-kicker">Seu orçamento</p>
               <h3 className="modal-title" style={{ marginTop: '6px' }}>Carrinho de pneus</h3>
               <p className="info-card__copy">Revise os itens antes de enviar sua solicitacao.</p>
             </div>
@@ -1747,7 +1747,7 @@ export default function StoreHome() {
                   <div className="empty-state__icon">
                     <ShoppingCart size={28} />
                   </div>
-                  <h3>Seu or?amento esta vazio</h3>
+                  <h3>Seu orçamento está vazio</h3>
                   <p>Adicione pneus da vitrine para enviar sua solicitacao.</p>
                 </div>
               ) : (
@@ -1766,7 +1766,7 @@ export default function StoreHome() {
                             <div style={{ minWidth: 0, flex: 1 }}>
                               <p style={{ margin: 0, fontWeight: 900, color: '#fff' }}>{item.titulo_anuncio}</p>
                               <p style={{ margin: '4px 0 0', color: 'rgba(248,250,252,0.66)', fontSize: '0.86rem' }}>
-                                {item.medida || 'Medida nao informada'} {item.quantidade_por_anuncio > 1 ? `- 1 kit = ${item.quantidade_por_anuncio} pneus` : ''}
+                                {item.medida || 'Medida não informada'} {item.quantidade_por_anuncio > 1 ? `- 1 kit = ${item.quantidade_por_anuncio} pneus` : ''}
                               </p>
                             </div>
                             <button
@@ -1822,7 +1822,7 @@ export default function StoreHome() {
                     <div className="contact-band__row" style={{ alignItems: 'flex-start' }}>
                       <div>
                         <h4 className="contact-band__title">Resumo</h4>
-                        <p className="contact-band__text">{cartSummary.distinctItems} item(ns) distintos, {cartSummary.totalOffers} anuncio(s), {cartSummary.totalPhysicalTires} pneus</p>
+                        <p className="contact-band__text">{cartSummary.distinctItems} item(ns) distintos, {cartSummary.totalOffers} anúncio(s), {cartSummary.totalPhysicalTires} pneus</p>
                       </div>
                       <strong style={{ color: '#fff', fontSize: '1.05rem' }}>{formatBRLCurrency(cartSummary.totalValue)}</strong>
                     </div>
@@ -1838,7 +1838,7 @@ export default function StoreHome() {
                         Limpar carrinho
                       </button>
                       <button type="submit" className="button button--primary button--xl" disabled={savingLead || !customerName.trim() || cartItems.length === 0}>
-                        {savingLead ? 'Enviando...' : 'Enviar or?amento'}
+                        {savingLead ? 'Enviando...' : 'Enviar orçamento'}
                       </button>
                     </div>
                   </form>

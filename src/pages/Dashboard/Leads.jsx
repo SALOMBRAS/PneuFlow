@@ -307,8 +307,8 @@ export default function Leads() {
       console.error('Erro ao excluir lead:', err);
       await createPersistentNotification({
         type: 'error',
-        title: 'Nao foi possivel concluir',
-        message: err.message || 'Nao foi possivel remover este lead.',
+        title: 'N?o foi poss?vel concluir',
+        message: err.message || 'N?o foi poss?vel remover este lead.',
         category: 'operation_errors'
       });
       setFeedbackMessage({
@@ -409,8 +409,8 @@ export default function Leads() {
           message: error?.message || 'Não foi possível salvar a quantidade.'
         });
         notifyTransientError({
-          title: 'Nao foi possivel concluir',
-          message: error?.message || 'Nao foi possivel salvar a quantidade.',
+          title: 'N?o foi poss?vel concluir',
+          message: error?.message || 'N?o foi poss?vel salvar a quantidade.',
           category: 'operation_errors'
         });
         setFeedbackMessage({
@@ -579,7 +579,7 @@ export default function Leads() {
       if (!multiItemLead && availableStock !== null && availableStock <= 0) {
         notifyTransientWarning({
           title: 'Estoque indisponivel',
-          message: 'Nao ha estoque suficiente para confirmar esta venda.',
+          message: 'N?o h? estoque suficiente para confirmar esta venda.',
           category: 'leads'
         });
         setFeedbackMessage({ type: 'error', text: 'Estoque indisponível.' });
@@ -640,8 +640,8 @@ export default function Leads() {
       console.error('Erro ao atualizar status do lead:', err);
       await createPersistentNotification({
         type: 'error',
-        title: 'Nao foi possivel concluir',
-        message: err.message || 'Nao foi possivel atualizar o status do lead.',
+        title: 'N?o foi poss?vel concluir',
+        message: err.message || 'N?o foi poss?vel atualizar o status do lead.',
         category: 'operation_errors'
       });
       setFeedbackMessage({
@@ -705,8 +705,8 @@ export default function Leads() {
       console.error('Erro ao confirmar venda com telefone:', err);
       await createPersistentNotification({
         type: 'error',
-        title: 'Nao foi possivel concluir',
-        message: err.message || 'Nao foi possivel atualizar o status do lead.',
+        title: 'N?o foi poss?vel concluir',
+        message: err.message || 'N?o foi poss?vel atualizar o status do lead.',
         category: 'operation_errors'
       });
       setSaleConfirmationModal((current) => ({

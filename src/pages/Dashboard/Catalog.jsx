@@ -172,7 +172,7 @@ export default function Catalog() {
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
       setTires([]);
-      setLoadError(err?.message || 'Nao foi possivel carregar os pneus agora.');
+      setLoadError(err?.message || 'Não foi possível carregar os pneus agora.');
     } finally {
       setLoading(false);
     }
@@ -291,7 +291,7 @@ export default function Catalog() {
       await createPersistentNotification({
         type: 'error',
         title: 'Falha no upload',
-        message: err.message || 'Nao foi possivel enviar as fotos.',
+        message: err.message || 'Não foi possível enviar as fotos.',
         category: 'operation_errors'
       });
     } finally {
@@ -397,7 +397,7 @@ export default function Catalog() {
       console.error('Erro completo ao salvar pneu:', error);
       await createPersistentNotification({
         type: 'error',
-        title: 'Nao foi possivel concluir',
+        title: 'Não foi possível concluir',
         message: error.message || 'Erro ao salvar pneu.',
         category: 'operation_errors'
       });
@@ -421,7 +421,7 @@ export default function Catalog() {
       } catch (err) {
         await createPersistentNotification({
           type: 'error',
-          title: 'Nao foi possivel concluir',
+          title: 'Não foi possível concluir',
           message: 'Erro ao excluir pneu.',
           category: 'operation_errors'
         });

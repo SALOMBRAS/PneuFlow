@@ -84,7 +84,7 @@ function ImpersonatedBanner({ onEndSession, endingSession }) {
           borderColor: 'rgba(245, 158, 11, 0.32)'
         }}
       >
-        {endingSession ? 'Encerrando...' : 'Encerrar sessao temporaria'}
+        {endingSession ? 'Encerrando...' : 'Encerrar sess?o tempor?ria'}
       </button>
     </section>
   );
@@ -192,7 +192,7 @@ export default function SellerAccessShell() {
       } catch (error) {
         if (cancelled) return;
 
-        setErrorMessage(error?.message || 'Nao foi possivel iniciar a sessao temporaria.');
+        setErrorMessage(error?.message || 'N?o foi poss?vel iniciar a sess?o tempor?ria.');
         setStatus('error');
       }
     };
@@ -215,14 +215,14 @@ export default function SellerAccessShell() {
     try {
       await storageService.endSellerAccess(auditId || null);
     } catch (error) {
-      console.error('Nao foi possivel registrar o encerramento da sessao temporaria:', error);
+      console.error('N?o foi poss?vel registrar o encerramento da sess?o tempor?ria:', error);
     } finally {
       window.sessionStorage.removeItem(IMPERSONATED_AUDIT_STORAGE_KEY);
 
       try {
         await storageService.logout();
       } catch (error) {
-        console.error('Nao foi possivel limpar a sessao temporaria:', error);
+        console.error('N?o foi poss?vel limpar a sess?o tempor?ria:', error);
       }
 
       setEndingSession(false);
@@ -238,7 +238,7 @@ export default function SellerAccessShell() {
     return (
       <SellerAccessScreen
         icon={<Loader2 className="animate-spin" size={44} />}
-        title="Preparando sessao temporaria"
+        title="Preparando sess?o tempor?ria"
         message="Estamos validando o ticket e abrindo uma sessao isolada para o vendedor."
       />
     );
@@ -258,7 +258,7 @@ export default function SellerAccessShell() {
     return (
       <SellerAccessScreen
         icon={<ShieldAlert size={44} />}
-        title="Nao foi possivel abrir o acesso"
+        title="N?o foi poss?vel abrir o acesso"
         message={errorMessage || 'O acesso temporario nao pode ser iniciado.'}
         tone="error"
       >
