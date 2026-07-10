@@ -2209,6 +2209,8 @@
   height: auto;
   max-height: calc(100dvh - 140px);
   object-fit: contain;
+  transform-origin: center center;
+  transition: transform 0.18s ease;
   user-select: none;
   pointer-events: none;
 }
@@ -2253,9 +2255,12 @@
 
 .storefront-photo-viewer__close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  inset: 16px 16px auto auto;
   z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
 }
 
 @keyframes slideUp {
@@ -3017,8 +3022,7 @@
 
   .product-detail-mobile .modal-close,
   .storefront-photo-viewer__close {
-    top: 12px;
-    right: 12px;
+    inset: 12px 12px auto auto;
     width: 36px;
     height: 36px;
     background: rgba(7, 10, 15, 0.84);

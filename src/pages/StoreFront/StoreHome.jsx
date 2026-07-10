@@ -534,6 +534,11 @@ export default function StoreHome() {
 
   const clampPhotoScale = (value) => Math.min(3, Math.max(1, Number(value) || 1));
 
+  const formatPhotoZoomLabel = (scale) => {
+    const rounded = Math.round(Number(scale || 1) * 10) / 10;
+    return Number.isInteger(rounded) ? `${rounded}x` : `${rounded.toFixed(1)}x`;
+  };
+
   const openPhotoViewer = (index = activeImageIndex) => {
     setPhotoViewer({
       open: true,
@@ -1655,7 +1660,10 @@ export default function StoreHome() {
                 className="storefront-photo-viewer__image"
                 src={galleryImages[photoViewer.index] || placeholderImage}
                 alt={getOfferTitle(selectedTire)}
-                style={{ width: `${photoViewer.scale * 100}%` }}
+                style={{
+                  transform: `scale(${photoViewer.scale})`,
+                  transformOrigin: 'center center'
+                }}
               />
             </div>
             <div className="storefront-photo-viewer__footer">
@@ -1703,7 +1711,7 @@ export default function StoreHome() {
                   onClick={() => setPhotoViewer((current) => ({ ...current, scale: 1 }))}
                   aria-label="Resetar zoom"
                 >
-                  1x
+                  {formatPhotoZoomLabel(photoViewer.scale)}
                 </button>
                 <button type="button" className="button button--ghost storefront-photo-viewer__zoom" onClick={() => shiftPhotoViewer(0.2)} aria-label="Aumentar zoom">
                   +
