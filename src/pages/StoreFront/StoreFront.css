@@ -2738,7 +2738,7 @@
 
   .product-detail-mobile__body {
     align-content: start;
-    overflow-y: hidden;
+    overflow-y: auto;
   }
 
   .product-detail-mobile__header {
@@ -2825,6 +2825,67 @@
     font-size: 0.64rem;
     line-height: 1;
     white-space: nowrap;
+  }
+
+  .product-detail-mobile__description {
+    display: grid;
+    gap: 3px;
+    min-height: 0;
+    padding: 0 2px;
+  }
+
+  .product-detail-mobile__description span {
+    color: #fbbf24;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .product-detail-mobile__description p {
+    margin: 0;
+    color: rgba(248, 250, 252, 0.68);
+    font-size: 0.78rem;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .product-detail-mobile .quantity-selector--detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(118px, 132px);
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 7px 8px;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .product-detail-mobile .quantity-selector--detail .quantity-selector__header {
+    display: grid;
+    gap: 2px;
+    font-size: 0.72rem;
+    line-height: 1;
+  }
+
+  .product-detail-mobile .quantity-selector--detail .quantity-selector__header small {
+    font-size: 0.62rem;
+    line-height: 1.1;
+  }
+
+  .product-detail-mobile .quantity-selector--detail .quantity-selector__control {
+    grid-template-columns: 34px minmax(38px, 1fr) 34px;
+    gap: 5px;
+  }
+
+  .product-detail-mobile .quantity-selector--detail .quantity-selector__control button,
+  .product-detail-mobile .quantity-selector--detail .quantity-selector__control input {
+    min-height: 34px;
+    border-radius: 11px;
   }
 
   .product-detail-actions,
@@ -2947,6 +3008,15 @@
 
   .info-card__copy--detail {
     -webkit-line-clamp: 1;
+  }
+
+  .product-detail-mobile__description p {
+    -webkit-line-clamp: 1;
+  }
+
+  .product-detail-mobile .quantity-selector--detail {
+    padding: 5px 7px;
+    gap: 6px;
   }
 
   .quantity-selector__control button,

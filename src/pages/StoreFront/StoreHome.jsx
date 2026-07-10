@@ -134,6 +134,15 @@ const getCompatibilitySnippet = (tire) =>
 
 const getCompatibilityDisplay = (tire) => getCompatibilitySummary(tire, 2);
 
+const getProductDescription = (tire) => {
+  const customDescription = tire?.descricao || tire?.description;
+  if (customDescription) return customDescription;
+
+  const title = getOfferTitle(tire);
+  const measure = tire?.medida ? ` na medida ${tire.medida}` : '';
+  return `Pneu ${title}${measure}. Consulte disponibilidade com a loja.`;
+};
+
 const formatPublicAddress = (store) => {
   const street = store?.endereco || '';
   const number = store?.address_number || '';
@@ -1424,17 +1433,18 @@ export default function StoreHome() {
                 </div>
               </div>
 
+              <div className="product-detail-mobile__description">
+                <span>Descrição</span>
+                <p>{getProductDescription(selectedTire)}</p>
+              </div>
+
               <QuantitySelector
                 value={detailQuantity}
                 max={getAvailableStock(selectedTire)}
                 onChange={setDetailQuantity}
-                label={getQuantitySelectorLabel(selectedTire)}
+                label="Quantidade"
                 availabilityText={getAvailabilityLabel(selectedTire)}
-                helperText={
-                  isKitOffer(selectedTire)
-                    ? `${getOfferQuantityLabel(detailQuantity, selectedTire)} = ${getPhysicalTireTotal(detailQuantity, selectedTire)} pneus.`
-                    : ''
-                }
+                helperText=""
                 disabled={!commercialContactEnabled}
                 compact
                 className="quantity-selector--detail"
