@@ -2250,6 +2250,13 @@
   border-radius: 12px;
 }
 
+.storefront-photo-viewer__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -2991,9 +2998,11 @@
 
   .product-detail-mobile .modal-close,
   .storefront-photo-viewer__close {
-    width: 34px;
-    height: 34px;
-    background: rgba(7, 10, 15, 0.78);
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    background: rgba(7, 10, 15, 0.84);
     border: 1px solid rgba(245, 158, 11, 0.28);
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32);
   }

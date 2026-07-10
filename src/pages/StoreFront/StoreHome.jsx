@@ -550,6 +550,26 @@ export default function StoreHome() {
     }));
   };
 
+  const setPhotoViewerIndex = (index) => {
+    if (!galleryImages.length) return;
+    const nextIndex = Math.max(0, Math.min(index, galleryImages.length - 1));
+    setPhotoViewer((current) => ({
+      ...current,
+      index: nextIndex,
+      scale: 1
+    }));
+  };
+
+  const goToPreviousPhoto = () => {
+    if (!galleryImages.length) return;
+    setPhotoViewerIndex(photoViewer.index === 0 ? galleryImages.length - 1 : photoViewer.index - 1);
+  };
+
+  const goToNextPhoto = () => {
+    if (!galleryImages.length) return;
+    setPhotoViewerIndex(photoViewer.index === galleryImages.length - 1 ? 0 : photoViewer.index + 1);
+  };
+
   const placeholderImage = 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=800';
   const primaryColor = '#f59e0b';
   const secondaryColor = '#121214';
@@ -1656,38 +1676,33 @@ export default function StoreHome() {
                     <button
                       type="button"
                       className="button button--ghost storefront-photo-viewer__nav"
-                      onClick={() =>
-                        setPhotoViewer((current) => ({
-                          ...current,
-                          index: current.index === 0 ? galleryImages.length - 1 : current.index - 1,
-                          scale: 1
-                        }))
-                      }
+                      onClick={goToPreviousPhoto}
+                      aria-label="Foto anterior"
                     >
                       <ArrowRight size={16} style={{ transform: 'rotate(180deg)' }} />
                     </button>
                     <button
                       type="button"
                       className="button button--ghost storefront-photo-viewer__nav"
-                      onClick={() =>
-                        setPhotoViewer((current) => ({
-                          ...current,
-                          index: current.index === galleryImages.length - 1 ? 0 : current.index + 1,
-                          scale: 1
-                        }))
-                      }
+                      onClick={goToNextPhoto}
+                      aria-label="Próxima foto"
                     >
                       <ArrowRight size={16} />
                     </button>
                   </>
                 )}
-                <button type="button" className="button button--ghost storefront-photo-viewer__zoom" onClick={() => shiftPhotoViewer(-0.2)}>
+                <button type="button" className="button button--ghost storefront-photo-viewer__zoom" onClick={() => shiftPhotoViewer(-0.2)} aria-label="Diminuir zoom">
                   -
                 </button>
-                <button type="button" className="button button--ghost storefront-photo-viewer__zoom" onClick={() => setPhotoViewer((current) => ({ ...current, scale: 1 }))}>
+                <button
+                  type="button"
+                  className="button button--ghost storefront-photo-viewer__zoom"
+                  onClick={() => setPhotoViewer((current) => ({ ...current, scale: 1 }))}
+                  aria-label="Resetar zoom"
+                >
                   1x
                 </button>
-                <button type="button" className="button button--ghost storefront-photo-viewer__zoom" onClick={() => shiftPhotoViewer(0.2)}>
+                <button type="button" className="button button--ghost storefront-photo-viewer__zoom" onClick={() => shiftPhotoViewer(0.2)} aria-label="Aumentar zoom">
                   +
                 </button>
               </div>
