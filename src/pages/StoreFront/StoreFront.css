@@ -2580,8 +2580,11 @@
   }
 
   .modal-overlay--detail {
-    padding: 0;
-    align-items: stretch;
+    padding: 12px 12px 0;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(2, 4, 8, 0.38);
+    backdrop-filter: blur(10px);
   }
 
   .modal-content-new {
@@ -2591,12 +2594,14 @@
   }
 
   .modal-content-new--detail {
-    width: 100%;
-    height: 100dvh;
-    max-height: 100dvh;
-    border-radius: 0;
+    width: min(100%, 560px);
+    max-height: calc(74dvh - env(safe-area-inset-bottom, 0px));
+    height: auto;
+    margin-top: auto;
+    border-radius: 24px 24px 0 0;
     overflow: hidden;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.42);
   }
 
   .product-detail-desktop {
@@ -2894,8 +2899,8 @@
   }
 
   .product-detail-hero__image {
-    min-height: clamp(200px, 31dvh, 250px) !important;
-    max-height: clamp(200px, 31dvh, 250px) !important;
+    min-height: clamp(180px, 28dvh, 220px) !important;
+    max-height: clamp(180px, 28dvh, 220px) !important;
     border-radius: 18px 18px 0 0;
   }
 
@@ -2926,7 +2931,7 @@
   }
 
   .modal-content-new__body--detail {
-    padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px));
     gap: 6px;
   }
 
@@ -3015,9 +3020,9 @@
   }
 
   .product-detail-mobile__price {
-    margin-top: 6px;
-    min-height: 74px;
-    padding: 10px 12px;
+    margin-top: 4px;
+    min-height: 66px;
+    padding: 9px 12px;
     border-radius: 14px;
     background: linear-gradient(145deg, rgba(245, 158, 11, 0.16), rgba(22, 163, 74, 0.06));
   }
@@ -3126,9 +3131,9 @@
     display: grid !important;
     grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
     align-items: stretch;
-    margin-top: 0 !important;
+    margin-top: 2px !important;
     gap: 8px !important;
-    padding: 0 0 calc(8px + env(safe-area-inset-bottom, 0px));
+    padding: 0 0 calc(10px + env(safe-area-inset-bottom, 0px));
   }
 
   .product-detail-actions .button,
@@ -3226,8 +3231,8 @@
 
 @media (max-width: 768px) and (max-height: 700px) {
   .product-detail-hero__image {
-    min-height: 140px !important;
-    max-height: 168px !important;
+    min-height: 130px !important;
+    max-height: 160px !important;
   }
 
   .modal-content-new__body--detail {
@@ -3263,7 +3268,7 @@
 
   .product-detail-actions .button {
     min-height: 38px;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
   }
 
   .modal-content-new .modal-close,
