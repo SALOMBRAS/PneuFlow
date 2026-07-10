@@ -2914,7 +2914,9 @@
   }
 
   .modal-content-new--detail {
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    height: fit-content;
+    max-height: calc(72dvh - env(safe-area-inset-bottom, 0px));
   }
 
   .product-detail-hero {
