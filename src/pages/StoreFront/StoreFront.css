@@ -2596,11 +2596,12 @@
   .modal-content-new--detail {
     width: min(100%, 560px);
     max-height: calc(74dvh - env(safe-area-inset-bottom, 0px));
-    height: auto;
+    height: fit-content;
     margin-top: auto;
     border-radius: 24px 24px 0 0;
     overflow: hidden;
     grid-template-rows: auto auto;
+    align-content: start;
     box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.42);
   }
 
@@ -2620,6 +2621,7 @@
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
     gap: 8px;
     overflow-y: auto;
+    align-self: start;
   }
 
   .modal-title--detail {
