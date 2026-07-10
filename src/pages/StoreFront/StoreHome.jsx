@@ -253,7 +253,7 @@ export default function StoreHome() {
     try {
       window.localStorage.setItem(cartStorageKey, JSON.stringify(cartItems));
     } catch (error) {
-      console.warn('Nao foi possivel persistir o carrinho:', error);
+      console.warn('N?o foi poss?vel persistir o carrinho:', error);
     }
   }, [cartItems, cartStorageKey]);
 
@@ -785,7 +785,7 @@ export default function StoreHome() {
         text += `Fui atendido por: ${referralSeller.nome || 'vendedor'}\n\n`;
       }
 
-      text += 'Poderia me passar mais informacoes?';
+      text += 'Poderia me passar mais informa??es?';
 
       window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 
@@ -829,17 +829,17 @@ export default function StoreHome() {
     try {
       await storageService.createLeadCart(leadPayload);
 
-      let text = `OlÃ¡!\n\nMeu nome Ã© ${customerName.trim()}.\n`;
+      let text = `Ol?!\n\nMeu nome ? ${customerName.trim()}.\n`;
       if (customerPhone.trim()) {
-        text += `Meu telefone/WhatsApp Ã© ${customerPhone.trim()}.\n`;
+        text += `Meu telefone/WhatsApp ? ${customerPhone.trim()}.\n`;
       }
-      text += '\nGostaria de solicitar o seguinte orcamento:\n\n';
+      text += '\nGostaria de solicitar o seguinte or?amento:\n\n';
 
       cartItems.forEach((item, index) => {
         text += `${index + 1}. ${item.titulo_anuncio}\n`;
         text += `Medida: ${item.medida || 'N/A'}\n`;
         text += `Quantidade: ${item.quantidade} ${item.quantidade === 1 ? 'anuncio' : 'anuncios'}\n`;
-        text += `Pneus fisicos: ${item.quantidade_total_pneus}\n`;
+        text += `Pneus f?sicos: ${item.quantidade_total_pneus}\n`;
         text += `Subtotal: ${formatBRLCurrency(item.valor_total)}\n\n`;
       });
 
@@ -851,7 +851,7 @@ export default function StoreHome() {
 
       if (vehicleSearchApplied) {
         const carInfo = vehicleBrand ? `${vehicleBrand} ${vehicleModel}` : vehicleModel;
-        text += `Meu carro Ã© um ${carInfo}. `;
+        text += `Meu carro ? um ${carInfo}. `;
       }
 
       if (hasReferralSeller) {
@@ -859,10 +859,10 @@ export default function StoreHome() {
       }
 
       if (customerNote.trim()) {
-        text += `Observacao: ${customerNote.trim()}\n\n`;
+        text += `Observa??o: ${customerNote.trim()}\n\n`;
       }
 
-      text += 'Poderia me passar mais informacoes?';
+      text += 'Poderia me passar mais informa??es?';
 
       window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 
@@ -873,7 +873,7 @@ export default function StoreHome() {
       setCustomerNote('');
     } catch (error) {
       console.error('Erro ao registrar lead:', error);
-      setLeadError('Nao foi possivel enviar seu orcamento. Tente novamente.');
+      setLeadError('N?o foi poss?vel enviar seu or?amento. Tente novamente.');
     } finally {
       setSavingLead(false);
     }
@@ -1164,7 +1164,7 @@ export default function StoreHome() {
         aria-label={
           cartSummary.totalOffers > 0
             ? `Abrir carrinho com ${cartSummary.totalOffers} anuncio(s)`
-            : 'Abrir carrinho de orcamento'
+            : 'Abrir carrinho de or?amento'
         }
       >
         <ShoppingCart size={22} />
@@ -1730,7 +1730,7 @@ export default function StoreHome() {
             </button>
 
             <div style={{ marginBottom: '16px' }}>
-              <p className="section-kicker">Seu orcamento</p>
+              <p className="section-kicker">Seu or?amento</p>
               <h3 className="modal-title" style={{ marginTop: '6px' }}>Carrinho de pneus</h3>
               <p className="info-card__copy">Revise os itens antes de enviar sua solicitacao.</p>
             </div>
@@ -1747,7 +1747,7 @@ export default function StoreHome() {
                   <div className="empty-state__icon">
                     <ShoppingCart size={28} />
                   </div>
-                  <h3>Seu orcamento esta vazio</h3>
+                  <h3>Seu or?amento esta vazio</h3>
                   <p>Adicione pneus da vitrine para enviar sua solicitacao.</p>
                 </div>
               ) : (
@@ -1809,7 +1809,7 @@ export default function StoreHome() {
                             </div>
 
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ color: 'rgba(248,250,252,0.66)', fontSize: '0.84rem' }}>{item.quantidade_total_pneus} pneus fisicos</div>
+                              <div style={{ color: 'rgba(248,250,252,0.66)', fontSize: '0.84rem' }}>{item.quantidade_total_pneus} pneus f?sicos</div>
                               <strong style={{ color: 'var(--store-primary)' }}>{formatBRLCurrency(item.valor_total)}</strong>
                             </div>
                           </div>
@@ -1838,7 +1838,7 @@ export default function StoreHome() {
                         Limpar carrinho
                       </button>
                       <button type="submit" className="button button--primary button--xl" disabled={savingLead || !customerName.trim() || cartItems.length === 0}>
-                        {savingLead ? 'Enviando...' : 'Enviar orcamento'}
+                        {savingLead ? 'Enviando...' : 'Enviar or?amento'}
                       </button>
                     </div>
                   </form>

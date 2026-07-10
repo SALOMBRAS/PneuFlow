@@ -43,7 +43,7 @@ export default function Login() {
         }
       } catch (err) {
         console.error('Login bootstrap error:', err);
-        setError('NÃ£o foi possÃ­vel preparar a tela de acesso. Tente novamente em alguns instantes.');
+        setError('Não foi possível preparar a tela de acesso. Tente novamente em alguns instantes.');
       }
     };
 
@@ -83,11 +83,11 @@ export default function Login() {
       if (err?.message === supabaseInitError?.message) {
         setError(err.message);
       } else if (err.message === 'Email not confirmed') {
-        setError('E-mail ainda nÃ£o confirmado. Verifique sua caixa de entrada.');
+        setError('E-mail ainda não confirmado. Verifique sua caixa de entrada.');
       } else if (authenticated) {
-        setError('NÃ£o foi possÃ­vel finalizar a configuraÃ§Ã£o da sua loja. Tente entrar novamente em alguns instantes.');
+        setError('Não foi possível finalizar a configuração da sua loja. Tente entrar novamente em alguns instantes.');
       } else {
-        setError('Credenciais invÃ¡lidas. Verifique seu e-mail e senha.');
+        setError('Credenciais inválidas. Verifique seu e-mail e senha.');
       }
     } finally {
       setLoading(false);
@@ -117,7 +117,7 @@ export default function Login() {
             textDecoration: 'none'
           }}
         >
-          <ArrowLeft size={16} /> Voltar para inÃ­cio
+          <ArrowLeft size={16} /> Voltar para início
         </Link>
 
       <div className="card animate-slide auth-beam-card" style={{ width: '100%' }}>
@@ -241,7 +241,7 @@ export default function Login() {
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-          <span style={{ color: 'var(--text-secondary)' }}>NÃ£o tem conta? </span>
+          <span style={{ color: 'var(--text-secondary)' }}>Não tem conta? </span>
           <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>Cadastrar Loja</Link>
         </div>
 
@@ -256,9 +256,9 @@ export default function Login() {
           fontSize: '12px',
           color: 'var(--text-secondary)'
         }}>
-          <p style={{ fontWeight: 'bold', color: 'var(--primary)', marginBottom: '4px' }}>ðŸ’¡ Acesso RÃ¡pido para Teste:</p>
-          <p>ðŸ“§ E-mail: <strong>demo@pneus.com</strong></p>
-          <p>ðŸ”‘ Senha: <strong>password123</strong></p>
+          <p style={{ fontWeight: 'bold', color: 'var(--primary)', marginBottom: '4px' }}>?? Acesso R?pido para Teste:</p>
+          <p>?? E-mail: <strong>demo@pneus.com</strong></p>
+          <p>?? Senha: <strong>password123</strong></p>
         </div>
         )}
       </div>
