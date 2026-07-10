@@ -102,16 +102,16 @@ export default function StoreFilters({
         </div>
       </div>
 
-      <div className="filter-panel">
-        <label className="filter-label" htmlFor="storefront-search">
-          <Search size={14} />
-          Buscar por medida, marca ou modelo
-        </label>
-        <div className="filter-input-wrap">
+        <div className="filter-panel">
+          <label className="filter-label" htmlFor="storefront-search">
+            <Search size={14} />
+          Buscar por medida, marca, modelo ou carro
+          </label>
+          <div className="filter-input-wrap">
           <input
             id="storefront-search"
             type="text"
-            placeholder="Ex: 205/55 R16"
+            placeholder="Ex: 205/55 R16, Onix"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="filter-input"

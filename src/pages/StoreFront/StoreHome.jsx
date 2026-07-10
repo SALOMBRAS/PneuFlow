@@ -134,6 +134,24 @@ const getCompatibilitySnippet = (tire) =>
 
 const getCompatibilityDisplay = (tire) => getCompatibilitySummary(tire, 2);
 
+const getCatalogSearchText = (tire) =>
+  [
+    getOfferTitle(tire),
+    tire?.marca,
+    tire?.modelo,
+    tire?.medida,
+    getCompatibilitySnippet(tire),
+    tire?.descricao,
+    tire?.description,
+    tire?.referencia,
+    tire?.reference,
+    tire?.codigo,
+    tire?.codigo_referencia,
+    tire?.codigoReferencia
+  ]
+    .filter(Boolean)
+    .join(' ');
+
 const getProductDescription = (tire) => {
   const customDescription = tire?.descricao || tire?.description;
   if (customDescription) return customDescription;
@@ -470,11 +488,7 @@ export default function StoreHome() {
       });
     } else {
       result = result.filter((t) => {
-        const matchesSearch =
-          normalizeText(getOfferTitle(t) || '').includes(normalizeText(searchQuery || '')) ||
-          normalizeText(t.modelo || '').includes(normalizeText(searchQuery || '')) ||
-          normalizeText(t.marca || '').includes(normalizeText(searchQuery || '')) ||
-          normalizeText(t.medida || '').includes(normalizeText(searchQuery || ''));
+        const matchesSearch = normalizeText(getCatalogSearchText(t)).includes(normalizeText(searchQuery || ''));
         const matchesBrand = !filterBrand || t.marca === filterBrand;
         const matchesStock = !filterStockOnly || getAvailableStock(t) > 0;
         
