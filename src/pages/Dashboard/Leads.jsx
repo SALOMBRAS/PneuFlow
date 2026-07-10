@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, useCallback, useMemo, useRef } from 'react';
+﻿import { Fragment, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
 import { useNotifications } from '../../hooks/useNotifications';
@@ -35,8 +35,8 @@ const LEAD_STATUS = {
     Icon: CheckCircle
   },
   desistencia: {
-    label: 'Desistência',
-    filterLabel: 'Desistência',
+    label: 'DesistÃªncia',
+    filterLabel: 'DesistÃªncia',
     className: 'lead-status--lost',
     rowClass: 'lead-row--lost',
     Icon: XCircle
@@ -217,7 +217,7 @@ export default function Leads() {
     try {
       window.sessionStorage.setItem(quantityDraftStorageKey, JSON.stringify(quantityDrafts));
     } catch (error) {
-      console.warn('Não foi possível persistir os rascunhos de quantidade:', error);
+      console.warn('NÃ£o foi possÃ­vel persistir os rascunhos de quantidade:', error);
     }
   }, [quantityDraftStorageKey, quantityDrafts]);
 
@@ -267,7 +267,7 @@ export default function Leads() {
       if (!silent) {
         setFeedbackMessage({
           type: 'error',
-          text: err.message || 'Não foi possível carregar os leads.'
+          text: err.message || 'NÃ£o foi possÃ­vel carregar os leads.'
         });
       }
     } finally {
@@ -285,7 +285,7 @@ export default function Leads() {
     if (!store?.id) return;
 
     const confirmed = window.confirm(
-      'Tem certeza que deseja excluir este lead? Essa ação é permanente e não poderá ser desfeita.'
+      'Tem certeza que deseja excluir este lead? Essa aÃ§Ã£o Ã© permanente e nÃ£o poderÃ¡ ser desfeita.'
     );
 
     if (!confirmed) return;
@@ -313,7 +313,7 @@ export default function Leads() {
       });
       setFeedbackMessage({
         type: 'error',
-        text: err.message || 'Não foi possível remover este lead. Tente novamente.'
+        text: err.message || 'NÃ£o foi possÃ­vel remover este lead. Tente novamente.'
       });
     } finally {
       setDeletingLeadId(null);
@@ -406,7 +406,7 @@ export default function Leads() {
         }));
         updateQuantitySaveState(leadId, {
           status: 'error',
-          message: error?.message || 'Não foi possível salvar a quantidade.'
+          message: error?.message || 'NÃ£o foi possÃ­vel salvar a quantidade.'
         });
         notifyTransientError({
           title: 'N?o foi poss?vel concluir',
@@ -415,7 +415,7 @@ export default function Leads() {
         });
         setFeedbackMessage({
           type: 'error',
-          text: 'Não foi possível salvar a quantidade.'
+          text: 'NÃ£o foi possÃ­vel salvar a quantidade.'
         });
         return false;
       } finally {
@@ -582,7 +582,7 @@ export default function Leads() {
           message: 'N?o h? estoque suficiente para confirmar esta venda.',
           category: 'leads'
         });
-        setFeedbackMessage({ type: 'error', text: 'Estoque indisponível.' });
+        setFeedbackMessage({ type: 'error', text: 'Estoque indisponÃ­vel.' });
         return;
       }
 
@@ -595,7 +595,7 @@ export default function Leads() {
     }
 
     if (currentStatus === 'vendido' && nextStatus === 'em_atendimento') {
-      const confirmed = window.confirm('Reabrir esta venda para edição?');
+      const confirmed = window.confirm('Reabrir esta venda para ediÃ§Ã£o?');
       if (!confirmed) return;
     }
 
@@ -646,7 +646,7 @@ export default function Leads() {
       });
       setFeedbackMessage({
         type: 'error',
-        text: err.message || 'Não foi possível atualizar o status do lead.'
+        text: err.message || 'NÃ£o foi possÃ­vel atualizar o status do lead.'
       });
       await loadData({ silent: true });
     } finally {
@@ -662,7 +662,7 @@ export default function Leads() {
     if (!isValidBrazilPhoneDigits(customerPhoneDigits)) {
       setSaleConfirmationModal((current) => ({
         ...current,
-        error: 'Informe um telefone válido com 10 ou 11 dígitos.'
+        error: 'Informe um telefone vÃ¡lido com 10 ou 11 dÃ­gitos.'
       }));
       return;
     }
@@ -712,11 +712,11 @@ export default function Leads() {
       setSaleConfirmationModal((current) => ({
         ...current,
         saving: false,
-        error: err.message || 'Não foi possível atualizar o status do lead.'
+        error: err.message || 'NÃ£o foi possÃ­vel atualizar o status do lead.'
       }));
       setFeedbackMessage({
         type: 'error',
-        text: err.message || 'Não foi possível atualizar o status do lead.'
+        text: err.message || 'NÃ£o foi possÃ­vel atualizar o status do lead.'
       });
       await loadData({ silent: true });
     } finally {
@@ -857,7 +857,7 @@ export default function Leads() {
           <>
             <div className="leads-table-wrap" style={{ overflowX: 'auto', position: 'relative' }}>
               <div className="leads-swipe-hint">
-                <span>Arraste para o lado para ver cliente, produto, vendedor, status, valor e ações.</span>
+                <span>Arraste para o lado para ver cliente, produto, vendedor, status, valor e aÃ§Ãµes.</span>
               </div>
               <table className="leads-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <colgroup>
@@ -877,7 +877,7 @@ export default function Leads() {
                     <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Status</th>
                     <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Valor</th>
                     <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Data/Hora</th>
-                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', textAlign: 'right' }}>Ações</th>
+                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', textAlign: 'right' }}>AÃ§Ãµes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -947,7 +947,7 @@ export default function Leads() {
                                 {isExpanded ? 'Ocultar itens' : 'Ver itens'}
                               </button>
                             )}
-                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lead.produto_medida || 'Medida não inf.'}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lead.produto_medida || 'Medida nÃ£o inf.'}</span>
                           </div>
                         </td>
 
@@ -961,12 +961,12 @@ export default function Leads() {
                             ) : lead.seller_id ? (
                               <>
                                 <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>Vendedor vinculado</span>
-                                <span style={{ fontSize: '11px', color: 'var(--error)', fontStyle: 'italic' }}>dados do vendedor indisponíveis</span>
+                                <span style={{ fontSize: '11px', color: 'var(--error)', fontStyle: 'italic' }}>dados do vendedor indisponÃ­veis</span>
                               </>
                             ) : lead.vendedor_ref_code ? (
                               <>
                                 <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>Ref: {lead.vendedor_ref_code}</span>
-                                <span style={{ fontSize: '11px', color: 'var(--error)', fontStyle: 'italic' }}>vendedor não encontrado</span>
+                                <span style={{ fontSize: '11px', color: 'var(--error)', fontStyle: 'italic' }}>vendedor nÃ£o encontrado</span>
                               </>
                             ) : (
                               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Sem vendedor</span>
@@ -974,9 +974,9 @@ export default function Leads() {
 
                             <div style={{ marginTop: '4px' }}>
                               {lead.attribution_source === 'referral' ? (
-                                <span className="lead-source lead-source--referral">Indicação</span>
+                                <span className="lead-source lead-source--referral">IndicaÃ§Ã£o</span>
                               ) : lead.attribution_source === 'product' ? (
-                                <span className="lead-source lead-source--product">Anúncio</span>
+                                <span className="lead-source lead-source--product">AnÃºncio</span>
                               ) : null}
                             </div>
                           </div>
@@ -1004,7 +1004,7 @@ export default function Leads() {
                               >
                                 <option value="em_atendimento">Em atendimento</option>
                                 <option value="vendido">Vendido</option>
-                                <option value="desistencia">Desistência</option>
+                                <option value="desistencia">DesistÃªncia</option>
                                 </select>
                               ) : (
                                 <div className="lead-status-closed-actions">
@@ -1094,7 +1094,7 @@ export default function Leads() {
                                       : quantitySaveState?.status === 'error'
                                         ? quantitySaveState.message
                                         : availableStock !== null && availableStock <= 0
-                                          ? 'Estoque indisponível.'
+                                          ? 'Estoque indisponÃ­vel.'
                                           : getLeadQuantityPerOffer(lead) > 1
                                             ? `Limite atual: ${availableStock ?? quantityValue} kit(s).`
                                             : `Limite atual: ${availableStock ?? quantityValue} pneu(s).`}
@@ -1123,7 +1123,7 @@ export default function Leads() {
                         <td style={{ padding: '16px 24px' }}>
                           {leadValue == null ? (
                             <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>
-                              Valor indisponível
+                              Valor indisponÃ­vel
                             </span>
                           ) : (
                             <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)' }}>
@@ -1136,7 +1136,7 @@ export default function Leads() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <CalendarDays className="lead-icon lead-icon--calendar" />
                             <span>
-                              {new Date(lead.created_at).toLocaleDateString('pt-BR')} às {new Date(lead.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(lead.created_at).toLocaleDateString('pt-BR')} Ã s {new Date(lead.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
                         </td>
@@ -1172,7 +1172,7 @@ export default function Leads() {
                                 <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
                                   Telefone:{' '}
                                   <strong style={{ color: 'var(--text-primary)' }}>
-                                    {lead.telefone_cliente ? formatBrazilPhone(lead.telefone_cliente) : 'Telefone não informado'}
+                                    {lead.telefone_cliente ? formatBrazilPhone(lead.telefone_cliente) : 'Telefone nÃ£o informado'}
                                   </strong>
                                 </div>
                               </div>
@@ -1189,10 +1189,10 @@ export default function Leads() {
                                     <div style={{ minWidth: 0 }}>
                                       <strong style={{ display: 'block', color: 'var(--text-primary)' }}>{item.titulo_anuncio}</strong>
                                       <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '12px' }}>
-                                        {[item.marca, item.modelo, item.medida].filter(Boolean).join(' • ') || 'Produto sem detalhes adicionais'}
+                                        {[item.marca, item.modelo, item.medida].filter(Boolean).join(' â€¢ ') || 'Produto sem detalhes adicionais'}
                                       </span>
                                       <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>
-                                        {item.quantidade} anuncio(s){Number(item.quantidade_por_anuncio) > 1 ? ` • ${item.quantidade_por_anuncio} pneus por anuncio` : ''} • {item.quantidade_total_pneus} pneus fisicos
+                                        {item.quantidade} anuncio(s){Number(item.quantidade_por_anuncio) > 1 ? ` â€¢ ${item.quantidade_por_anuncio} pneus por anuncio` : ''} â€¢ {item.quantidade_total_pneus} pneus fisicos
                                       </span>
                                     </div>
                                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -1222,11 +1222,11 @@ export default function Leads() {
                 <span>
                   Mostrando {pageSize === 'all' ? filteredLeads.length : paginatedLeads.length} de {filteredLeads.length} lead{filteredLeads.length === 1 ? '' : 's'}
                 </span>
-                <strong>Página {currentPage} de {totalPages}</strong>
+                <strong>PÃ¡gina {currentPage} de {totalPages}</strong>
               </div>
 
               {pageSize !== 'all' && totalPages > 1 && (
-                <div className="leads-pagination__controls" aria-label="Paginação de leads">
+                <div className="leads-pagination__controls" aria-label="PaginaÃ§Ã£o de leads">
                   <button
                     type="button"
                     className="btn btn-outline"
@@ -1260,7 +1260,7 @@ export default function Leads() {
                     onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                     disabled={currentPage === totalPages}
                   >
-                    Próxima
+                    PrÃ³xima
                   </button>
                 </div>
               )}
@@ -1281,7 +1281,7 @@ export default function Leads() {
               type="button"
               className="modal-close"
               onClick={closeSaleConfirmationModal}
-              aria-label="Fechar confirmação de venda"
+              aria-label="Fechar confirmaÃ§Ã£o de venda"
             >
               <XCircle size={18} />
             </button>
@@ -1340,7 +1340,7 @@ export default function Leads() {
               </label>
 
               <p className={`leads-sale-modal__error ${saleConfirmationModal.error ? 'leads-sale-modal__error--visible' : ''}`}>
-                {saleConfirmationModal.error || 'Digite um número com 10 ou 11 dígitos para concluir a venda.'}
+                {saleConfirmationModal.error || 'Digite um nÃºmero com 10 ou 11 dÃ­gitos para concluir a venda.'}
               </p>
 
               <div className="leads-sale-modal__footer">
@@ -1938,7 +1938,7 @@ export default function Leads() {
           }
 
           .leads-swipe-hint::after {
-            content: '→';
+            content: 'â†’';
             flex-shrink: 0;
             color: var(--primary);
             font-size: 14px;
