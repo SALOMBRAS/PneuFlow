@@ -268,14 +268,24 @@ export default function StoreSettings() {
     }
 
     loadingSetter(true);
+    const previousValue = type === 'logo' ? logo : '';
     try {
       const publicUrl = await storageService.uploadStoreImage(file);
-      setter(publicUrl);
-      setMessage('Upload concluído com sucesso!');
+      if (type === 'logo') {
+        setter(publicUrl);
+        const updatedStore = await storageService.updateStore(store.id, { logo: publicUrl });
+        if (updatedStore) {
+          await refreshStore();
+        }
+      }
+      setMessage(type === 'logo' ? 'Logo salva com sucesso!' : 'Upload concluído com sucesso!');
       setIsSuccess(true);
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       console.error('Erro no upload:', err);
+      if (type === 'logo') {
+        setter(previousValue);
+      }
       setMessage('Erro ao fazer upload da imagem.');
       setIsSuccess(false);
     } finally {
