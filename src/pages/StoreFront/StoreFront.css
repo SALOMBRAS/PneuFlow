@@ -2379,8 +2379,8 @@
   }
 
   .modal-content-new__body--detail {
-    padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
-    gap: 10px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
     overflow-y: auto;
   }
 
@@ -2661,8 +2661,8 @@
   }
 
   .product-detail-hero__image {
-    min-height: clamp(176px, 24vh, 212px) !important;
-    max-height: clamp(176px, 24vh, 212px) !important;
+    min-height: clamp(192px, 27vh, 236px) !important;
+    max-height: clamp(192px, 27vh, 236px) !important;
     border-radius: 18px 18px 0 0;
   }
 
@@ -2678,10 +2678,11 @@
     grid-template-rows: minmax(0, 1fr) auto;
   }
 
-  .storefront-photo-viewer__stage {
-    min-height: 0;
-    padding: 12px;
-  }
+.storefront-photo-viewer__stage {
+  min-height: 0;
+  padding: 12px;
+  touch-action: pan-x pan-y pinch-zoom;
+}
 
   .storefront-photo-viewer__image {
     max-height: calc(100dvh - 120px);
@@ -2697,39 +2698,40 @@
   }
 
   .contact-band--detail {
-    margin-top: 10px;
-    padding: 10px 12px;
-    border-radius: 16px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 15px;
   }
 
   .contact-band--detail .contact-band__title {
-    font-size: 1.02rem;
+    font-size: 0.98rem;
+    line-height: 1.1;
   }
 
   .contact-band--detail .info-card__copy {
-    margin-top: 4px !important;
-    font-size: 0.82rem;
-    line-height: 1.38;
+    margin-top: 3px !important;
+    font-size: 0.8rem;
+    line-height: 1.32;
   }
 
   .quantity-selector--detail {
     margin-top: 0;
-    padding: 8px 9px;
+    padding: 7px 9px;
   }
 
   .product-detail-actions {
     display: grid !important;
     grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
     align-items: stretch;
-    margin-top: 2px !important;
+    margin-top: 0 !important;
     gap: 8px !important;
-    padding: 2px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+    padding: 0 0 calc(6px + env(safe-area-inset-bottom, 0px));
   }
 
   .product-detail-actions .button {
-    min-height: 50px;
+    min-height: 48px;
     width: 100%;
-    font-size: 0.88rem;
+    font-size: 0.86rem;
     padding-inline: 12px;
   }
 
@@ -2749,7 +2751,7 @@
 
   .quantity-selector__control button,
   .quantity-selector__control input {
-    min-height: 38px;
+    min-height: 36px;
     border-radius: 12px;
   }
 
@@ -2845,5 +2847,14 @@
   .product-detail-actions .button {
     min-height: 38px;
     font-size: 0.8rem;
+  }
+
+  .modal-content-new .modal-close,
+  .storefront-photo-viewer__close {
+    width: 34px;
+    height: 34px;
+    background: rgba(7, 10, 15, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.26);
   }
 }
