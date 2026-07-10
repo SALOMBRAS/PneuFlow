@@ -2661,8 +2661,8 @@
   }
 
   .product-detail-hero__image {
-    min-height: clamp(220px, 31vh, 272px) !important;
-    max-height: clamp(220px, 31vh, 272px) !important;
+    min-height: clamp(190px, 29dvh, 245px) !important;
+    max-height: clamp(190px, 29dvh, 245px) !important;
     border-radius: 18px 18px 0 0;
   }
 
@@ -2693,46 +2693,46 @@
   }
 
   .modal-content-new__body--detail {
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
-    gap: 8px;
+    padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px));
+    gap: 6px;
   }
 
   .contact-band--detail {
-    margin-top: 8px;
-    padding: 8px 12px;
-    border-radius: 15px;
+    margin-top: 6px;
+    padding: 12px 14px;
+    border-radius: 14px;
   }
 
   .contact-band--detail .contact-band__title {
-    font-size: 0.98rem;
+    font-size: 0.95rem;
     line-height: 1.1;
   }
 
   .contact-band--detail .info-card__copy {
-    margin-top: 3px !important;
-    font-size: 0.8rem;
-    line-height: 1.32;
+    margin-top: 2px !important;
+    font-size: 0.77rem;
+    line-height: 1.25;
   }
 
   .quantity-selector--detail {
     margin-top: 0;
-    padding: 7px 9px;
+    padding: 6px 9px;
   }
 
   .product-detail-actions {
     display: grid !important;
-    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
     align-items: stretch;
     margin-top: 0 !important;
-    gap: 8px !important;
+    gap: 7px !important;
     padding: 0 0 calc(8px + env(safe-area-inset-bottom, 0px));
   }
 
   .product-detail-actions .button {
-    min-height: 46px;
+    min-height: 44px;
     width: 100%;
-    font-size: 0.84rem;
-    padding-inline: 12px;
+    font-size: 0.82rem;
+    padding-inline: 10px;
   }
 
   .quantity-selector__header {
@@ -2751,7 +2751,7 @@
 
   .quantity-selector__control button,
   .quantity-selector__control input {
-    min-height: 36px;
+    min-height: 34px;
     border-radius: 12px;
   }
 
