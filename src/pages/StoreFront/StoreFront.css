@@ -2175,6 +2175,7 @@
 
 .storefront-photo-viewer {
   padding: 12px;
+  overscroll-behavior: contain;
 }
 
 .storefront-photo-viewer__sheet {
@@ -2612,6 +2613,11 @@
     box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.42);
   }
 
+  .modal-content-new.modal-content-new--detail {
+    height: fit-content;
+    max-height: calc(74dvh - env(safe-area-inset-bottom, 0px));
+  }
+
   .product-detail-desktop {
     display: none;
   }
@@ -2920,6 +2926,12 @@
     border-radius: 0;
   }
 
+  .modal-content-new.modal-content-new--detail {
+    width: min(100%, 560px);
+    height: fit-content;
+    max-height: calc(74dvh - env(safe-area-inset-bottom, 0px));
+  }
+
   .modal-content-new--detail {
     grid-template-rows: auto auto;
     height: fit-content;
@@ -2956,6 +2968,13 @@
     min-height: 0;
     padding: 12px;
     touch-action: pan-x pan-y pinch-zoom;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .storefront-photo-viewer__stage::-webkit-scrollbar {
+    width: 0;
+    height: 0;
   }
 
   .storefront-photo-viewer__image {
