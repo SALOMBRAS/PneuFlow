@@ -1235,6 +1235,6 @@ export const storageService = {
       .from('stores')
       .getPublicUrl(filePath);
 
-    return publicUrl;
+    return `${publicUrl}?v=${Date.now()}`;
   }
 };
