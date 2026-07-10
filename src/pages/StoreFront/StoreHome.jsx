@@ -1298,14 +1298,14 @@ export default function StoreHome() {
       {selectedTire && (
         <div className="modal-overlay modal-overlay--detail" style={{ zIndex: 1000 }}>
           <div
-            className="modal-content-new modal-content-new--detail animate-slide"
+            className="modal-content-new modal-content-new--detail product-detail-mobile animate-slide"
             style={{ textAlign: 'left', maxWidth: '760px', width: 'min(100%, 760px)' }}
           >
             <button className="modal-close" onClick={() => setSelectedTire(null)} type="button" aria-label="Fechar">
               <X size={18} />
             </button>
 
-            <div className="product-detail-hero">
+            <div className="product-detail-hero product-detail-mobile__hero">
               <button
                 type="button"
                 className="product-detail-hero__button"
@@ -1401,24 +1401,24 @@ export default function StoreHome() {
               )}
             </div>
 
-            <div className="modal-content-new__body modal-content-new__body--detail">
-              <div className="modal-detail-header">
-                <div style={{ minWidth: 0, flex: '1 1 auto' }}>
-                  <p className="section-kicker" style={{ marginBottom: '6px' }}>{selectedTire.marca}</p>
-                  <h3 className="modal-title modal-title--detail">{getOfferTitle(selectedTire)}</h3>
-                  <p className="info-card__copy info-card__copy--detail" style={{ marginTop: '10px' }}>{getCompatibilityDisplay(selectedTire)}</p>
+            <div className="modal-content-new__body modal-content-new__body--detail product-detail-mobile__body">
+              <div className="modal-detail-header product-detail-mobile__header">
+                <div className="product-detail-mobile__summary" style={{ minWidth: 0, flex: '1 1 auto' }}>
+                  <p className="section-kicker product-detail-mobile__brand" style={{ marginBottom: '6px' }}>{selectedTire.marca}</p>
+                  <h3 className="modal-title modal-title--detail product-detail-mobile__title">{getOfferTitle(selectedTire)}</h3>
+                  <p className="info-card__copy info-card__copy--detail product-detail-mobile__compatibility" style={{ marginTop: '10px' }}>{getCompatibilityDisplay(selectedTire)}</p>
                 </div>
-                <span className="product-badge product-badge--spec">{selectedTire.medida}</span>
+                <span className="product-badge product-badge--spec product-detail-mobile__spec">{selectedTire.medida}</span>
               </div>
 
-              <div className="contact-band contact-band--detail">
-                <div className="contact-band__row">
-                  <div>
+              <div className="contact-band contact-band--detail product-detail-mobile__price">
+                <div className="contact-band__row product-detail-mobile__price-row">
+                  <div className="product-detail-mobile__price-copy">
                     <p className="section-kicker" style={{ marginBottom: '6px' }}>{isKitOffer(selectedTire) ? 'Preço do kit' : 'Preço à vista'}</p>
-                    <h4 className="contact-band__title">{formatBRLCurrency(selectedTire.preco)}</h4>
-                    <p className="info-card__copy" style={{ marginTop: '8px' }}>{getOfferDescriptor(selectedTire)}</p>
+                    <h4 className="contact-band__title product-detail-mobile__price-value">{formatBRLCurrency(selectedTire.preco)}</h4>
+                    <p className="info-card__copy product-detail-mobile__price-note" style={{ marginTop: '8px' }}>{getOfferDescriptor(selectedTire)}</p>
                   </div>
-                  <span className={`status-pill ${getAvailableStock(selectedTire) > 0 ? 'status-pill--success' : 'status-pill--muted'}`}>
+                  <span className={`status-pill product-detail-mobile__stock ${getAvailableStock(selectedTire) > 0 ? 'status-pill--success' : 'status-pill--muted'}`}>
                     {getAvailabilityLabel(selectedTire)}
                   </span>
                 </div>
@@ -1440,13 +1440,13 @@ export default function StoreHome() {
                 className="quantity-selector--detail"
               />
 
-              <div className="product-detail-actions" style={{ display: 'flex', gap: '12px' }}>
-                <button type="button" className="button button--ghost button--xl" style={{ flex: 1 }} onClick={() => setSelectedTire(null)}>
+              <div className="product-detail-actions product-detail-mobile__actions" style={{ display: 'flex', gap: '12px' }}>
+                <button type="button" className="button button--ghost button--xl product-detail-mobile__back" style={{ flex: 1 }} onClick={() => setSelectedTire(null)}>
                   Voltar
                 </button>
                 <button
                   type="button"
-                  className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+                  className={`button button--primary button--xl product-detail-mobile__buy ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
                   style={{ flex: 2 }}
                   disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
                   aria-disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
