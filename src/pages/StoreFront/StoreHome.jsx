@@ -134,6 +134,33 @@ const getCompatibilitySnippet = (tire) =>
 
 const getCompatibilityDisplay = (tire) => getCompatibilitySummary(tire, 2);
 
+const getCatalogSearchText = (tire) =>
+  [
+    getOfferTitle(tire),
+    tire?.marca,
+    tire?.modelo,
+    tire?.medida,
+    getCompatibilitySnippet(tire),
+    tire?.descricao,
+    tire?.description,
+    tire?.referencia,
+    tire?.reference,
+    tire?.codigo,
+    tire?.codigo_referencia,
+    tire?.codigoReferencia
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+const getProductDescription = (tire) => {
+  const customDescription = tire?.descricao || tire?.description;
+  if (customDescription) return customDescription;
+
+  const title = getOfferTitle(tire);
+  const measure = tire?.medida ? ` na medida ${tire.medida}` : '';
+  return `Pneu ${title}${measure}. Consulte disponibilidade com a loja.`;
+};
+
 const formatPublicAddress = (store) => {
   const street = store?.endereco || '';
   const number = store?.address_number || '';
@@ -177,6 +204,7 @@ export default function StoreHome() {
 
   const [selectedTire, setSelectedTire] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [photoViewer, setPhotoViewer] = useState({ open: false, index: 0, scale: 1 });
   const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [targetTire, setTargetTire] = useState(null);
   const [leadQuantity, setLeadQuantity] = useState(1);
@@ -228,6 +256,19 @@ export default function StoreHome() {
       console.warn('Nao foi possivel persistir o carrinho:', error);
     }
   }, [cartItems, cartStorageKey]);
+
+  useEffect(() => {
+    if (!photoViewer.open) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closePhotoViewer();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [photoViewer.open]);
 
   useEffect(() => {
     if (!tires.length) return;
@@ -385,6 +426,30 @@ export default function StoreHome() {
     };
   }, [store?.id, loading, referralLookupDone, referralSeller?.id, referralSeller?.ref_code, activeRefCode, referralCode, location.pathname, location.search]);
 
+  useEffect(() => {
+    if (!selectedTire || typeof window === 'undefined') return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setSelectedTire(null);
+        closePhotoViewer();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedTire]);
+
   const uniqueBrands = useMemo(
     () => [...new Set(tires.map((t) => t.marca).filter(Boolean))].sort(),
     [tires]
@@ -426,11 +491,7 @@ export default function StoreHome() {
       });
     } else {
       result = result.filter((t) => {
-        const matchesSearch =
-          normalizeText(getOfferTitle(t) || '').includes(normalizeText(searchQuery || '')) ||
-          normalizeText(t.modelo || '').includes(normalizeText(searchQuery || '')) ||
-          normalizeText(t.marca || '').includes(normalizeText(searchQuery || '')) ||
-          normalizeText(t.medida || '').includes(normalizeText(searchQuery || ''));
+        const matchesSearch = normalizeText(getCatalogSearchText(t)).includes(normalizeText(searchQuery || ''));
         const matchesBrand = !filterBrand || t.marca === filterBrand;
         const matchesStock = !filterStockOnly || getAvailableStock(t) > 0;
         
@@ -470,6 +531,52 @@ export default function StoreHome() {
   const galleryImages = useMemo(() => {
     return getTireImages(selectedTire);
   }, [selectedTire]);
+
+  const clampPhotoScale = (value) => Math.min(3, Math.max(1, Number(value) || 1));
+
+  const formatPhotoZoomLabel = (scale) => {
+    const rounded = Math.round(Number(scale || 1) * 10) / 10;
+    return Number.isInteger(rounded) ? `${rounded}x` : `${rounded.toFixed(1)}x`;
+  };
+
+  const openPhotoViewer = (index = activeImageIndex) => {
+    setPhotoViewer({
+      open: true,
+      index: Math.max(0, Math.min(index, Math.max(galleryImages.length - 1, 0))),
+      scale: 1
+    });
+  };
+
+  const closePhotoViewer = () => {
+    setPhotoViewer({ open: false, index: 0, scale: 1 });
+  };
+
+  const shiftPhotoViewer = (delta) => {
+    setPhotoViewer((current) => ({
+      ...current,
+      scale: clampPhotoScale(current.scale + delta)
+    }));
+  };
+
+  const setPhotoViewerIndex = (index) => {
+    if (!galleryImages.length) return;
+    const nextIndex = Math.max(0, Math.min(index, galleryImages.length - 1));
+    setPhotoViewer((current) => ({
+      ...current,
+      index: nextIndex,
+      scale: 1
+    }));
+  };
+
+  const goToPreviousPhoto = () => {
+    if (!galleryImages.length) return;
+    setPhotoViewerIndex(photoViewer.index === 0 ? galleryImages.length - 1 : photoViewer.index - 1);
+  };
+
+  const goToNextPhoto = () => {
+    if (!galleryImages.length) return;
+    setPhotoViewerIndex(photoViewer.index === galleryImages.length - 1 ? 0 : photoViewer.index + 1);
+  };
 
   const placeholderImage = 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=800';
   const primaryColor = '#f59e0b';
@@ -571,6 +678,11 @@ export default function StoreHome() {
     setFilterStockOnly(false);
     setCatalogVehicleType('todos');
     handleClearVehicleSearch();
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedTire(null);
+    closePhotoViewer();
   };
 
   const handleOpenDetail = (tire) => {
@@ -1261,26 +1373,128 @@ export default function StoreHome() {
       )}
 
       {selectedTire && (
-        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+        <div className="modal-overlay modal-overlay--detail" style={{ zIndex: 1000 }} onClick={handleCloseDetail}>
           <div
-            className="modal-content-new modal-content-new--detail animate-slide"
-            style={{ textAlign: 'left', maxWidth: '760px', width: 'min(100%, 760px)' }}
+            className="modal-content-new modal-content-new--detail product-detail-mobile animate-slide"
+            style={{ textAlign: 'left' }}
+            onClick={(event) => event.stopPropagation()}
           >
-            <button className="modal-close" onClick={() => setSelectedTire(null)} type="button" aria-label="Fechar">
+            <button className="modal-close" onClick={handleCloseDetail} type="button" aria-label="Fechar">
               <X size={18} />
             </button>
 
-            <div style={{ position: 'relative' }}>
-              <div
-                style={{
-                  minHeight: '220px',
-                  maxHeight: '260px',
-                  backgroundImage: `linear-gradient(180deg, rgba(5,7,12,0.02), rgba(5,7,12,0.72)), url(${galleryImages.length > 0 ? galleryImages[activeImageIndex] : placeholderImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  transition: 'background-image 0.3s ease-in-out'
-                }}
-              />
+            <div className="product-detail-desktop">
+              <div className="product-detail-desktop__gallery">
+                <div className="product-detail-desktop__thumbs" aria-label="Fotos do anúncio">
+                  {(galleryImages.length > 0 ? galleryImages : [placeholderImage]).map((image, idx) => (
+                    <button
+                      key={image}
+                      type="button"
+                      className={`product-detail-desktop__thumb ${activeImageIndex === idx ? 'is-active' : ''}`}
+                      onClick={() => setActiveImageIndex(idx)}
+                      aria-label={`Ver foto ${idx + 1}`}
+                    >
+                      <img src={image} alt="" loading="lazy" decoding="async" />
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="product-detail-desktop__image"
+                  onClick={() => openPhotoViewer(activeImageIndex)}
+                  aria-label="Abrir imagem ampliada do anúncio"
+                >
+                  <img
+                    src={galleryImages[activeImageIndex] || placeholderImage}
+                    alt={getOfferTitle(selectedTire)}
+                    loading="eager"
+                    decoding="async"
+                  />
+                </button>
+              </div>
+
+              <section className="product-detail-desktop__info">
+                <p className="product-detail-desktop__brand">{selectedTire.marca}</p>
+                <h3 className="product-detail-desktop__title">{getOfferTitle(selectedTire)}</h3>
+                <p className="product-detail-desktop__compatibility">{getCompatibilityDisplay(selectedTire)}</p>
+
+                <div className="product-detail-desktop__chips">
+                  <span>{selectedTire.medida}</span>
+                  <span>{getOfferDescriptor(selectedTire)}</span>
+                  {selectedTire.aro ? <span>Aro {selectedTire.aro}</span> : null}
+                </div>
+
+                <div className="product-detail-desktop__description">
+                  <span>Descrição</span>
+                  <p>{getProductDescription(selectedTire)}</p>
+                </div>
+              </section>
+
+              <aside className="product-detail-desktop__purchase">
+                <span className={`status-pill product-detail-desktop__stock ${getAvailableStock(selectedTire) > 0 ? 'status-pill--success' : 'status-pill--muted'}`}>
+                  {getAvailabilityLabel(selectedTire)}
+                </span>
+
+                <div>
+                  <p className="product-detail-desktop__price-label">{isKitOffer(selectedTire) ? 'Preço do kit' : 'Preço à vista'}</p>
+                  <strong className="product-detail-desktop__price">{formatBRLCurrency(selectedTire.preco)}</strong>
+                  <small className="product-detail-desktop__price-note">{getOfferDescriptor(selectedTire)}</small>
+                </div>
+
+                <QuantitySelector
+                  value={detailQuantity}
+                  max={getAvailableStock(selectedTire)}
+                  onChange={setDetailQuantity}
+                  label={getQuantitySelectorLabel(selectedTire)}
+                  availabilityText={getAvailabilityLabel(selectedTire)}
+                  helperText={
+                    isKitOffer(selectedTire)
+                      ? `${getOfferQuantityLabel(detailQuantity, selectedTire)} = ${getPhysicalTireTotal(detailQuantity, selectedTire)} pneus`
+                      : ''
+                  }
+                  disabled={!commercialContactEnabled}
+                  compact
+                  className="quantity-selector--desktop-detail"
+                />
+
+                <button
+                  type="button"
+                  className={`button button--primary button--xl product-detail-desktop__buy ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+                  disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
+                  aria-disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
+                  onClick={() => {
+                    handleInterest(selectedTire, detailQuantity);
+                    handleCloseDetail();
+                  }}
+                >
+                  <ShoppingCart size={18} />
+                  {getAvailableStock(selectedTire) > 0 ? 'Comprar agora' : 'Indisponível'}
+                </button>
+
+                <p className="product-detail-desktop__support">Atendimento direto com a loja para confirmar retirada ou entrega.</p>
+              </aside>
+            </div>
+
+            <div className="product-detail-hero product-detail-mobile__hero">
+              <button
+                type="button"
+                className="product-detail-hero__button"
+                onClick={() => openPhotoViewer(activeImageIndex)}
+                aria-label="Abrir imagem ampliada do anúncio"
+              >
+                <div
+                  className="product-detail-hero__image"
+                  style={{
+                    minHeight: '220px',
+                    maxHeight: '260px',
+                    backgroundImage: `linear-gradient(180deg, rgba(5,7,12,0.02), rgba(5,7,12,0.72)), url(${galleryImages.length > 0 ? galleryImages[activeImageIndex] : placeholderImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    transition: 'background-image 0.3s ease-in-out'
+                  }}
+                />
+              </button>
               
               {galleryImages.length > 1 && (
                 <>
@@ -1358,61 +1572,149 @@ export default function StoreHome() {
               )}
             </div>
 
-            <div className="modal-content-new__body modal-content-new__body--detail">
-              <div className="modal-detail-header">
-                <div style={{ minWidth: 0, flex: '1 1 auto' }}>
-                  <p className="section-kicker" style={{ marginBottom: '6px' }}>{selectedTire.marca}</p>
-                  <h3 className="modal-title modal-title--detail">{getOfferTitle(selectedTire)}</h3>
-                  <p className="info-card__copy info-card__copy--detail" style={{ marginTop: '10px' }}>{getCompatibilityDisplay(selectedTire)}</p>
+            <div className="modal-content-new__body modal-content-new__body--detail product-detail-mobile__body">
+              <div className="modal-detail-header product-detail-mobile__header">
+                <div className="product-detail-mobile__summary" style={{ minWidth: 0, flex: '1 1 auto' }}>
+                  <p className="section-kicker product-detail-mobile__brand" style={{ marginBottom: '6px' }}>{selectedTire.marca}</p>
+                  <h3 className="modal-title modal-title--detail product-detail-mobile__title">{getOfferTitle(selectedTire)}</h3>
+                  <p className="info-card__copy info-card__copy--detail product-detail-mobile__compatibility" style={{ marginTop: '10px' }}>{getCompatibilityDisplay(selectedTire)}</p>
                 </div>
-                <span className="product-badge product-badge--spec">{selectedTire.medida}</span>
+                <span className="product-badge product-badge--spec product-detail-mobile__spec">{selectedTire.medida}</span>
               </div>
 
-              <div className="contact-band" style={{ marginTop: '18px' }}>
-                <div className="contact-band__row">
-                  <div>
+              <div className="contact-band contact-band--detail product-detail-mobile__price">
+                <div className="contact-band__row product-detail-mobile__price-row">
+                  <div className="product-detail-mobile__price-copy">
                     <p className="section-kicker" style={{ marginBottom: '6px' }}>{isKitOffer(selectedTire) ? 'Preço do kit' : 'Preço à vista'}</p>
-                    <h4 className="contact-band__title">{formatBRLCurrency(selectedTire.preco)}</h4>
-                    <p className="info-card__copy" style={{ marginTop: '8px' }}>{getOfferDescriptor(selectedTire)}</p>
+                    <h4 className="contact-band__title product-detail-mobile__price-value">{formatBRLCurrency(selectedTire.preco)}</h4>
+                    <p className="info-card__copy product-detail-mobile__price-note" style={{ marginTop: '8px' }}>{getOfferDescriptor(selectedTire)}</p>
                   </div>
-                  <span className={`status-pill ${getAvailableStock(selectedTire) > 0 ? 'status-pill--success' : 'status-pill--muted'}`}>
+                  <span className={`status-pill product-detail-mobile__stock ${getAvailableStock(selectedTire) > 0 ? 'status-pill--success' : 'status-pill--muted'}`}>
                     {getAvailabilityLabel(selectedTire)}
                   </span>
                 </div>
+              </div>
+
+              <div className="product-detail-mobile__description">
+                <span>Descrição</span>
+                <p>{getProductDescription(selectedTire)}</p>
               </div>
 
               <QuantitySelector
                 value={detailQuantity}
                 max={getAvailableStock(selectedTire)}
                 onChange={setDetailQuantity}
-                label={getQuantitySelectorLabel(selectedTire)}
+                label="Quantidade"
                 availabilityText={getAvailabilityLabel(selectedTire)}
-                helperText={
-                  isKitOffer(selectedTire)
-                    ? `${getOfferQuantityLabel(detailQuantity, selectedTire)} = ${getPhysicalTireTotal(detailQuantity, selectedTire)} pneus.`
-                    : ''
-                }
+                helperText=""
                 disabled={!commercialContactEnabled}
+                compact
                 className="quantity-selector--detail"
               />
 
-              <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-                <button type="button" className="button button--ghost button--xl" style={{ flex: 1 }} onClick={() => setSelectedTire(null)}>
+              <div className="product-detail-actions product-detail-mobile__actions" style={{ display: 'flex', gap: '12px' }}>
+                <button type="button" className="button button--ghost button--xl product-detail-mobile__back" style={{ flex: 1 }} onClick={handleCloseDetail}>
                   Voltar
                 </button>
                 <button
                   type="button"
-                  className={`button button--primary button--xl ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
+                  className={`button button--primary button--xl product-detail-mobile__buy ${!commercialContactEnabled ? 'commercial-disabled' : ''}`}
                   style={{ flex: 2 }}
-                disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
-                aria-disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
-                onClick={() => {
-                  handleInterest(selectedTire, detailQuantity);
-                  setSelectedTire(null);
+                  disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
+                  aria-disabled={!commercialContactEnabled || getAvailableStock(selectedTire) <= 0}
+                  onClick={() => {
+                    handleInterest(selectedTire, detailQuantity);
+                    handleCloseDetail();
+                  }}
+                >
+                  <ShoppingCart size={16} />
+                    {getAvailableStock(selectedTire) > 0 ? 'Comprar agora' : 'Indisponivel'}
+                  </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {photoViewer.open && selectedTire && (
+        <div
+          className="modal-overlay storefront-photo-viewer"
+          style={{ zIndex: 1200 }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Visualizador ampliado da imagem do anúncio"
+          onClick={closePhotoViewer}
+        >
+          <div className="storefront-photo-viewer__sheet" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="modal-close storefront-photo-viewer__close" onClick={closePhotoViewer} aria-label="Fechar imagem">
+              <X size={18} />
+            </button>
+            <div
+              className="storefront-photo-viewer__stage"
+              onWheel={(event) => {
+                event.preventDefault();
+                shiftPhotoViewer(event.deltaY < 0 ? 0.15 : -0.15);
+              }}
+            >
+              <img
+                className="storefront-photo-viewer__image"
+                src={galleryImages[photoViewer.index] || placeholderImage}
+                alt={getOfferTitle(selectedTire)}
+                style={{
+                  transform: `scale(${photoViewer.scale})`,
+                  transformOrigin: 'center center'
                 }}
-              >
-                <ShoppingCart size={16} />
-                  {getAvailableStock(selectedTire) > 0 ? 'Comprar agora' : 'Indisponivel'}
+              />
+            </div>
+            <div className="storefront-photo-viewer__footer">
+              {galleryImages.length > 1 && (
+                <div className="storefront-photo-viewer__dots" aria-hidden="true">
+                  {galleryImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`storefront-photo-viewer__dot ${photoViewer.index === idx ? 'is-active' : ''}`}
+                      onClick={() => setPhotoViewer((current) => ({ ...current, index: idx, scale: 1 }))}
+                      aria-label={`Ver foto ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <div className="storefront-photo-viewer__controls">
+                {galleryImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="button button--ghost storefront-photo-viewer__nav"
+                      onClick={goToPreviousPhoto}
+                      aria-label="Foto anterior"
+                    >
+                      <ArrowRight size={16} style={{ transform: 'rotate(180deg)' }} />
+                    </button>
+                    <button
+                      type="button"
+                      className="button button--ghost storefront-photo-viewer__nav"
+                      onClick={goToNextPhoto}
+                      aria-label="Próxima foto"
+                    >
+                      <ArrowRight size={16} />
+                    </button>
+                  </>
+                )}
+                <button type="button" className="button button--ghost storefront-photo-viewer__zoom" onClick={() => shiftPhotoViewer(-0.2)} aria-label="Diminuir zoom">
+                  -
+                </button>
+                <button
+                  type="button"
+                  className="button button--ghost storefront-photo-viewer__zoom"
+                  onClick={() => setPhotoViewer((current) => ({ ...current, scale: 1 }))}
+                  aria-label="Resetar zoom"
+                >
+                  {formatPhotoZoomLabel(photoViewer.scale)}
+                </button>
+                <button type="button" className="button button--ghost storefront-photo-viewer__zoom" onClick={() => shiftPhotoViewer(0.2)} aria-label="Aumentar zoom">
+                  +
                 </button>
               </div>
             </div>

@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ShoppingCart, Car, Bike, Info, ShieldCheck, Zap, Gauge } from 'lucide-react';
-import QuantitySelector from './QuantitySelector';
 import { formatBRLCurrency } from '../../../utils/currency';
 import {
   getAvailabilityLabel,
@@ -8,32 +7,41 @@ import {
   getCompatibilitySummary,
   getOfferBadgeLabel,
   getOfferDescriptor,
-  getOfferQuantityLabel,
-  getPhysicalTireTotal,
-  getQuantityPerOffer,
-  getQuantitySelectorLabel,
   isKitOffer
 } from '../../../utils/tireOffer';
 
 export default function ProductCard({ tire, primaryColor, onInterest, onDetail, commercialContactEnabled = true }) {
   const stockCount = getAvailableOfferCount(tire);
   const isStock = stockCount > 0;
-  const [desiredQuantity, setDesiredQuantity] = useState(1);
   const image = tire.foto_principal_url || tire.image || 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&q=80&w=800';
   const vehicleLabel = tire.tipo_veiculo === 'moto' ? 'Moto' : 'Carro';
   const compatibility = getCompatibilitySummary(tire, 2);
   const contactDisabled = !commercialContactEnabled || !isStock;
-  const quantityPerOffer = getQuantityPerOffer(tire);
-  const physicalTotal = getPhysicalTireTotal(desiredQuantity, quantityPerOffer);
-  const helperText = isKitOffer(tire)
-    ? `${getOfferQuantityLabel(desiredQuantity, tire)} = ${physicalTotal} pneus.`
-    : '';
+  const openDetail = () => onDetail(tire);
+  const stopCardClick = (event) => event.stopPropagation();
+
+  const handleCardKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openDetail();
+    }
+  };
 
   return (
-    <article className="product-card">
+    <article
+      className="product-card"
+      role="button"
+      tabIndex={0}
+      aria-label={`Abrir detalhes do pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
+      onClick={openDetail}
+      onKeyDown={handleCardKeyDown}
+    >
       <button
         className="product-image-container"
-        onClick={() => onDetail(tire)}
+        onClick={(event) => {
+          stopCardClick(event);
+          openDetail();
+        }}
         type="button"
         aria-label={`Ver detalhes do pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
       >
@@ -89,17 +97,6 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
             </span>
             <span>{vehicleLabel}</span>
           </div>
-
-          <QuantitySelector
-            value={desiredQuantity}
-            max={stockCount}
-            onChange={setDesiredQuantity}
-            label={getQuantitySelectorLabel(tire)}
-            availabilityText={getAvailabilityLabel(tire)}
-            helperText={helperText}
-            compact
-            disabled={!commercialContactEnabled}
-          />
         </div>
 
         <div className="product-card-footer">
@@ -109,19 +106,25 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
               <div className="product-price" style={{ color: primaryColor }}>{formatBRLCurrency(tire.preco)}</div>
               <small className="product-price-note">{getOfferDescriptor(tire)}</small>
             </div>
-            <button
-              onClick={() => onDetail(tire)}
-              type="button"
-              className="product-detail-link"
-              aria-label={`Ver detalhes do pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
-            >
+          <button
+            onClick={(event) => {
+              stopCardClick(event);
+              openDetail();
+            }}
+            type="button"
+            className="product-detail-link"
+            aria-label={`Ver detalhes do pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}
+          >
               <Info size={14} />
               Ver
             </button>
           </div>
 
           <button
-            onClick={() => onInterest(tire, desiredQuantity)}
+            onClick={(event) => {
+              stopCardClick(event);
+              onInterest(tire, 1);
+            }}
             type="button"
             className={`btn-whatsapp-card ${contactDisabled ? 'commercial-disabled' : ''}`}
             aria-label={`Adicionar ao carrinho o pneu ${tire.marca || ''} ${tire.modelo || tire.medida || ''}`.trim()}

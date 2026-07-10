@@ -216,6 +216,10 @@ const mapLeadAttendanceErrorMessage = (error) => {
     return 'Informe uma quantidade válida.';
   }
 
+  if (message.includes('telefone') && message.includes('inval')) {
+    return 'Informe um telefone válido com 10 ou 11 dígitos.';
+  }
+
   return error?.message || 'Não foi possível atualizar este lead.';
 };
 
@@ -912,7 +916,7 @@ export const storageService = {
     return data;
   },
 
-  updateLeadAttendanceStatus: async (leadId, status, soldQuantity = 1, desiredQuantity = null, snapshot = {}) => {
+  updateLeadAttendanceStatus: async (leadId, status, soldQuantity = 1, desiredQuantity = null, snapshot = {}, customerPhone = null) => {
     const normalizedDesiredQuantity =
       desiredQuantity == null
         ? null
@@ -930,7 +934,8 @@ export const storageService = {
       p_titulo_anuncio: snapshot.titulo_anuncio || null,
       p_preco_anuncio: snapshot.preco_anuncio == null ? null : Number(snapshot.preco_anuncio),
       p_quantidade_por_anuncio: snapshot.quantidade_por_anuncio == null ? null : normalizeLeadQuantity(snapshot.quantidade_por_anuncio),
-      p_valor_total: snapshot.valor_total == null ? null : Number(snapshot.valor_total)
+      p_valor_total: snapshot.valor_total == null ? null : Number(snapshot.valor_total),
+      p_telefone_cliente: customerPhone || snapshot.telefone_cliente || null
     });
 
     if (error) {
