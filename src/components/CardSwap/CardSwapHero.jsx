@@ -27,15 +27,17 @@ export default function CardSwapHero() {
                 <span className="card-swap-panel__dot" aria-hidden="true" />
               </header>
               <div className="card-swap-panel__body">
-                <img
-                  src={card.image}
-                  alt={`Prévia da área ${card.title} do PneuFlow`}
-                  width="960"
-                  height="600"
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                  decoding="async"
-                  fetchPriority={index === 0 ? 'high' : 'auto'}
-                />
+                <div className="card-swap-panel__frame">
+                  <img
+                    src={card.image}
+                    alt={`Prévia da área ${card.title} do PneuFlow`}
+                    width="960"
+                    height="540"
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    fetchPriority={index === 0 ? 'high' : 'auto'}
+                  />
+                </div>
               </div>
             </div>
           </Card>

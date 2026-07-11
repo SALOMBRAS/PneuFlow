@@ -71,6 +71,11 @@
   position: relative;
   flex: 1;
   min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px 14px;
+  box-sizing: border-box;
   background: #07080b;
 }
 
@@ -82,11 +87,24 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(0, 0, 0, 0.08));
 }
 
+.card-swap-panel__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #07080b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
 .card-swap-panel__body img {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
+  object-position: center center;
   background: #07080b;
 }
 
@@ -153,7 +171,7 @@
 
 @media (max-width: 480px) {
   .card-swap-hero-frame {
-    height: 278px;
+    height: 286px;
   }
 
   .card-swap-container {
@@ -165,7 +183,7 @@
 
 @media (max-width: 390px) {
   .card-swap-hero-frame {
-    height: 266px;
+    height: 274px;
   }
 
   .card-swap-container {
