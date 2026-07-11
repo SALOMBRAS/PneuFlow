@@ -131,6 +131,36 @@ const getStatusMeta = (status) => LEAD_STATUS[status] || LEAD_STATUS.em_atendime
 const formatHistoricalCurrency = (value, fallback = 'Valor indisponivel') =>
   value == null ? fallback : formatBRLCurrency(value);
 
+const LEAD_AUDIT_ACTION_LABELS = {
+  sold: 'Vendido por',
+  abandoned: 'Desistência por',
+  reopened_sale: 'Venda reaberta por',
+  reopened_lead: 'Lead reaberto por',
+  in_progress: 'Em atendimento por'
+};
+
+const formatLeadAuditDate = (value) => {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return `${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })}`;
+};
+
+const getLeadAuditSummary = (event) => {
+  if (!event) return '';
+
+  const label = LEAD_AUDIT_ACTION_LABELS[event.action] || 'Status alterado por';
+  const actor = event.changed_by_name || event.changed_by_email || 'Usuário';
+  const date = formatLeadAuditDate(event.created_at);
+
+  return `${label}: ${actor}${date ? ` • ${date}` : ''}`;
+};
+
 const getPageNumbers = (currentPage, totalPages) => {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -1032,11 +1062,15 @@ export default function Leads() {
                               </span>
                             )}
 
-                            {isSold && lead.venda_confirmada_em && (
+                            {lead.latest_status_audit ? (
+                              <span className="lead-status-audit">
+                                {getLeadAuditSummary(lead.latest_status_audit)}
+                              </span>
+                            ) : isSold && lead.venda_confirmada_em ? (
                               <span className="lead-status-note">
                                 Confirmado em {new Date(lead.venda_confirmada_em).toLocaleDateString('pt-BR')}
                               </span>
-                            )}
+                            ) : null}
 
                             {status === 'em_atendimento' ? (
                               <div className="lead-sale-quantity-control">
@@ -1180,6 +1214,15 @@ export default function Leads() {
                               {lead.observacao_cliente && (
                                 <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                                   <strong style={{ color: 'var(--text-primary)' }}>Observacao:</strong> {lead.observacao_cliente}
+                                </div>
+                              )}
+
+                              {lead.status_audit_history?.length > 0 && (
+                                <div className="lead-audit-history">
+                                  <strong>Histórico de status</strong>
+                                  {lead.status_audit_history.map((event) => (
+                                    <span key={event.id}>{getLeadAuditSummary(event)}</span>
+                                  ))}
                                 </div>
                               )}
 
@@ -1555,6 +1598,33 @@ export default function Leads() {
         .lead-status-note--neutral {
           background: rgba(148, 163, 184, 0.12);
           color: #cbd5e1;
+        }
+
+        .lead-status-audit {
+          color: var(--text-secondary);
+          font-size: 11px;
+          font-weight: 600;
+          line-height: 1.45;
+        }
+
+        .lead-audit-history {
+          display: grid;
+          gap: 5px;
+          padding: 12px 14px;
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: var(--radius-md);
+          background: rgba(255, 255, 255, 0.025);
+        }
+
+        .lead-audit-history strong {
+          color: var(--text-primary);
+          font-size: 12px;
+        }
+
+        .lead-audit-history span {
+          color: var(--text-secondary);
+          font-size: 11px;
+          line-height: 1.45;
         }
 
         .lead-sale-quantity-control {

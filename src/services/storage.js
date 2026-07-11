@@ -785,20 +785,39 @@ export const storageService = {
       console.warn('Não foi possível expirar leads inativos automaticamente:', error?.message || error);
     }
 
-    const [{ data, error }, relationResult] = await Promise.all([
+    const [{ data, error }, relationResult, auditResult] = await Promise.all([
       supabase.rpc('get_leads_com_vendedor', {
         p_store_id: storeId
       }),
       loadLeadStockMap(storeId).catch((stockError) => {
         console.warn('Não foi possível carregar o estoque dos leads:', stockError?.message || stockError);
         return { leadRelations: [], stockByProductId: new Map() };
-      })
+      }),
+      supabase
+        .from('lead_status_audit')
+        .select('id, lead_id, changed_by_name, changed_by_email, previous_status, new_status, action, sold_quantity, desired_quantity, valor_total, created_at')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false })
     ]);
 
     if (error) {
       console.error('Erro RPC get_leads_com_vendedor:', error);
       throw error;
     }
+
+    if (auditResult.error) {
+      console.error('Erro ao carregar histórico de status dos leads:', auditResult.error);
+      throw auditResult.error;
+    }
+
+    const auditByLeadId = new Map();
+    (auditResult.data || []).forEach((event) => {
+      const events = auditByLeadId.get(event.lead_id) || [];
+      if (events.length < 3) {
+        events.push(event);
+        auditByLeadId.set(event.lead_id, events);
+      }
+    });
 
     const relationMap = new Map(
       (relationResult.leadRelations || []).map((relation) => [relation.id, relation])
@@ -807,6 +826,7 @@ export const storageService = {
     return (data || []).map((lead) => {
       const relation = relationMap.get(lead.id);
       const productId = relation?.produto_id || relation?.pneu_id || null;
+      const statusAuditHistory = auditByLeadId.get(lead.id) || [];
 
       return {
         ...lead,
@@ -814,7 +834,9 @@ export const storageService = {
         pneu_id: relation?.pneu_id || null,
         estoque_disponivel: productId
           ? relationResult.stockByProductId.get(productId) ?? null
-          : null
+          : null,
+        latest_status_audit: statusAuditHistory[0] || null,
+        status_audit_history: statusAuditHistory
       };
     });
   },
