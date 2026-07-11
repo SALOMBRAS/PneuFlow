@@ -161,17 +161,19 @@ const getProductDescription = (tire) => {
   return `Pneu ${title}${measure}. Consulte disponibilidade com a loja.`;
 };
 
-const formatPublicAddress = (store) => {
-  const street = store?.endereco || '';
-  const number = store?.address_number || '';
-  const complement = store?.address_complement || '';
-  const neighborhood = store?.neighborhood || '';
-  const city = store?.cidade || '';
-  const state = store?.estado || '';
+const normalizePublicText = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
 
-  const firstLine = [street, number ? `nÂº ${number}` : '', complement].filter(Boolean).join(' - ');
+const formatPublicAddress = (store) => {
+  const street = normalizePublicText(store?.endereco);
+  const number = normalizePublicText(store?.address_number);
+  const complement = normalizePublicText(store?.address_complement);
+  const neighborhood = normalizePublicText(store?.neighborhood);
+  const city = normalizePublicText(store?.cidade);
+  const state = normalizePublicText(store?.estado).toUpperCase();
+
+  const firstLine = [street, number ? `nº ${number}` : '', complement].filter(Boolean).join(' - ');
   const secondLine = [neighborhood, city ? `${city}${state ? `/${state}` : ''}` : ''].filter(Boolean).join(', ');
-  return [firstLine, secondLine].filter(Boolean).join(' â€” ') || 'Endereco nao informado';
+  return [firstLine, secondLine].filter(Boolean).join(' — ') || 'Endereço não informado';
 };
 
 export default function StoreHome() {
