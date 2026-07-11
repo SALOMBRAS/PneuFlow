@@ -149,7 +149,7 @@ export default function VehicleSearchBox({
                     aria-disabled={heroContactDisabled}
                   >
                     <MessageSquare size={18} />
-                    {heroTire && !inStock ? 'Indisponivel' : isKitOffer(heroTire) ? 'Comprar kit no WhatsApp' : 'Comprar no WhatsApp'}
+                    {heroTire && !inStock ? 'Indisponível' : isKitOffer(heroTire) ? 'Comprar kit no WhatsApp' : 'Comprar no WhatsApp'}
                   </button>
                 </div>
               </div>

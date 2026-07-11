@@ -127,7 +127,7 @@ const debugReferral = (...args) => {
 
 const VISIT_SESSION_PREFIX = 'pneuflow_store_visit';
 const VISIT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-const INACTIVE_STOREFRONT_MESSAGE = 'Esta vitrine estÃ¡ temporariamente inativa. Entre em contato com a loja ou aguarde a reativaÃ§Ã£o.';
+const INACTIVE_STOREFRONT_MESSAGE = 'Esta vitrine está temporariamente inativa. Entre em contato com a loja ou aguarde a reativação.';
 
 const getCompatibilitySnippet = (tire) =>
   tire.compatibilidade || tire.compatibility || tire.descricao || tire.description || 'Compatibilidade premium sob consulta';
@@ -253,7 +253,7 @@ export default function StoreHome() {
     try {
       window.localStorage.setItem(cartStorageKey, JSON.stringify(cartItems));
     } catch (error) {
-      console.warn('N?o foi poss?vel persistir o carrinho:', error);
+      console.warn('Não foi possível persistir o carrinho:', error);
     }
   }, [cartItems, cartStorageKey]);
 
@@ -495,7 +495,7 @@ export default function StoreHome() {
         const matchesBrand = !filterBrand || t.marca === filterBrand;
         const matchesStock = !filterStockOnly || getAvailableStock(t) > 0;
         
-        // Filtro por tipo de veÃ­culo do catÃ¡logo (Todos/Carro/Moto)
+        // Filtro por tipo de veículo do catálogo (Todos/Carro/Moto)
         let matchesCatalogType = true;
         if (catalogVehicleType === 'carro') {
           matchesCatalogType = t.tipo_veiculo === 'carro';
@@ -640,7 +640,7 @@ export default function StoreHome() {
   if (!store) {
     return (
       <div className="flex-center" style={{ height: '100vh', background: '#05070c', flexDirection: 'column', gap: '16px', color: '#fff' }}>
-        <h2>Loja nÃ£o encontrada</h2>
+        <h2>Loja não encontrada</h2>
         <Link to="/" className="button button--primary button--xl" style={{ textDecoration: 'none' }}>
           Ir para o site principal
         </Link>
@@ -765,7 +765,7 @@ export default function StoreHome() {
       await storageService.createLead(leadPayload);
 
       const formattedPrice = formatBRLCurrency(targetTire.preco);
-      let text = `OlÃ¡!\n\nMeu nome Ã© ${customerName.trim()}.\n\nTenho interesse no seguinte produto:\n\nProduto: ${produtoNome}\nMedida: ${targetTire.medida || 'N/A'}\nValor do anÃºncio: ${formattedPrice}\n\n`;
+      let text = `Olá!\n\nMeu nome é ${customerName.trim()}.\n\nTenho interesse no seguinte produto:\n\nProduto: ${produtoNome}\nMedida: ${targetTire.medida || 'N/A'}\nValor do anúncio: ${formattedPrice}\n\n`;
 
       if (isKitOffer(targetTire)) {
         text += `Quantidade desejada: ${requestedQuantity} ${requestedQuantity === 1 ? 'kit' : 'kits'}\n`;
@@ -778,14 +778,14 @@ export default function StoreHome() {
 
       if (vehicleSearchApplied) {
         const carInfo = vehicleBrand ? `${vehicleBrand} ${vehicleModel}` : vehicleModel;
-        text += `Meu carro Ã© um ${carInfo}. `;
+        text += `Meu carro é um ${carInfo}. `;
       }
 
       if (hasReferralSeller) {
         text += `Fui atendido por: ${referralSeller.nome || 'vendedor'}\n\n`;
       }
 
-      text += 'Poderia me passar mais informaÃ§Ãµes?';
+      text += 'Poderia me passar mais informações?';
 
       window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 
@@ -795,7 +795,7 @@ export default function StoreHome() {
       setLeadQuantity(1);
     } catch (error) {
       console.error('Erro ao registrar lead:', error);
-      setLeadError('NÃ£o foi possÃ­vel registrar seu interesse. Tente novamente.');
+      setLeadError('Não foi possível registrar seu interesse. Tente novamente.');
     } finally {
       setSavingLead(false);
     }
@@ -829,29 +829,29 @@ export default function StoreHome() {
     try {
       await storageService.createLeadCart(leadPayload);
 
-      let text = `OlÃ¡!\n\nMeu nome Ã© ${customerName.trim()}.\n`;
+      let text = `Olá!\n\nMeu nome é ${customerName.trim()}.\n`;
       if (customerPhone.trim()) {
-        text += `Meu telefone/WhatsApp Ã© ${customerPhone.trim()}.\n`;
+        text += `Meu telefone/WhatsApp é ${customerPhone.trim()}.\n`;
       }
-      text += '\nGostaria de solicitar o seguinte orÃ§amento:\n\n';
+      text += '\nGostaria de solicitar o seguinte orçamento:\n\n';
 
       cartItems.forEach((item, index) => {
         text += `${index + 1}. ${item.titulo_anuncio}\n`;
         text += `Medida: ${item.medida || 'N/A'}\n`;
-        text += `Quantidade: ${item.quantidade} ${item.quantidade === 1 ? 'anÃºncio' : 'anÃºncios'}\n`;
-        text += `Pneus f?sicos: ${item.quantidade_total_pneus}\n`;
+        text += `Quantidade: ${item.quantidade} ${item.quantidade === 1 ? 'anúncio' : 'anúncios'}\n`;
+        text += `Pneus físicos: ${item.quantidade_total_pneus}\n`;
         text += `Subtotal: ${formatBRLCurrency(item.valor_total)}\n\n`;
       });
 
       text += `Resumo do carrinho:\n`;
       text += `Itens distintos: ${cartSummary.distinctItems}\n`;
-      text += `Total de anÃºncios/kits: ${cartSummary.totalOffers}\n`;
+      text += `Total de anúncios/kits: ${cartSummary.totalOffers}\n`;
       text += `Total de pneus: ${cartSummary.totalPhysicalTires}\n`;
       text += `Valor total estimado: ${formatBRLCurrency(cartSummary.totalValue)}\n\n`;
 
       if (vehicleSearchApplied) {
         const carInfo = vehicleBrand ? `${vehicleBrand} ${vehicleModel}` : vehicleModel;
-        text += `Meu carro Ã© um ${carInfo}. `;
+        text += `Meu carro é um ${carInfo}. `;
       }
 
       if (hasReferralSeller) {
@@ -859,10 +859,10 @@ export default function StoreHome() {
       }
 
       if (customerNote.trim()) {
-        text += `ObservaÃ§Ã£o: ${customerNote.trim()}\n\n`;
+        text += `Observação: ${customerNote.trim()}\n\n`;
       }
 
-      text += 'Poderia me passar mais informaÃ§Ãµes?';
+      text += 'Poderia me passar mais informações?';
 
       window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 
@@ -873,7 +873,7 @@ export default function StoreHome() {
       setCustomerNote('');
     } catch (error) {
       console.error('Erro ao registrar lead:', error);
-      setLeadError('NÃ£o foi possÃ­vel enviar seu orÃ§amento. Tente novamente.');
+      setLeadError('Não foi possível enviar seu orçamento. Tente novamente.');
     } finally {
       setSavingLead(false);
     }
@@ -882,14 +882,14 @@ export default function StoreHome() {
   const handleGeneralWhatsapp = () => {
     if (!commercialContactEnabled) return;
 
-    let text = 'OlÃ¡! Acessei o catÃ¡logo digital de vocÃªs e gostaria de tirar uma dÃºvida sobre pneus.';
+    let text = 'Olá! Acessei o catálogo digital de vocês e gostaria de tirar uma dúvida sobre pneus.';
     if (referralSeller?.ref_code && hasValidWhatsapp(referralSeller?.whatsapp)) {
       text += ` Fui atendido por: ${referralSeller.nome || 'vendedor'}.`;
     }
     window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
-  const paymentMethods = ['Pix', 'CartÃ£o', 'Dinheiro'];
+  const paymentMethods = ['Pix', 'Cartão', 'Dinheiro'];
 
   return (
     <div className="public-store-page" style={brandStyle}>
@@ -961,9 +961,9 @@ export default function StoreHome() {
           <div className="storefront-products">
             <div className="catalog-toolbar">
               <div>
-                <p className="section-kicker">CatÃ¡logo premium</p>
+                <p className="section-kicker">Catálogo premium</p>
                 <h2 className="store-collection__title">
-                  {vehicleSearchApplied ? 'Pneus compatÃ­veis' : 'SeleÃ§Ã£o em destaque'}
+                  {vehicleSearchApplied ? 'Pneus compatíveis' : 'Seleção em destaque'}
                 </h2>
                 <p>{displayedTires.length} {displayedTires.length === 1 ? 'produto encontrado' : 'produtos encontrados'}</p>
               </div>
@@ -1001,7 +1001,7 @@ export default function StoreHome() {
                   <Search size={34} />
                 </div>
                 <h3>Nenhum pneu encontrado</h3>
-                <p>Tente ajustar os filtros, remover a busca por veÃ­culo ou mudar a marca selecionada.</p>
+                <p>Tente ajustar os filtros, remover a busca por veículo ou mudar a marca selecionada.</p>
                 <button type="button" className="button button--primary button--xl" onClick={handleResetFilters}>
                   Limpar todos os filtros
                 </button>
@@ -1012,7 +1012,7 @@ export default function StoreHome() {
         <section className="store-section-grid store-section-grid--final">
           <article className="info-card info-card--final">
             <p className="section-kicker">Operacao</p>
-            <h3 className="info-card__title">HorÃ¡rio e endereÃ§o</h3>
+            <h3 className="info-card__title">Horário e endereço</h3>
             <p className="info-card__copy">
               Tudo o que o cliente precisa para confiar antes de chamar no WhatsApp.
             </p>
@@ -1035,7 +1035,7 @@ export default function StoreHome() {
           <article className="info-card info-card--final">
             <p className="section-kicker">Pagamento</p>
             <h3 className="info-card__title">Formas aceitas</h3>
-            <p className="info-card__copy">Mostre facilidade de compra e reduza a fricÃ§Ã£o no fechamento.</p>
+            <p className="info-card__copy">Mostre facilidade de compra e reduza a fricção no fechamento.</p>
             <div className="payments-list">
               {paymentMethods.map((method) => (
                 <span className="payment-item" key={method}>
@@ -1052,7 +1052,7 @@ export default function StoreHome() {
                 </div>
                 <button type="button" className="button button--primary button--xl final-section-button" onClick={scrollToCatalog}>
                   <ArrowRight size={18} />
-                  Ver catÃ¡logo
+                  Ver catálogo
                 </button>
               </div>
             </div>
@@ -1060,7 +1060,7 @@ export default function StoreHome() {
 
           <article className="info-card info-card--final info-card--accent">
             <p className="section-kicker">Atendimento</p>
-            <h3 className="info-card__title">Contato rÃ¡pido</h3>
+            <h3 className="info-card__title">Contato rápido</h3>
             <p className="info-card__copy">
               Abra o WhatsApp da loja em poucos segundos e continue o atendimento sem sair da vitrine.
             </p>
@@ -1116,12 +1116,12 @@ export default function StoreHome() {
                 <span>{store.nome}</span>
               </div>
               <p className="footer-copy">
-                {store.description || 'Especialistas em pneus com uma vitrine digital mais elegante, mais clara e mais focada em conversÃ£o.'}
+                {store.description || 'Especialistas em pneus com uma vitrine digital mais elegante, mais clara e mais focada em conversão.'}
               </p>
             </div>
 
             <div className="footer-links">
-              <a className="footer-link" href="#catalogo">CatÃ¡logo</a>
+              <a className="footer-link" href="#catalogo">Catálogo</a>
               <a className="footer-link" href="#catalogo" onClick={(e) => { e.preventDefault(); scrollToCatalog(); }}>Filtros</a>
               <button
                 type="button"
@@ -1164,7 +1164,7 @@ export default function StoreHome() {
         aria-label={
           cartSummary.totalOffers > 0
             ? `Abrir carrinho com ${cartSummary.totalOffers} anuncio(s)`
-            : 'Abrir carrinho de orÃ§amento'
+            : 'Abrir carrinho de orçamento'
         }
       >
         <ShoppingCart size={22} />
@@ -1208,13 +1208,13 @@ export default function StoreHome() {
             </button>
             <p className="section-kicker">Busca inteligente</p>
             <h3 className="modal-title">Encontre o pneu ideal</h3>
-            <p className="info-card__copy">Filtre por marca ou busque pelo veÃ­culo para chegar mais rÃ¡pido no catÃ¡logo.</p>
+            <p className="info-card__copy">Filtre por marca ou busque pelo veículo para chegar mais rápido no catálogo.</p>
 
             <div className="finder-modal__section">
               <div className="finder-modal__section-header">
                 <div>
                   <p className="search-card__label">Busca por marca</p>
-                  <p className="search-card__copy">Escolha uma marca da loja e veja os pneus compatÃ­veis.</p>
+                  <p className="search-card__copy">Escolha uma marca da loja e veja os pneus compatíveis.</p>
                 </div>
                 {filterBrand && (
                   <button type="button" className="text-button text-button--light" onClick={() => setFilterBrand('')}>
@@ -1289,7 +1289,7 @@ export default function StoreHome() {
                 </div>
 
                 <div style={{ position: 'relative' }}>
-                  <label className="filter-label" htmlFor="vehicle-model">Modelo do veÃ­culo *</label>
+                  <label className="filter-label" htmlFor="vehicle-model">Modelo do veículo *</label>
                   <input
                     id="vehicle-model"
                     type="text"
@@ -1385,7 +1385,7 @@ export default function StoreHome() {
 
             <div className="product-detail-desktop">
               <div className="product-detail-desktop__gallery">
-                <div className="product-detail-desktop__thumbs" aria-label="Fotos do anÃºncio">
+                <div className="product-detail-desktop__thumbs" aria-label="Fotos do anúncio">
                   {(galleryImages.length > 0 ? galleryImages : [placeholderImage]).map((image, idx) => (
                     <button
                       key={image}
@@ -1403,7 +1403,7 @@ export default function StoreHome() {
                   type="button"
                   className="product-detail-desktop__image"
                   onClick={() => openPhotoViewer(activeImageIndex)}
-                  aria-label="Abrir imagem ampliada do anÃºncio"
+                  aria-label="Abrir imagem ampliada do anúncio"
                 >
                   <img
                     src={galleryImages[activeImageIndex] || placeholderImage}
@@ -1426,7 +1426,7 @@ export default function StoreHome() {
                 </div>
 
                 <div className="product-detail-desktop__description">
-                  <span>DescriÃ§Ã£o</span>
+                  <span>Descrição</span>
                   <p>{getProductDescription(selectedTire)}</p>
                 </div>
               </section>
@@ -1437,7 +1437,7 @@ export default function StoreHome() {
                 </span>
 
                 <div>
-                  <p className="product-detail-desktop__price-label">{isKitOffer(selectedTire) ? 'PreÃ§o do kit' : 'PreÃ§o Ã  vista'}</p>
+                  <p className="product-detail-desktop__price-label">{isKitOffer(selectedTire) ? 'Preço do kit' : 'Preço à vista'}</p>
                   <strong className="product-detail-desktop__price">{formatBRLCurrency(selectedTire.preco)}</strong>
                   <small className="product-detail-desktop__price-note">{getOfferDescriptor(selectedTire)}</small>
                 </div>
@@ -1469,7 +1469,7 @@ export default function StoreHome() {
                   }}
                 >
                   <ShoppingCart size={18} />
-                  {getAvailableStock(selectedTire) > 0 ? 'Comprar agora' : 'IndisponÃ­vel'}
+                  {getAvailableStock(selectedTire) > 0 ? 'Comprar agora' : 'Indisponível'}
                 </button>
 
                 <p className="product-detail-desktop__support">Atendimento direto com a loja para confirmar retirada ou entrega.</p>
@@ -1481,7 +1481,7 @@ export default function StoreHome() {
                 type="button"
                 className="product-detail-hero__button"
                 onClick={() => openPhotoViewer(activeImageIndex)}
-                aria-label="Abrir imagem ampliada do anÃºncio"
+                aria-label="Abrir imagem ampliada do anúncio"
               >
                 <div
                   className="product-detail-hero__image"
@@ -1585,7 +1585,7 @@ export default function StoreHome() {
               <div className="contact-band contact-band--detail product-detail-mobile__price">
                 <div className="contact-band__row product-detail-mobile__price-row">
                   <div className="product-detail-mobile__price-copy">
-                    <p className="section-kicker" style={{ marginBottom: '6px' }}>{isKitOffer(selectedTire) ? 'PreÃ§o do kit' : 'PreÃ§o Ã  vista'}</p>
+                    <p className="section-kicker" style={{ marginBottom: '6px' }}>{isKitOffer(selectedTire) ? 'Preço do kit' : 'Preço à vista'}</p>
                     <h4 className="contact-band__title product-detail-mobile__price-value">{formatBRLCurrency(selectedTire.preco)}</h4>
                     <p className="info-card__copy product-detail-mobile__price-note" style={{ marginTop: '8px' }}>{getOfferDescriptor(selectedTire)}</p>
                   </div>
@@ -1596,7 +1596,7 @@ export default function StoreHome() {
               </div>
 
               <div className="product-detail-mobile__description">
-                <span>DescriÃ§Ã£o</span>
+                <span>Descrição</span>
                 <p>{getProductDescription(selectedTire)}</p>
               </div>
 
@@ -1642,7 +1642,7 @@ export default function StoreHome() {
           style={{ zIndex: 1200 }}
           role="dialog"
           aria-modal="true"
-          aria-label="Visualizador ampliado da imagem do anÃºncio"
+          aria-label="Visualizador ampliado da imagem do anúncio"
           onClick={closePhotoViewer}
         >
           <div className="storefront-photo-viewer__sheet" onClick={(event) => event.stopPropagation()}>
@@ -1696,7 +1696,7 @@ export default function StoreHome() {
                       type="button"
                       className="button button--ghost storefront-photo-viewer__nav"
                       onClick={goToNextPhoto}
-                      aria-label="PrÃ³xima foto"
+                      aria-label="Próxima foto"
                     >
                       <ArrowRight size={16} />
                     </button>
@@ -1730,7 +1730,7 @@ export default function StoreHome() {
             </button>
 
             <div style={{ marginBottom: '16px' }}>
-              <p className="section-kicker">Seu orÃ§amento</p>
+              <p className="section-kicker">Seu orçamento</p>
               <h3 className="modal-title" style={{ marginTop: '6px' }}>Carrinho de pneus</h3>
               <p className="info-card__copy">Revise os itens antes de enviar sua solicitacao.</p>
             </div>
@@ -1747,7 +1747,7 @@ export default function StoreHome() {
                   <div className="empty-state__icon">
                     <ShoppingCart size={28} />
                   </div>
-                  <h3>Seu orÃ§amento estÃ¡ vazio</h3>
+                  <h3>Seu orçamento está vazio</h3>
                   <p>Adicione pneus da vitrine para enviar sua solicitacao.</p>
                 </div>
               ) : (
@@ -1766,7 +1766,7 @@ export default function StoreHome() {
                             <div style={{ minWidth: 0, flex: 1 }}>
                               <p style={{ margin: 0, fontWeight: 900, color: '#fff' }}>{item.titulo_anuncio}</p>
                               <p style={{ margin: '4px 0 0', color: 'rgba(248,250,252,0.66)', fontSize: '0.86rem' }}>
-                                {item.medida || 'Medida nÃ£o informada'} {item.quantidade_por_anuncio > 1 ? `- 1 kit = ${item.quantidade_por_anuncio} pneus` : ''}
+                                {item.medida || 'Medida não informada'} {item.quantidade_por_anuncio > 1 ? `- 1 kit = ${item.quantidade_por_anuncio} pneus` : ''}
                               </p>
                             </div>
                             <button
@@ -1809,7 +1809,7 @@ export default function StoreHome() {
                             </div>
 
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ color: 'rgba(248,250,252,0.66)', fontSize: '0.84rem' }}>{item.quantidade_total_pneus} pneus f?sicos</div>
+                              <div style={{ color: 'rgba(248,250,252,0.66)', fontSize: '0.84rem' }}>{item.quantidade_total_pneus} pneus físicos</div>
                               <strong style={{ color: 'var(--store-primary)' }}>{formatBRLCurrency(item.valor_total)}</strong>
                             </div>
                           </div>
@@ -1822,7 +1822,7 @@ export default function StoreHome() {
                     <div className="contact-band__row" style={{ alignItems: 'flex-start' }}>
                       <div>
                         <h4 className="contact-band__title">Resumo</h4>
-                        <p className="contact-band__text">{cartSummary.distinctItems} item(ns) distintos, {cartSummary.totalOffers} anÃºncio(s), {cartSummary.totalPhysicalTires} pneus</p>
+                        <p className="contact-band__text">{cartSummary.distinctItems} {cartSummary.distinctItems === 1 ? 'item distinto' : 'itens distintos'}, {cartSummary.totalOffers} {cartSummary.totalOffers === 1 ? 'anúncio' : 'anúncios'}, {cartSummary.totalPhysicalTires} {cartSummary.totalPhysicalTires === 1 ? 'pneu físico' : 'pneus físicos'}</p>
                       </div>
                       <strong style={{ color: '#fff', fontSize: '1.05rem' }}>{formatBRLCurrency(cartSummary.totalValue)}</strong>
                     </div>
@@ -1838,7 +1838,7 @@ export default function StoreHome() {
                         Limpar carrinho
                       </button>
                       <button type="submit" className="button button--primary button--xl" disabled={savingLead || !customerName.trim() || cartItems.length === 0}>
-                        {savingLead ? 'Enviando...' : 'Enviar orÃ§amento'}
+                        {savingLead ? 'Enviando...' : 'Enviar orçamento'}
                       </button>
                     </div>
                   </form>
@@ -1870,7 +1870,7 @@ export default function StoreHome() {
               <div className="empty-state__icon" style={{ width: '72px', height: '72px' }}>
                 <MessageSquare size={30} />
               </div>
-              <h3 className="modal-title" style={{ marginTop: '10px' }}>Quase lÃ¡</h3>
+              <h3 className="modal-title" style={{ marginTop: '10px' }}>Quase lá</h3>
               <p className="info-card__copy">Como podemos te chamar? Informe seu nome para iniciar o contato.</p>
             </div>
 

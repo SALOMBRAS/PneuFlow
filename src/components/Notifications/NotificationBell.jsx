@@ -5,8 +5,8 @@ export default function NotificationBell({ mobileFloating = false }) {
   const { unreadCount, centerOpen, toggleCenter } = useNotifications();
   const badgeLabel = unreadCount > 9 ? '9+' : unreadCount;
   const badgeAriaLabel = unreadCount > 0
-    ? `Notificacoes, ${unreadCount} nao lidas`
-    : 'Notificacoes';
+    ? `Notificações, ${unreadCount} não lidas`
+    : 'Notificações';
 
   return (
     <button

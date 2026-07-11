@@ -10,13 +10,13 @@ export const REPORT_SECTION_DEFINITIONS = [
     id: 'summary',
     label: 'Resumo geral',
     defaultChecked: true,
-    description: 'Visualizacoes, total de clientes interessados, vendas confirmadas, faturamento e ticket medio.'
+    description: 'Visualizações, total de clientes interessados, vendas confirmadas, faturamento e ticket médio.'
   },
   {
     id: 'sales',
     label: 'Vendas realizadas',
     defaultChecked: true,
-    description: 'Lista compacta de vendas confirmadas no periodo.'
+    description: 'Lista compacta de vendas confirmadas no período.'
   },
   {
     id: 'sold_products',
@@ -42,7 +42,7 @@ export const REPORT_SECTION_DEFINITIONS = [
     id: 'pending',
     label: 'Vendas pendentes',
     defaultChecked: false,
-    description: 'Oportunidades em aberto e valor potencial ainda nao convertido.'
+    description: 'Oportunidades em aberto e valor potencial ainda não convertido.'
   },
   {
     id: 'withdrawals',
@@ -54,7 +54,7 @@ export const REPORT_SECTION_DEFINITIONS = [
     id: 'seller_performance',
     label: 'Desempenho da equipe',
     defaultChecked: false,
-    description: 'Leads atendidos, vendas confirmadas, conversao e faturamento por vendedor.'
+    description: 'Leads atendidos, vendas confirmadas, conversão e faturamento por vendedor.'
   },
   {
     id: 'stock',

@@ -55,7 +55,7 @@ export function getSubscriptionAccess(store, now = new Date()) {
 }
 
 export function formatSubscriptionDate(date) {
-  if (!date) return 'data indisponivel';
+  if (!date) return 'data indisponível';
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: 'long',
@@ -85,7 +85,7 @@ export function getTrialMessage(access) {
   if (access.daysRemaining <= 3) {
     return {
       title: `Seu teste gratuito termina em ${access.daysRemaining} dias.`,
-      body: 'Assine o PneuFlow por R$ 39,00/mes para nao perder o acesso.'
+      body: 'Assine o PneuFlow por R$ 39,00/mês para não perder o acesso.'
     };
   }
 

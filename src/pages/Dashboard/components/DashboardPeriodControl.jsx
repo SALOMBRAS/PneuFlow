@@ -14,10 +14,10 @@ export default function DashboardPeriodControl({ value, options, selectedLabel, 
     >
       <div style={{ flex: '1 1 240px', minWidth: 0 }}>
         <strong style={{ display: 'block', fontSize: '15px', color: 'var(--text-primary)', marginBottom: '4px' }}>
-          Periodo das metricas
+          Período das métricas
         </strong>
         <span style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.5 }}>
-          Escolha o intervalo exibido nas metricas. Atual: {selectedLabel.toLowerCase()}.
+          Escolha o intervalo exibido nas métricas. Atual: {selectedLabel.toLowerCase()}.
         </span>
       </div>
 
@@ -26,7 +26,7 @@ export default function DashboardPeriodControl({ value, options, selectedLabel, 
         value={value}
         onChange={(event) => onChange(event.target.value)}
         style={{ width: 'min(220px, 100%)', flex: '1 1 180px', marginLeft: 'auto' }}
-        aria-label="Selecionar periodo das metricas"
+        aria-label="Selecionar período das métricas"
       >
         {options.map((option) => (
           <option key={option.id} value={option.id}>

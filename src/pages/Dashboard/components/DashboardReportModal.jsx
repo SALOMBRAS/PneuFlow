@@ -28,8 +28,8 @@ function ReportConfigStep({
       <div className="dashboard-report-sheet__header">
         <div>
           <span className="dashboard-report-sheet__eyebrow">Dashboard principal</span>
-          <h2 id="dashboard-report-title">Gerar relatorio</h2>
-          <p>Escolha o periodo e as secoes antes de abrir a pre-visualizacao para impressao.</p>
+          <h2 id="dashboard-report-title">Gerar relatório</h2>
+          <p>Escolha o período e as seções antes de abrir a pré-visualização para impressão.</p>
         </div>
         <button type="button" className="dashboard-report-close" onClick={onClose} aria-label="Fechar configuracao">
           <X size={18} />
@@ -39,7 +39,7 @@ function ReportConfigStep({
       <div className="dashboard-report-sheet__body">
         <div className="dashboard-report-config-grid">
         <section className="dashboard-report-card dashboard-report-card--period">
-          <h3>Periodo</h3>
+          <h3>Período</h3>
           <div className="dashboard-report-presets">
             {REPORT_PERIOD_PRESETS.map((preset) => (
               <button
@@ -56,7 +56,7 @@ function ReportConfigStep({
               className={`dashboard-report-choice ${config.preset === 'custom' ? 'is-active' : ''}`}
               onClick={() => onConfigChange((current) => ({ ...current, preset: 'custom' }))}
             >
-              Periodo personalizado
+              Período personalizado
             </button>
           </div>
 
@@ -116,7 +116,7 @@ function ReportConfigStep({
                   }))
                 }
               >
-                Limpar selecao
+                Limpar seleção
               </button>
             </div>
           </div>
@@ -168,7 +168,7 @@ function ReportConfigStep({
         </button>
         <button type="button" className="btn btn-primary" onClick={onPreview} disabled={loading}>
           {loading ? <LoaderCircle size={16} className="spin" /> : <FileText size={16} />}
-          {loading ? 'Carregando...' : 'Visualizar relatorio'}
+          {loading ? 'Carregando...' : 'Visualizar relatório'}
         </button>
       </div>
     </div>
@@ -177,12 +177,12 @@ function ReportConfigStep({
 
 function SummaryGrid({ summary }) {
   const cards = [
-    { label: 'Visualizacoes', value: summary.totalViews },
+    { label: 'Visualizações', value: summary.totalViews },
     { label: 'Clientes interessados', value: summary.totalLeads },
     { label: 'Vendas confirmadas', value: summary.confirmedSales },
     { label: 'Faturamento confirmado', value: formatCurrency(summary.confirmedRevenue) },
-    { label: 'Taxa de conversao', value: `${formatPercent(summary.conversionRate)}%` },
-    { label: 'Ticket medio', value: summary.confirmedSales > 0 ? formatCurrency(summary.averageTicket) : 'Sem dados' }
+    { label: 'Taxa de conversão', value: `${formatPercent(summary.conversionRate)}%` },
+    { label: 'Ticket médio', value: summary.confirmedSales > 0 ? formatCurrency(summary.averageTicket) : 'Sem dados' }
   ];
 
   return (
@@ -239,7 +239,7 @@ function ReportSection({ section }) {
           </table>
         </div>
       ) : (
-        <p className="dashboard-report-empty">Nenhum dado encontrado para esta secao no periodo selecionado.</p>
+        <p className="dashboard-report-empty">Nenhum dado encontrado para esta seção no período selecionado.</p>
       )}
       {section.totalLabel && (
         <div className="dashboard-report-total">
@@ -257,7 +257,7 @@ function ReportPreviewStep({ report, onBack, onClose, onPrint }) {
       <div className="dashboard-report-sheet__header no-print">
         <div>
           <span className="dashboard-report-sheet__eyebrow">Pre-visualizacao</span>
-          <h2 id="dashboard-report-title">Relatorio pronto para impressao</h2>
+          <h2 id="dashboard-report-title">Relatório pronto para impressão</h2>
           <p>Confira o conteudo antes de imprimir ou salvar em PDF pelo navegador.</p>
         </div>
         <button type="button" className="dashboard-report-close" onClick={onClose} aria-label="Fechar pre-visualizacao">
@@ -280,7 +280,7 @@ function ReportPreviewStep({ report, onBack, onClose, onPrint }) {
             </div>
           </div>
           <div className="dashboard-report-meta">
-            <span>Periodo: {report.header.rangeLabel}</span>
+            <span>Período: {report.header.rangeLabel}</span>
             <span>Gerado em: {report.header.generatedAt}</span>
           </div>
         </header>
@@ -303,7 +303,7 @@ function ReportPreviewStep({ report, onBack, onClose, onPrint }) {
 
         <footer className="dashboard-report-preview__footer">
           <span>{report.header.storeName}</span>
-          <span>Relatorio gerado pelo PneuFlow</span>
+          <span>Relatório gerado pelo PneuFlow</span>
         </footer>
       </div>
       </div>

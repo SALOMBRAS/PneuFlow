@@ -125,7 +125,7 @@ export default function Sellers() {
     if (!session?.access_token) {
       notifyTransientError({
         title: 'Sessao expirada',
-        message: 'Faca login novamente para iniciar o acesso temporario.',
+        message: 'Faça login novamente para iniciar o acesso temporário.',
         category: 'vendedores'
       });
       return;
@@ -150,7 +150,7 @@ export default function Sellers() {
         setBlockedSellerAccess(payload);
         notifyTransientWarning({
           title: 'Nova guia bloqueada',
-          message: 'O navegador bloqueou a nova guia. Clique em "Abrir sessao temporaria" para continuar.',
+        message: 'O navegador bloqueou a nova guia. Clique em "Abrir sessão temporária" para continuar.',
           category: 'vendedores'
         });
         return;
@@ -168,8 +168,8 @@ export default function Sellers() {
     } catch (err) {
       await createPersistentNotification({
         type: 'error',
-        title: 'Nao foi possivel iniciar',
-        message: err.message || 'Nao foi possivel iniciar o acesso temporario.',
+        title: 'Não foi possível iniciar',
+        message: err.message || 'Não foi possível iniciar o acesso temporário.',
         category: 'operation_errors'
       });
     } finally {
@@ -200,16 +200,16 @@ export default function Sellers() {
     if (formData.password) {
       if (!isPasswordValid(formData.password)) {
         notifyTransientWarning({
-          title: 'Senha invalida',
-          message: 'A senha precisa ter minimo 5 caracteres, 1 numero, 1 letra maiuscula e 1 letra minuscula.',
+          title: 'Senha inválida',
+          message: 'A senha precisa ter no mínimo 5 caracteres, 1 número, 1 letra maiúscula e 1 letra minúscula.',
           category: 'vendedores'
         });
         return;
       }
       if (formData.password !== formData.confirmPassword) {
         notifyTransientWarning({
-          title: 'Senha invalida',
-          message: 'As senhas nao coincidem.',
+          title: 'Senha inválida',
+          message: 'As senhas não coincidem.',
           category: 'vendedores'
         });
         return;
@@ -237,7 +237,7 @@ export default function Sellers() {
     } catch (err) {
       await createPersistentNotification({
         type: 'error',
-        title: 'Nao foi possivel concluir',
+        title: 'Não foi possível concluir',
         message: err.message || 'Erro ao processar vendedor.',
         category: 'operation_errors'
       });
@@ -252,8 +252,8 @@ export default function Sellers() {
 
     if (!isPasswordValid(newPasswordData.password)) {
       notifyTransientWarning({
-        title: 'Senha invalida',
-        message: 'A senha precisa ter minimo 5 caracteres, 1 numero, 1 letra maiuscula e 1 letra minuscula.',
+          title: 'Senha inválida',
+          message: 'A senha precisa ter no mínimo 5 caracteres, 1 número, 1 letra maiúscula e 1 letra minúscula.',
         category: 'vendedores'
       });
       return;
@@ -261,8 +261,8 @@ export default function Sellers() {
 
     if (newPasswordData.password !== newPasswordData.confirmPassword) {
       notifyTransientWarning({
-        title: 'Senha invalida',
-        message: 'As senhas nao coincidem.',
+          title: 'Senha inválida',
+          message: 'As senhas não coincidem.',
         category: 'vendedores'
       });
       return;
@@ -278,7 +278,7 @@ export default function Sellers() {
       await createPersistentNotification({
         type: 'success',
         title: 'Senha alterada com sucesso.',
-        message: 'A nova senha do vendedor ja esta ativa no sistema.',
+        message: 'A nova senha do vendedor já está ativa no sistema.',
         category: 'general',
         actionPath: '/dashboard/sellers'
       });
@@ -289,7 +289,7 @@ export default function Sellers() {
     } catch (err) {
       await createPersistentNotification({
         type: 'error',
-        title: 'Nao foi possivel concluir',
+        title: 'Não foi possível concluir',
         message: err.message || 'Erro ao alterar senha.',
         category: 'operation_errors'
       });
@@ -307,7 +307,7 @@ export default function Sellers() {
     } catch (err) {
       notifyTransientError({
         title: 'Falha ao copiar',
-        message: 'Nao foi possivel copiar o e-mail. Tente novamente.',
+        message: 'Não foi possível copiar o e-mail. Tente novamente.',
         category: 'vendedores'
       });
     }
@@ -330,7 +330,7 @@ export default function Sellers() {
       await createPersistentNotification({
         type: 'info',
         title: 'Acesso atualizado',
-        message: result.message || 'A acao foi executada com sucesso.',
+        message: result.message || 'A ação foi executada com sucesso.',
         category: 'general',
         actionPath: '/dashboard/sellers'
       });
@@ -338,7 +338,7 @@ export default function Sellers() {
     } catch (err) {
       await createPersistentNotification({
         type: 'error',
-        title: 'Nao foi possivel concluir',
+        title: 'Não foi possível concluir',
         message: err.message || 'Erro ao gerenciar vendedor.',
         category: 'operation_errors'
       });
@@ -354,7 +354,7 @@ export default function Sellers() {
     } catch (err) {
       notifyTransientError({
         title: 'Falha ao copiar',
-        message: 'Nao foi possivel copiar o link. Tente novamente.',
+        message: 'Não foi possível copiar o link. Tente novamente.',
         category: 'vendedores'
       });
     }
@@ -369,8 +369,8 @@ export default function Sellers() {
     const cleanRef = tempRefCode.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-');
     if (!cleanRef) {
       notifyTransientWarning({
-        title: 'Codigo invalido',
-        message: 'O codigo nao pode estar vazio.',
+        title: 'Código inválido',
+        message: 'O código não pode estar vazio.',
         category: 'vendedores'
       });
       return;
@@ -382,7 +382,7 @@ export default function Sellers() {
       await createPersistentNotification({
         type: 'success',
         title: 'Codigo atualizado',
-        message: 'O codigo referral do vendedor foi atualizado.',
+        message: 'O código de indicação do vendedor foi atualizado.',
         category: 'general',
         actionPath: '/dashboard/sellers'
       });
@@ -390,8 +390,8 @@ export default function Sellers() {
     } catch (err) {
       await createPersistentNotification({
         type: 'error',
-        title: 'Nao foi possivel concluir',
-        message: err.message || 'Erro ao atualizar codigo.',
+        title: 'Não foi possível concluir',
+        message: err.message || 'Erro ao atualizar código.',
         category: 'operation_errors'
       });
     }
@@ -405,8 +405,8 @@ export default function Sellers() {
   const handleSaveWhatsapp = async (memberId) => {
     if (String(tempWhatsapp || '').replace(/\D/g, '').length < 10) {
       notifyTransientWarning({
-        title: 'WhatsApp invalido',
-        message: 'Informe um WhatsApp valido para o vendedor.',
+        title: 'WhatsApp inválido',
+        message: 'Informe um WhatsApp válido para o vendedor.',
         category: 'vendedores'
       });
       return;
@@ -426,7 +426,7 @@ export default function Sellers() {
     } catch (err) {
       await createPersistentNotification({
         type: 'error',
-        title: 'Nao foi possivel concluir',
+        title: 'Não foi possível concluir',
         message: err.message || 'Erro ao atualizar WhatsApp.',
         category: 'operation_errors'
       });
@@ -838,8 +838,8 @@ export default function Sellers() {
             </button>
             <h3 style={{ fontSize: '20px', marginBottom: '10px' }}>Acessar como vendedor?</h3>
             <p style={{ color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
-              Voce abrira uma sessao temporaria como <strong style={{ color: 'var(--text-primary)' }}>{sellerAccessTarget.nome || 'Vendedor'}</strong>.
-              A acao ficara registrada no historico de seguranca.
+              Você abrirá uma sessão temporária como <strong style={{ color: 'var(--text-primary)' }}>{sellerAccessTarget.nome || 'Vendedor'}</strong>.
+              A ação ficará registrada no histórico de segurança.
             </p>
 
             <div
@@ -873,7 +873,7 @@ export default function Sellers() {
                   lineHeight: 1.5
                 }}
               >
-                O navegador bloqueou a nova guia. Use o botao abaixo para abrir a sessao temporaria manualmente.
+                O navegador bloqueou a nova guia. Use o botão abaixo para abrir a sessão temporária manualmente.
               </div>
             )}
 

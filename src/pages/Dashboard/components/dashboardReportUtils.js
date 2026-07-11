@@ -132,11 +132,11 @@ export const validateReportConfig = (config) => {
   }
 
   if (end < start) {
-    return 'A data final nao pode ser anterior a data inicial.';
+    return 'A data final não pode ser anterior à data inicial.';
   }
 
   if (start > today || end > today) {
-    return 'Nao e permitido selecionar datas futuras.';
+    return 'Não é permitido selecionar datas futuras.';
   }
 
   return '';
@@ -151,7 +151,7 @@ export const estimateReportLength = (config) => {
 
 export const getUnavailableSectionReason = (section) => {
   if (section.id === 'contacts') {
-    return 'Indisponivel: os leads atuais nao armazenam telefone do cliente.';
+    return 'Indisponível: os leads atuais não armazenam telefone do cliente.';
   }
   return '';
 };
@@ -186,12 +186,12 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
       title: 'Resumo geral',
       kind: 'summary',
       items: [
-        { label: 'Visualizacoes', value: summary.totalViews },
+        { label: 'Visualizações', value: summary.totalViews },
         { label: 'Clientes interessados', value: summary.totalLeads },
         { label: 'Vendas confirmadas', value: summary.confirmedSales },
         { label: 'Faturamento confirmado', value: formatCurrency(summary.confirmedRevenue) },
-        { label: 'Taxa de conversao', value: `${formatPercent(summary.conversionRate)}%` },
-        { label: 'Ticket medio', value: summary.confirmedSales > 0 ? formatCurrency(summary.averageTicket) : 'Sem dados' }
+        { label: 'Taxa de conversão', value: `${formatPercent(summary.conversionRate)}%` },
+        { label: 'Ticket médio', value: summary.confirmedSales > 0 ? formatCurrency(summary.averageTicket) : 'Sem dados' }
       ]
     });
   }
@@ -209,7 +209,7 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
         return [
           formatDate(lead.venda_confirmada_em || lead.created_at),
           lead.nome_cliente || 'Cliente interessado',
-          lead.produto_nome || 'Produto nao identificado',
+          lead.produto_nome || 'Produto não identificado',
           lead.produto_medida || '--',
           `${offerQuantity}`,
           `${physicalQuantity}`,
@@ -399,7 +399,7 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
         `${formatPercent(entry.leads > 0 ? (entry.sales / entry.leads) * 100 : 0)}%`,
         formatCurrency(entry.revenue)
       ]),
-      totalLabel: 'Vendedores no relatorio',
+      totalLabel: 'Vendedores no relatório',
       totalValue: `${rows.length}`
     });
   }
@@ -426,20 +426,20 @@ export const buildDashboardReport = ({ store, rangeLabel, generatedAt, selectedS
       columns: ['Produto', 'Medida', 'Pneus fisicos', 'Kits completos', 'Indicacao'],
       rows: rows.map((item) => [item.product, item.measure, `${item.quantity}`, `${item.offerQuantity}`, item.lowStock]),
       totalLabel: 'Observacao',
-      totalValue: 'Fotografia atual do estoque, nao um historico do periodo.'
+      totalValue: 'Fotografia atual do estoque, não um histórico do período.'
     });
   }
 
   const missingData = [];
   if (selectedSections.includes('contacts')) {
-    missingData.push('A secao "Nomes e telefones" nao foi gerada porque os leads atuais nao armazenam telefone do cliente.');
+    missingData.push('A seção "Nomes e telefones" não foi gerada porque os leads atuais não armazenam telefone do cliente.');
   }
 
   return {
     header: {
       storeName: store?.nome || store?.name || 'Loja',
       storeLogo: store?.logo || '',
-      title: 'Relatorio Comercial',
+      title: 'Relatório Comercial',
       rangeLabel,
       generatedAt: formatDateTime(generatedAt)
     },

@@ -35,7 +35,7 @@ export default function QuantitySelector({
     <div className={`quantity-selector ${compact ? 'quantity-selector--compact' : ''} ${className}`}>
       <div className="quantity-selector__header">
         <span>{label}</span>
-        <small>{availabilityText || (isUnavailable ? 'Indisponivel' : `Disponivel: ${safeMax}`)}</small>
+        <small>{availabilityText || (isUnavailable ? 'Indisponível' : `Disponível: ${safeMax}`)}</small>
       </div>
 
       <div className="quantity-selector__control">

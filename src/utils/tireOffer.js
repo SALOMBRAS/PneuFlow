@@ -107,16 +107,16 @@ export const getAvailabilityLabel = (item) => {
 
   if (isKitOffer(item)) {
     if (availableOffers <= 0) {
-      return 'Indisponivel';
+      return 'Indisponível';
     }
-    return `${availableOffers} ${availableOffers === 1 ? 'kit disponivel' : 'kits disponiveis'}`;
+    return `${availableOffers} ${availableOffers === 1 ? 'kit disponível' : 'kits disponíveis'}`;
   }
 
   if (availableOffers <= 0) {
-    return 'Indisponivel';
+    return 'Indisponível';
   }
 
-  return `${availableOffers} disponivel${availableOffers === 1 ? '' : 's'}`;
+  return `${availableOffers} disponível${availableOffers === 1 ? '' : 's'}`;
 };
 
 export const getQuantitySelectorLabel = (item) =>
@@ -310,7 +310,7 @@ export const getLeadSummaryLabel = (lead, mode = 'desired') => {
     const distinctItems = getLeadDistinctItemCount(lead);
     const offerUnits = getLeadOfferUnitCount(lead);
     const physicalTotal = getLeadPhysicalQuantity(lead, mode);
-    return `${distinctItems} item(ns) - ${offerUnits} anuncio(s) - ${physicalTotal} pneus`;
+    return `${distinctItems} ${distinctItems === 1 ? 'item distinto' : 'itens distintos'} - ${offerUnits} ${offerUnits === 1 ? 'anúncio' : 'anúncios'} - ${physicalTotal} ${physicalTotal === 1 ? 'pneu físico' : 'pneus físicos'}`;
   }
 
   const offerQuantity = getLeadOfferQuantity(lead, mode);

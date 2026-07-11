@@ -132,7 +132,7 @@ export default function ProductCard({ tire, primaryColor, onInterest, onDetail, 
             aria-disabled={contactDisabled}
           >
             <ShoppingCart size={16} />
-            {isStock ? 'Adicionar ao carrinho' : 'Indisponivel'}
+            {isStock ? 'Adicionar ao carrinho' : 'Indisponível'}
           </button>
         </div>
       </div>

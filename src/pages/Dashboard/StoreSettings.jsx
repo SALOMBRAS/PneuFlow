@@ -695,7 +695,7 @@ export default function StoreSettings() {
     <div className="animate-fade store-settings-page">
       <div className="pf-section-header store-settings-title-row">
         <div className="store-settings-title-copy">
-          <span className="pf-kicker">Vitrine publica</span>
+          <span className="pf-kicker">Vitrine pública</span>
           <h1 style={{ fontSize: '32px', margin: 0, textAlign: 'left' }}>Configurações da Vitrine</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Personalize a identidade da sua loja e os dados de contato.</p>
         </div>
@@ -718,7 +718,7 @@ export default function StoreSettings() {
           <div>
             <span className="pf-badge-soft">Preview da loja</span>
             <h2>{name || store.nome || 'Nome da loja'}</h2>
-            <p>{description || 'Descricao curta da loja para gerar confianca no comprador.'}</p>
+            <p>{description || 'Descrição curta da loja para gerar confiança no comprador.'}</p>
           </div>
         </div>
         <div className="store-settings-preview__meta">

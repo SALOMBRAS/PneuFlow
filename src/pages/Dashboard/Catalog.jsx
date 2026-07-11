@@ -134,19 +134,19 @@ export default function Catalog() {
     }
 
     if (!String(formData.preco || '').trim()) {
-      errors.preco = 'Informe o preco do anuncio.';
+      errors.preco = 'Informe o preço do anúncio.';
     } else if (parsedPrice == null) {
-      errors.preco = 'Use um preco valido no formato brasileiro, como 355,55.';
+      errors.preco = 'Use um preço válido no formato brasileiro, como 355,55.';
     }
 
     if (String(formData.titulo_anuncio || '').length > 0 && !trimmedTitle) {
-      errors.titulo_anuncio = 'O titulo nao pode conter apenas espacos.';
+      errors.titulo_anuncio = 'O título não pode conter apenas espaços.';
     } else if (trimmedTitle.length > 100) {
-      errors.titulo_anuncio = 'Use no maximo 100 caracteres no titulo do anuncio.';
+      errors.titulo_anuncio = 'Use no máximo 100 caracteres no título do anúncio.';
     }
 
     if (!Number.isFinite(quantityPerOffer) || quantityPerOffer < 1) {
-      errors.quantidade_por_anuncio = 'Informe pelo menos 1 pneu por anuncio.';
+      errors.quantidade_por_anuncio = 'Informe pelo menos 1 pneu por anúncio.';
     }
 
     if (!Number.isFinite(stockValue) || stockValue < 0) {
@@ -248,7 +248,7 @@ export default function Catalog() {
     if (currentCount >= MAX_IMAGES_PER_TIRE) {
       notifyTransientWarning({
         title: 'Limite de imagens',
-        message: `Este anuncio ja atingiu o limite de ${MAX_IMAGES_PER_TIRE} imagens.`,
+        message: `Este anúncio já atingiu o limite de ${MAX_IMAGES_PER_TIRE} imagens.`,
         category: 'catalogo'
       });
       e.target.value = '';
@@ -258,7 +258,7 @@ export default function Catalog() {
     if (files.length > MAX_IMAGES_PER_TIRE) {
       notifyTransientWarning({
         title: 'Limite de imagens',
-        message: `Voce pode enviar no maximo ${MAX_IMAGES_PER_TIRE} imagens por anuncio.`,
+        message: `Você pode enviar no máximo ${MAX_IMAGES_PER_TIRE} imagens por anúncio.`,
         category: 'catalogo'
       });
       e.target.value = '';
@@ -383,7 +383,7 @@ export default function Catalog() {
         await createPersistentNotification({
           type: 'success',
           title: 'Pneu cadastrado com sucesso.',
-          message: `${formData.marca} ${formData.modelo} ja esta disponivel no catalogo.`,
+          message: `${formData.marca} ${formData.modelo} já está disponível no catálogo.`,
           category: 'general',
           actionPath: '/dashboard/catalog',
           entityType: 'pneu',
@@ -413,7 +413,7 @@ export default function Catalog() {
         await createPersistentNotification({
           type: 'success',
           title: 'Pneu removido',
-          message: 'O pneu foi excluido do catalogo.',
+          message: 'O pneu foi excluído do catálogo.',
           category: 'general',
           actionPath: '/dashboard/catalog'
         });
@@ -496,8 +496,8 @@ export default function Catalog() {
       {/* Page Header */}
       <div className="pf-section-header catalog-page-header">
         <div>
-          <span className="pf-kicker">Catalogo comercial</span>
-          <h1 style={{ fontSize: '32px', margin: '10px 0 0', textAlign: 'left' }}>Catalogo de Pneus</h1>
+          <span className="pf-kicker">Catálogo comercial</span>
+          <h1 style={{ fontSize: '32px', margin: '10px 0 0', textAlign: 'left' }}>Catálogo de Pneus</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Gerencie seu estoque e catálogo de produtos.</p>
         </div>
         <button onClick={openAddTireModal} className="btn btn-primary">
@@ -511,7 +511,7 @@ export default function Catalog() {
           <strong>{loadError ? '--' : tires.length}</strong>
         </div>
         <div className="pf-card catalog-summary-card">
-          <span>Anuncios ativos</span>
+          <span>Anúncios ativos</span>
           <strong>{loadError ? '--' : activeTiresCount}</strong>
         </div>
         <div className="pf-card catalog-summary-card">
@@ -525,7 +525,7 @@ export default function Catalog() {
           <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
             <AlertCircle size={18} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: '2px' }} />
             <div>
-              <strong style={{ display: 'block', marginBottom: '6px' }}>Os pneus nao puderam ser carregados.</strong>
+              <strong style={{ display: 'block', marginBottom: '6px' }}>Os pneus não puderam ser carregados.</strong>
               <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
                 {loadError}
               </span>
@@ -565,7 +565,7 @@ export default function Catalog() {
           <Layers size={48} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
           <h3>Cadastre seu primeiro pneu e publique sua vitrine.</h3>
           <p style={{ fontSize: '16px', maxWidth: '42ch', margin: '10px auto 0' }}>
-            Seus pneus cadastrados aparecem na vitrine publica com foto, medida, preco e botao de WhatsApp.
+            Seus pneus cadastrados aparecem na vitrine pública com foto, medida, preço e botão de WhatsApp.
           </p>
           <button onClick={openAddTireModal} className="btn btn-primary" style={{ marginTop: '16px' }}>
             Cadastrar primeiro pneu
@@ -633,7 +633,7 @@ export default function Catalog() {
                         <StockIcon size={13} />
                         <span>
                           {isKitOffer(tire)
-                            ? `${getAvailableOfferCount(tire)} kits completos (${Number(tire.estoque || 0)} pneus fisicos)`
+                            ? `${getAvailableOfferCount(tire)} kits completos (${Number(tire.estoque || 0)} pneus físicos)`
                             : `Estoque: ${Number(tire.estoque || 0)}`}
                         </span>
                       </>

@@ -276,15 +276,15 @@ const PRICING_PLAN = {
   name: 'Plano PRO',
   badge: 'Mais escolhido',
   price: '39,00',
-  description: 'Uma assinatura simples para manter vitrine, dashboard, leads e vendedores em um so lugar.',
-  ctaLabel: `Comecar meus ${PRICING_CONFIG.trialDays} dias gratis`,
+  description: 'Uma assinatura simples para manter vitrine, dashboard, leads e vendedores em um só lugar.',
+  ctaLabel: `Começar meus ${PRICING_CONFIG.trialDays} dias grátis`,
   waitlistCtaLabel: 'Entrar na lista de espera',
-  trialLabel: `Teste gratis por ${PRICING_CONFIG.trialDays} dias. Cancele quando quiser.`,
-  reassurance: 'Sem compromisso durante o periodo de teste.',
-  urgencyTitle: 'Condicao de lancamento',
-  urgencyFallback: 'Onboarding prioritario disponivel por tempo limitado.',
+  trialLabel: `Teste grátis por ${PRICING_CONFIG.trialDays} dias. Cancele quando quiser.`,
+  reassurance: 'Sem compromisso durante o período de teste.',
+  urgencyTitle: 'Condição de lançamento',
+  urgencyFallback: 'Onboarding prioritário disponível por tempo limitado.',
   benefits: [
-    'Vitrine publica com catalogo de pneus',
+    'Vitrine pública com catálogo de pneus',
     'Leads com destino para WhatsApp',
     'Dashboard comercial e ranking',
     'Controle de vendedores e links referral',
@@ -360,7 +360,7 @@ export default function LandingPage() {
   const isWaitlistOpen = PRICING_CONFIG.onboardingSlots === 0;
   const showOfferBar = PRICING_CONFIG.urgencyEnabled && (PRICING_CONFIG.launchOfferLabel || hasRealSlots || offerDeadline);
   const urgencyCopy = hasRealSlots
-    ? `Restam ${PRICING_CONFIG.onboardingSlots} vagas para onboarding prioritario neste ciclo.`
+    ? `Restam ${PRICING_CONFIG.onboardingSlots} vagas para onboarding prioritário neste ciclo.`
     : PRICING_PLAN.urgencyFallback;
   const slotIndicatorLabel = hasRealSlots
     ? `${PRICING_CONFIG.onboardingSlots} vagas disponiveis para onboarding`
@@ -545,7 +545,7 @@ export default function LandingPage() {
               <div className="landing-pricing-offerbar" role="status">
                 <div>
                   <strong>{PRICING_CONFIG.launchOfferLabel}</strong>
-                  <span> Comece agora e tenha acesso ao onboarding prioritario.{offerBarSuffix}</span>
+                  <span> Comece agora e tenha acesso ao onboarding prioritário.{offerBarSuffix}</span>
                 </div>
                 {(hasRealSlots || isWaitlistOpen) && (
                   <span className={`landing-pricing-slotpill${isWaitlistOpen ? ' landing-pricing-slotpill--waitlist' : ''}`}>
@@ -561,7 +561,7 @@ export default function LandingPage() {
                   <span className="pf-kicker">{PRICING_PLAN.name}</span>
                   <span className="landing-pricing-badge">{PRICING_PLAN.badge}</span>
                 </div>
-                <h2 className="landing-pricing-price" aria-label="R$ 39,00 por mes">
+                <h2 className="landing-pricing-price" aria-label="R$ 39,00 por mês">
                   <span className="landing-pricing-price__currency">R$</span>
                   <span className="landing-pricing-price__amount">{PRICING_PLAN.price}</span>
                   <span className="landing-pricing-price__period">/mês</span>

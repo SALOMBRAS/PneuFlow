@@ -87,14 +87,14 @@ export default function NotificationCenter() {
       <button
         type="button"
         className="pf-notification-center-backdrop"
-        aria-label="Fechar central de notificacoes"
+      aria-label="Fechar central de notificações"
         onClick={closeCenter}
       />
-      <aside className={`pf-notification-center ${isDesktop ? 'pf-notification-center--desktop' : 'pf-notification-center--mobile'}`} role="dialog" aria-modal="true" aria-label="Notificacoes">
+      <aside className={`pf-notification-center ${isDesktop ? 'pf-notification-center--desktop' : 'pf-notification-center--mobile'}`} role="dialog" aria-modal="true" aria-label="Notificações">
         <header className="pf-notification-center__header">
           <div>
             <span className="pf-kicker">Central</span>
-            <h2>Notificacoes</h2>
+            <h2>Notificações</h2>
           </div>
           <button
             type="button"
@@ -106,7 +106,7 @@ export default function NotificationCenter() {
           </button>
         </header>
 
-        <div className="pf-notification-center__tabs" role="tablist" aria-label="Abas da central de notificacoes">
+        <div className="pf-notification-center__tabs" role="tablist" aria-label="Abas da central de notificações">
           <button
             type="button"
             role="tab"
@@ -114,7 +114,7 @@ export default function NotificationCenter() {
             className={`pf-notification-center__tab ${activeTab === 'notifications' ? 'is-active' : ''}`}
             onClick={() => setActiveTab('notifications')}
           >
-            Notificacoes
+            Notificações
           </button>
           <button
             type="button"
@@ -143,7 +143,7 @@ export default function NotificationCenter() {
                   className={`btn ${filter === 'unread' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setFilter('unread')}
                 >
-                  Nao lidas
+                  Não lidas
                 </button>
               </div>
               <button type="button" className="btn btn-outline" onClick={markAllAsRead} disabled={unreadCount === 0}>
@@ -202,7 +202,7 @@ export default function NotificationCenter() {
             <section className="pf-notification-center__preferences">
               <div className="pf-notification-center__preferences-text">
                 <span><SlidersHorizontal size={14} /> Mostrar avisos na tela do computador</span>
-                <small>Exibe notificacoes rapidas enquanto voce usa o PneuFlow no computador.</small>
+                <small>Exibe notificações rápidas enquanto você usa o PneuFlow no computador.</small>
               </div>
               <NotificationSwitch
                 checked={popupEnabled}
@@ -213,8 +213,8 @@ export default function NotificationCenter() {
 
             <section className="pf-notification-center__category-panel">
               <div className="pf-notification-center__category-header">
-                <h3>Quais notificacoes receber</h3>
-                <p>Desativar uma categoria impede novas notificacoes, sem apagar o historico antigo.</p>
+                <h3>Quais notificações receber</h3>
+                <p>Desativar uma categoria impede novas notificações, sem apagar o histórico antigo.</p>
               </div>
               <div className="pf-notification-center__category-list">
                 {CATEGORY_ITEMS.map((item) => (

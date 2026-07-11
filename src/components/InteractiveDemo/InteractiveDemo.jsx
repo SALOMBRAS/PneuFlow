@@ -23,16 +23,16 @@ const demoTabs = [
     icon: Store,
     title: 'Seu cliente encontra o pneu certo sozinho',
     description:
-      'A vitrine organiza pneus ficticios e mostra como o cliente pesquisaria por medida, aro ou veiculo antes de chamar no atendimento.',
+      'A vitrine organiza pneus fictícios e mostra como o cliente pesquisaria por medida, aro ou veículo antes de chamar no atendimento.',
     benefit: 'Menos perguntas repetidas. Mais clientes prontos para comprar.',
   },
   {
     id: 'catalogo',
-    label: 'Catalogo',
+    label: 'Catálogo',
     icon: PackageSearch,
-    title: 'Catalogo profissional e sempre organizado',
+    title: 'Catálogo profissional e sempre organizado',
     description:
-      'Veja uma previa simples de como produtos poderiam ficar organizados por marca, medida, preco e status.',
+      'Veja uma prévia simples de como produtos poderiam ficar organizados por marca, medida, preço e status.',
     benefit: 'Sua loja deixa de depender de fotos soltas e listas confusas.',
   },
   {
@@ -50,7 +50,7 @@ const demoTabs = [
     icon: BarChart3,
     title: 'Controle sua loja digital em um so painel',
     description:
-      'Indicadores simples mostram como catalogo, leads e vitrine podem aparecer juntos em uma visao rapida.',
+      'Indicadores simples mostram como catálogo, leads e vitrine podem aparecer juntos em uma visão rápida.',
     benefit: 'Menos bagunca. Mais velocidade no atendimento.',
   },
 ];
@@ -151,7 +151,7 @@ function VitrinePanel({ products, onInterest }) {
 
       <div className="demo-search" aria-label="Campo de busca demonstrativo">
         <Search size={16} />
-        <span>Digite medida, aro ou veiculo</span>
+        <span>Digite medida, aro ou veículo</span>
       </div>
 
       <div className="demo-chip-row" aria-label="Filtros ficticios por aro">
@@ -228,7 +228,7 @@ function CatalogoPanel({ products, onToggleProduct }) {
       <div className="demo-panel-header">
         <div>
           <span>Gestao ficticia</span>
-          <h4>Catalogo de Pneus</h4>
+          <h4>Catálogo de Pneus</h4>
         </div>
         <span className="demo-mini-action">4 produtos</span>
       </div>
@@ -375,7 +375,7 @@ function DashboardPanel({ products, leads, onNavigate }) {
       <div className="demo-actions-box">
         <span>Acoes rapidas demonstrativas</span>
         <div>
-          <button type="button" onClick={() => onNavigate('catalogo')}>Ver catalogo</button>
+          <button type="button" onClick={() => onNavigate('catalogo')}>Ver catálogo</button>
           <button type="button" onClick={() => onNavigate('leads')}>Ver leads</button>
           <button type="button" onClick={() => onNavigate('vitrine')}>Ver vitrine</button>
         </div>
