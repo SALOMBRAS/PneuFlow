@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { applyCors } from '../../server/cors.js';
 
 const MONTHLY_PLAN_PRICE = 39;
 const PLAN_NAME = 'Assinatura PneuFlow - Plano PRO';
@@ -194,6 +195,8 @@ function parseBody(body) {
 }
 
 export default async function handler(req, res) {
+  if (!applyCors(req, res)) return;
+
   loadLocalEnvFallback();
   const appUrl = normalizeAppUrl(process.env.APP_URL);
 

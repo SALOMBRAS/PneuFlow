@@ -2,6 +2,8 @@
 import { useNavigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
+import { getPublicWebUrl } from '../../lib/runtime';
+import { openExternalUrl } from '../../lib/externalLinks';
 import '../../components/MagicBento/MagicBento.css';
 import MetricDetailsPanel from './components/MetricDetailsPanel';
 import DashboardReportModal from './components/DashboardReportModal';
@@ -745,7 +747,7 @@ export default function DashboardHome() {
 
   if (!store) return null;
 
-  const publicLink = `${window.location.origin}/store/${store.slug}`;
+  const publicLink = getPublicWebUrl(`store/${store.slug}`);
   const selectedDashboardPeriod = DASHBOARD_PERIOD_PRESETS.find((option) => option.id === dashboardPeriod) || DASHBOARD_PERIOD_PRESETS[0];
   const showInitialMetricsLoading = !dashboardPeriodReady || !metricsInitialized;
   const normalizeSlugPreview = (value) =>
@@ -957,7 +959,7 @@ export default function DashboardHome() {
       actionHint: 'Acompanhe os contatos e marque vendas confirmadas para melhorar a leitura do funil.',
       actions: [
         { label: 'Ver leads', to: '/dashboard/leads' },
-        { label: 'Abrir vitrine', href: publicLink }
+        { label: 'Abrir vitrine', to: `/store/${store.slug}` }
       ],
       note: 'Leads gerados pelo botao Tenho Interesse e contatos vindos da vitrine.'
     },
@@ -1025,7 +1027,7 @@ export default function DashboardHome() {
       progressLabel: 'Participacao das visitas de hoje',
       actionHint: 'Compartilhe o link da vitrine para aumentar visitas qualificadas.',
       actions: [
-        { label: 'Abrir vitrine', href: publicLink },
+        { label: 'Abrir vitrine', to: `/store/${store.slug}` },
         { label: 'Ver vendedores', to: '/dashboard/sellers' }
       ],
       note: 'Visualizacoes registradas na vitrine publica, com dedupe por visitante e janela de 24 horas.'
@@ -1050,7 +1052,7 @@ export default function DashboardHome() {
       actionHint: 'Use visitas e leads juntos para entender se a vitrine esta atraindo o cliente certo.',
       actions: [
         { label: 'Ver leads', to: '/dashboard/leads' },
-        { label: 'Abrir vitrine', href: publicLink }
+        { label: 'Abrir vitrine', to: `/store/${store.slug}` }
       ],
       note: 'Se nao houver visualizacoes, a conversao sera 0%.'
     }
@@ -1288,7 +1290,7 @@ export default function DashboardHome() {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        window.open('https://wa.me/5585992369359', '_blank', 'noopener,noreferrer');
+                        void openExternalUrl('https://wa.me/5585992369359', 'whatsapp');
                       }}
                       style={{
                         marginTop: '12px',

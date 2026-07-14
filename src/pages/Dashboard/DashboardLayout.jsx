@@ -18,6 +18,7 @@ import {
   CalendarDays
 } from 'lucide-react';
 import { formatSubscriptionDate, getSubscriptionAccess, getTrialMessage } from '../../utils/subscriptionAccess';
+import { getPublicWebUrl, isNativeApp } from '../../lib/runtime';
 
 export default function DashboardLayout({ children, onLogout }) {
   const navigate = useNavigate();
@@ -142,7 +143,7 @@ export default function DashboardLayout({ children, onLogout }) {
     );
   }
 
-  const baseUrl = `${window.location.origin}/store/${store.slug}`;
+  const baseUrl = getPublicWebUrl(`store/${store.slug}`);
   const publicStoreUrl = role === 'seller' && member?.ref_code ? `${baseUrl}?ref=${member.ref_code}` : baseUrl;
   const trialMessage = getTrialMessage(subscriptionAccess);
 
@@ -376,8 +377,13 @@ export default function DashboardLayout({ children, onLogout }) {
         >
           <a
             href={publicStoreUrl}
-            target="_blank"
+            target={isNativeApp() ? undefined : '_blank'}
             rel="noopener noreferrer"
+            onClick={(event) => {
+              if (!isNativeApp()) return;
+              event.preventDefault();
+              navigate(`/store/${store.slug}${role === 'seller' && member?.ref_code ? `?ref=${member.ref_code}` : ''}`);
+            }}
             title="Abrir a vitrine pública da loja"
             aria-label="Abrir a vitrine pública da loja"
             style={{

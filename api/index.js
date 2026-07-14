@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
+import { corsOptions, rejectDisallowedOrigins } from '../server/cors.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,7 +16,8 @@ const app = express();
 const DB_PATH = path.join(process.cwd(), 'database.json');
 
 // Middleware
-app.use(cors());
+app.use(rejectDisallowedOrigins);
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // --- Database Helpers ---

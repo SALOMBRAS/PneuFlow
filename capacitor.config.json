@@ -1,0 +1,9 @@
+{
+  "appId": "br.com.pneuflow.app",
+  "appName": "PneuFlow",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost"
+  }
+}

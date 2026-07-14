@@ -7,6 +7,7 @@ import { formatBusinessHourLabel, getStoreStatus } from '../../utils/storeHours'
 import { formatBRLCurrency } from '../../utils/currency';
 import { VEHICLE_MODELS } from '../../data/vehicleModels';
 import { MOTORCYCLE_MODELS } from '../../data/motorcycleModels';
+import { openExternalUrl } from '../../lib/externalLinks';
 import {
   getAvailabilityLabel,
   getAvailableOfferCount,
@@ -789,7 +790,7 @@ export default function StoreHome() {
 
       text += 'Poderia me passar mais informações?';
 
-      window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+      await openExternalUrl(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, 'whatsapp');
 
       setLeadModalOpen(false);
       setCustomerName('');
@@ -866,7 +867,7 @@ export default function StoreHome() {
 
       text += 'Poderia me passar mais informações?';
 
-      window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+      await openExternalUrl(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, 'whatsapp');
 
       setCartItems([]);
       setCartOpen(false);
@@ -881,14 +882,14 @@ export default function StoreHome() {
     }
   };
 
-  const handleGeneralWhatsapp = () => {
+  const handleGeneralWhatsapp = async () => {
     if (!commercialContactEnabled) return;
 
     let text = 'Olá! Acessei o catálogo digital de vocês e gostaria de tirar uma dúvida sobre pneus.';
     if (referralSeller?.ref_code && hasValidWhatsapp(referralSeller?.whatsapp)) {
       text += ` Fui atendido por: ${referralSeller.nome || 'vendedor'}.`;
     }
-    window.open(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    await openExternalUrl(`https://wa.me/${stripPhone(whatsappDestination)}?text=${encodeURIComponent(text)}`, 'whatsapp');
   };
 
   const paymentMethods = ['Pix', 'Cartão', 'Dinheiro'];

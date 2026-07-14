@@ -4,6 +4,8 @@ import { AlertTriangle, CreditCard, LogOut, ShieldCheck, Store, Zap } from 'luci
 import { StoreProvider, useStore } from '../contexts/StoreContext';
 import { storageService } from '../services/storage';
 import { formatSubscriptionDate, getSubscriptionAccess } from '../utils/subscriptionAccess';
+import { getApiUrl } from '../lib/runtime';
+import { openExternalUrl } from '../lib/externalLinks';
 
 function SubscriptionContent() {
   const navigate = useNavigate();
@@ -26,7 +28,7 @@ function SubscriptionContent() {
     setCheckoutError('');
 
     try {
-      const response = await fetch('/api/mercadopago/create-preference', {
+      const response = await fetch(getApiUrl('/api/mercadopago/create-preference'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -50,7 +52,8 @@ function SubscriptionContent() {
         throw new Error('O Mercado Pago nao retornou um link de checkout.');
       }
 
-      window.location.assign(checkoutUrl);
+      await openExternalUrl(checkoutUrl, 'checkout');
+      setCheckoutLoading(false);
     } catch (checkoutRequestError) {
       setCheckoutError(checkoutRequestError.message || 'Nao foi possivel iniciar o checkout.');
       setCheckoutLoading(false);

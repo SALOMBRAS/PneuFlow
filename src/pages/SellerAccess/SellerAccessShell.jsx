@@ -6,12 +6,15 @@ import { StoreProvider, useStore } from '../../contexts/StoreContext';
 import { createImpersonatedSupabase, IMPERSONATED_AUDIT_STORAGE_KEY } from '../../lib/impersonatedSupabase';
 import { resetStorageServiceClient, setStorageServiceClient, storageService } from '../../services/storage';
 import DashboardLayout from '../Dashboard/DashboardLayout';
+import { isNativeApp, SELLER_ACCESS_HANDSHAKE_KEY } from '../../lib/runtime';
 
 const impersonatedSupabase = createImpersonatedSupabase();
 
 const readHandshake = () => {
   try {
-    const rawValue = window.name;
+    const nativeValue = window.sessionStorage.getItem(SELLER_ACCESS_HANDSHAKE_KEY);
+    const rawValue = nativeValue || window.name;
+    window.sessionStorage.removeItem(SELLER_ACCESS_HANDSHAKE_KEY);
     window.name = '';
 
     if (!rawValue) return null;
@@ -229,6 +232,11 @@ export default function SellerAccessShell() {
       setStatus('ended');
 
       window.setTimeout(() => {
+        if (isNativeApp()) {
+          window.location.replace('/dashboard/sellers');
+          return;
+        }
+
         window.close();
       }, 120);
     }
@@ -262,8 +270,12 @@ export default function SellerAccessShell() {
         message={errorMessage || 'O acesso temporario nao pode ser iniciado.'}
         tone="error"
       >
-        <button type="button" className="btn btn-outline" onClick={() => window.close()}>
-          Fechar esta guia
+        <button
+          type="button"
+          className="btn btn-outline"
+          onClick={() => isNativeApp() ? window.location.replace('/dashboard/sellers') : window.close()}
+        >
+          {isNativeApp() ? 'Voltar aos vendedores' : 'Fechar esta guia'}
         </button>
       </SellerAccessScreen>
     );
