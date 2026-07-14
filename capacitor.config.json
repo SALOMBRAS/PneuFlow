@@ -5,5 +5,11 @@
   "server": {
     "androidScheme": "https",
     "hostname": "localhost"
+  },
+  "plugins": {
+    "SystemBars": {
+      "style": "DARK",
+      "insetsHandling": "css"
+    }
   }
 }
