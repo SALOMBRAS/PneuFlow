@@ -1,5 +1,33 @@
 # Story: PneuFlow MVP Development
 
+## Extensão Android com Capacitor — 2026-07-13
+
+### Checklist de aceitação
+
+- [x] Branch local `feat/capacitor-android-mvp` criada sem commit ou push
+- [x] Baseline web validado antes da implementação
+- [x] Capacitor 8 configurado com frontend único e bundle local em `dist`
+- [x] Projeto Android criado em `android/` com `br.com.pneuflow.app`
+- [x] API própria, URL pública, callbacks de autenticação e links externos centralizados
+- [x] CORS restritivo validado localmente e em preview Vercel
+- [x] Landing, login, sessão lembrada, dashboard, catálogo, leads, vendedores, configurações e vitrine executados no AVD
+- [x] Botão voltar e vitrine interna validados no Android
+- [x] WhatsApp validado como abertura externa sem envio de mensagem
+- [x] APK debug gerado pelo Gradle Wrapper
+- [x] Produção publicada e domínio canônico validado com CORS restritivo para web e Android
+- [x] APK final reconstruído, reinstalado e validado no AVD sem falha fatal
+- [ ] Cadastro e recuperação por e-mail dependem da confirmação do painel Supabase e de e-mail descartável autorizado
+- [ ] Checkout em produção depende das variáveis do Mercado Pago; nenhuma preferência ou cobrança foi criada
+- [ ] Lint global permanece bloqueado por 122 erros e 7 avisos preexistentes no baseline
+
+### File list da extensão Android
+
+- [NEW] `capacitor.config.json`, `.env.android`, `android/`, `src/lib/runtime.js`, `src/lib/externalLinks.js` e `server/cors.js`.
+- [MODIFY] `package.json`, `package-lock.json`, `.env.example`, `eslint.config.js`, `src/App.jsx` e `src/services/storage.js`.
+- [MODIFY] `src/pages/Subscription.jsx`, `src/pages/StoreFront/StoreHome.jsx` e páginas do dashboard relacionadas a links e vendedores.
+- [MODIFY] `api/index.js`, `api/mercadopago/create-preference.js` e `server.js`.
+- [MODIFY] `android/app/src/main/AndroidManifest.xml` e `android/.gitignore` para impedir backup e ignorar materiais de assinatura/serviços locais.
+
 Este documento registra o desenvolvimento e a entrega do MVP para a plataforma SaaS **PneuFlow**.
 
 ## 📋 Checklist de Aceitação

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
 import { useNotifications } from '../../hooks/useNotifications';
+import { getPublicWebUrl, isNativeApp, SELLER_ACCESS_HANDSHAKE_KEY } from '../../lib/runtime';
 import {
   Users,
   UserPlus,
@@ -105,10 +106,7 @@ export default function Sellers() {
   };
 
   const openSellerAccessWindow = (payload) => {
-    const popup = window.open('about:blank', '_blank');
-    if (!popup) return false;
-
-    popup.name = JSON.stringify({
+    const handshake = JSON.stringify({
       type: 'pneuflow:seller-access',
       ticket: payload.ticket,
       ownerAccessToken: payload.ownerAccessToken,
@@ -116,6 +114,17 @@ export default function Sellers() {
       hashedToken: payload.hashedToken,
       verificationType: payload.verificationType
     });
+
+    if (isNativeApp()) {
+      window.sessionStorage.setItem(SELLER_ACCESS_HANDSHAKE_KEY, handshake);
+      window.location.assign('/seller-access');
+      return true;
+    }
+
+    const popup = window.open('about:blank', '_blank');
+    if (!popup) return false;
+
+    popup.name = handshake;
     popup.location.replace(`${window.location.origin}/seller-access`);
     return true;
   };
@@ -346,7 +355,7 @@ export default function Sellers() {
   };
 
   const handleCopyLink = async (member) => {
-    const publicUrl = `${window.location.origin}/store/${store.slug}?ref=${member.ref_code}`;
+    const publicUrl = `${getPublicWebUrl(`store/${store.slug}`)}?ref=${member.ref_code}`;
     try {
       await copyTextToClipboard(publicUrl);
       setCopiedId(member.id);

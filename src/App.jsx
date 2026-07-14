@@ -1,5 +1,7 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { App as CapacitorApp } from '@capacitor/app';
+import { isNativeApp } from './lib/runtime';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
@@ -28,6 +30,30 @@ const routeFallback = (
 );
 
 export default function App() {
+  useEffect(() => {
+    if (!isNativeApp()) return undefined;
+
+    let listener;
+    let active = true;
+    CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack && window.history.length > 1) {
+        window.history.back();
+      }
+    }).then((registeredListener) => {
+      if (!active) {
+        registeredListener.remove();
+        return;
+      }
+
+      listener = registeredListener;
+    });
+
+    return () => {
+      active = false;
+      listener?.remove();
+    };
+  }, []);
+
   return (
     <Router>
       <Suspense fallback={routeFallback}>

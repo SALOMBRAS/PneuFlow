@@ -1,5 +1,6 @@
 import { supabase as defaultSupabase } from '../lib/supabase';
 import { optimizeImageToWebp } from '../utils/imageOptimizer';
+import { getPublicWebUrl } from '../lib/runtime';
 
 let activeSupabaseClient = defaultSupabase;
 
@@ -265,7 +266,7 @@ export const storageService = {
 
   resetPasswordEmail: async (email) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getPublicWebUrl('reset-password'),
     });
     if (error) throw error;
     return true;
@@ -541,7 +542,7 @@ export const storageService = {
       email: ownerEmail,
       password: ownerPassword,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: getPublicWebUrl('auth/callback'),
         data: {
           full_name: name,
           store_name: storeName,

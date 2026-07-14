@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { storageService } from '../../services/storage';
 import { useStore } from '../../contexts/StoreContext';
 import { Save, Check, ExternalLink, Zap, MapPin, Palette, Upload, Loader2, Image as ImageIcon, Copy, Clock3, CalendarDays, CarFront, Bike } from 'lucide-react';
+import { getPublicWebUrl, isNativeApp } from '../../lib/runtime';
 
 const WEEK_DAYS = [
   { key: 'monday', label: 'Segunda' },
@@ -400,7 +401,7 @@ export default function StoreSettings() {
 
   if (!store) return null;
 
-  const publicLink = `${window.location.origin}/store/${store.slug}`;
+  const publicLink = getPublicWebUrl(`store/${store.slug}`);
   const updateDayHours = (dayKey, patch) => {
     setScheduleDraft((current) => ({
       ...current,
@@ -701,8 +702,13 @@ export default function StoreSettings() {
         </div>
         <a
           href={publicLink}
-          target="_blank"
+          target={isNativeApp() ? undefined : '_blank'}
           rel="noopener noreferrer"
+          onClick={(event) => {
+            if (!isNativeApp()) return;
+            event.preventDefault();
+            window.location.assign(`/store/${store.slug}`);
+          }}
           className="btn btn-outline store-settings-visualize-btn"
           style={{ fontSize: '14px' }}
         >

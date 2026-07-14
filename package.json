@@ -8,10 +8,19 @@
     "dev:backend": "node server.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "build": "vite build",
+    "build:android": "vite build --mode android && cap sync android",
+    "cap:sync": "cap sync android",
+    "android:open": "cap open android",
+    "android:run": "npm run build:android && cap run android",
+    "android:apk:debug": "npm run build:android && cd android && gradlew.bat assembleDebug",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/browser": "^8.0.3",
+    "@capacitor/core": "^8.4.1",
     "@supabase/supabase-js": "^2.107.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
@@ -25,6 +34,7 @@
     "react-router-dom": "^7.16.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

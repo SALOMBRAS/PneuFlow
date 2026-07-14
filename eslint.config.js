@@ -17,6 +17,7 @@ export default defineConfig([
     '.gemini',
     '.kimi',
     '.vercel',
+    'android',
   ]),
   {
     files: ['**/*.{js,jsx}'],
