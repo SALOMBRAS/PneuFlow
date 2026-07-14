@@ -49,6 +49,7 @@ Thumbs.db
 supabase/.temp/
 
 # Local scratch files
+.release/
 npmtest.txt
 proc-test2.txt
 test-start.txt
