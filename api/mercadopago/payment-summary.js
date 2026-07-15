@@ -10,6 +10,21 @@ function parseDate(value) {
   return date && !Number.isNaN(date.getTime()) ? date : null;
 }
 
+function normalizeDate(value) {
+  return parseDate(value)?.toISOString() || null;
+}
+
+export function normalizePaymentRecord(payment) {
+  if (!payment) return null;
+  return {
+    ...payment,
+    created_at: normalizeDate(payment.created_at),
+    approved_at: normalizeDate(payment.approved_at),
+    period_start: normalizeDate(payment.period_start),
+    period_end: normalizeDate(payment.period_end)
+  };
+}
+
 export function getPaymentOverview(store, approvedPayments, now = new Date()) {
   const trialEndsAt = parseDate(store.trial_ends_at);
   const currentPeriodEnd = parseDate(store.current_period_end);
@@ -23,7 +38,7 @@ export function getPaymentOverview(store, approvedPayments, now = new Date()) {
     plan: store.plano || 'free',
     subscriptionStatus: store.subscription_status || 'trialing',
     displayStatus,
-    storeCreatedAt: store.created_at,
+    storeCreatedAt: normalizeDate(store.created_at),
     dueAt: dueAt?.toISOString() || null,
     daysRemaining,
     approvedPayments,
@@ -51,8 +66,8 @@ export function createPaymentSummaryHandler(overrides = {}) {
       const summary = await makeOrders(clients.adminClient).getSummaryForStore(store.id);
       return res.status(200).json({
         subscription: getPaymentOverview(store, summary.approvedPayments, now()),
-        lastPayment: summary.lastPayment,
-        history: summary.history
+        lastPayment: normalizePaymentRecord(summary.lastPayment),
+        history: (summary.history || []).map(normalizePaymentRecord)
       });
     } catch (error) {
       if (error?.statusCode) return res.status(error.statusCode).json({ error: error.message, correlationId });

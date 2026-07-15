@@ -4,11 +4,11 @@ import test from 'node:test';
 import { createPreferenceHandler } from '../../api/mercadopago/create-preference.js';
 import { createWebhookHandler } from '../../api/mercadopago/webhook.js';
 import { createPaymentStatusHandler } from '../../api/mercadopago/payment-status.js';
-import { createPaymentSummaryHandler, getPaymentOverview } from '../../api/mercadopago/payment-summary.js';
+import { createPaymentSummaryHandler, getPaymentOverview, normalizePaymentRecord } from '../../api/mercadopago/payment-summary.js';
 import { calculateManualPeriod } from '../../api/mercadopago/_lib/period.js';
 import { validateMercadoPagoWebhookSignature } from '../../api/mercadopago/_lib/webhook-signature.js';
 import { PAYMENT_STATUS_POLL_DELAYS, hasPaymentPollingTimedOut } from '../../src/lib/paymentPolling.js';
-import { getSubscriptionAccess } from '../../src/utils/subscriptionAccess.js';
+import { formatSubscriptionDate, getSubscriptionAccess } from '../../src/utils/subscriptionAccess.js';
 
 const config = {
   enabled: true,
@@ -201,6 +201,35 @@ test('payment overview centralizes trial, active, expiring, and expired labels',
   assert.equal(getPaymentOverview({ subscription_status: 'active', current_period_end: '2026-08-16T12:00:00.000Z' }, 1, now).displayStatus, 'active');
   assert.equal(getPaymentOverview({ subscription_status: 'active', current_period_end: '2026-07-16T12:00:00.000Z' }, 1, now).displayStatus, 'expiring');
   assert.equal(getPaymentOverview({ subscription_status: 'past_due', current_period_end: '2026-07-13T12:00:00.000Z' }, 1, now).displayStatus, 'expired');
+});
+
+test('payment date formatting accepts ISO strings and rejects null, empty, and invalid values safely', () => {
+  assert.notEqual(formatSubscriptionDate('2026-07-14T12:00:00.000Z'), 'Não disponível');
+  assert.equal(formatSubscriptionDate(null), 'Não disponível');
+  assert.equal(formatSubscriptionDate(''), 'Não disponível');
+  assert.equal(formatSubscriptionDate('not-a-date'), 'Não disponível');
+});
+
+test('payment summary preserves a history record without dates and supports no last payment', async () => {
+  const handler = createPaymentSummaryHandler({
+    getConfig: () => config,
+    createClients: () => ({ adminClient: {} }),
+    authenticate: async () => ({ store: { id: 'store-1', subscription_status: 'trialing', trial_ends_at: '2026-07-20T00:00:00.000Z', created_at: '' } }),
+    createOrders: () => ({ getSummaryForStore: async () => ({
+      approvedPayments: 0,
+      lastPayment: null,
+      history: [{ id: 'order-without-date', status: 'pending', created_at: null, approved_at: null, period_start: null, period_end: null }]
+    }) }),
+    now: () => new Date('2026-07-14T00:00:00.000Z')
+  });
+  const res = response();
+  await handler(request({ method: 'GET', headers: { authorization: 'Bearer token' } }), res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.subscription.storeCreatedAt, null);
+  assert.equal(res.body.lastPayment, null);
+  assert.equal(res.body.history[0].created_at, null);
+  assert.equal(res.body.history[0].approved_at, null);
+  assert.equal(normalizePaymentRecord({ id: 'bad-date', created_at: 'not-a-date' }).created_at, null);
 });
 
 test('webhook signature rejects missing and invalid signatures', () => {

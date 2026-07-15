@@ -13,7 +13,7 @@ function isValidDate(date) {
 }
 
 function parseDate(dateValue) {
-  if (!dateValue) return null;
+  if (dateValue === null || dateValue === undefined || dateValue === '') return null;
   const date = new Date(dateValue);
   return isValidDate(date) ? date : null;
 }
@@ -64,8 +64,10 @@ export function getSubscriptionAccess(store, now = new Date()) {
   };
 }
 
-export function formatSubscriptionDate(date) {
-  if (!date) return 'data indisponível';
+export function formatSubscriptionDate(dateValue) {
+  const date = parseDate(dateValue);
+  if (!date) return 'Não disponível';
+
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: 'long',
