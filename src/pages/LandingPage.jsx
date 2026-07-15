@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   CheckCircle, 
@@ -16,8 +16,7 @@ import './LandingPage.css';
 import RevealOnScroll from '../components/RevealOnScroll';
 import FeedbackCarousel from '../components/FeedbackCarousel';
 import InteractiveDemo from '../components/InteractiveDemo/InteractiveDemo';
-
-const CardSwapHero = lazy(() => import('../components/CardSwap/CardSwapHero'));
+import CardSwapHero from '../components/CardSwap/CardSwapHero';
 
 const pricingLaunchConfig = {
   urgencyEnabled: true,
@@ -464,9 +463,7 @@ export default function LandingPage() {
           
           {!isMobileHero && (
             <RevealOnScroll className="hero-mockup" direction="right" delay={120} duration={640} distance={20}>
-              <Suspense fallback={<div className="card-swap-fallback" aria-hidden="true" />}>
-                <CardSwapHero />
-              </Suspense>
+              <CardSwapHero />
             </RevealOnScroll>
           )}
         </div>
