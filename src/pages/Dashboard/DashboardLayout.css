@@ -1,0 +1,25 @@
+/* Loaded only with DashboardLayout; the trigger remains below the notification dialog layers (149/150). */
+.dashboard-main > .dashboard-notification-layer {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 140;
+  pointer-events: none;
+}
+
+.dashboard-main > .dashboard-notification-layer .pf-notification-bell {
+  pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  .dashboard-main > .dashboard-notification-layer {
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .dashboard-main > .dashboard-notification-layer .pf-notification-bell {
+    width: 52px;
+    height: 52px;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.3);
+  }
+}

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { getSubscriptionAccess } from '../../utils/subscriptionAccess';
 import { getPublicWebUrl, isNativeApp } from '../../lib/runtime';
+import './DashboardLayout.css';
 
 export default function DashboardLayout({ children, onLogout }) {
   const navigate = useNavigate();
@@ -449,19 +450,6 @@ export default function DashboardLayout({ children, onLogout }) {
       </main>
 
       <style>{`
-        .dashboard-main > .dashboard-notification-layer {
-          position: fixed;
-          right: 24px;
-          bottom: 24px;
-          /* Floating action < notification backdrop < notification panel. */
-          z-index: 160;
-          pointer-events: none;
-        }
-
-        .dashboard-main > .dashboard-notification-layer .pf-notification-bell {
-          pointer-events: auto;
-        }
-
         @media (min-width: 769px) {
           .dashboard-layout {
             display: flex !important;
@@ -512,17 +500,6 @@ export default function DashboardLayout({ children, onLogout }) {
         }
 
         @media (max-width: 768px) {
-          .dashboard-main > .dashboard-notification-layer {
-            right: max(16px, env(safe-area-inset-right));
-            bottom: max(16px, env(safe-area-inset-bottom));
-          }
-
-          .dashboard-main > .dashboard-notification-layer .pf-notification-bell {
-            width: 52px;
-            height: 52px;
-            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.3);
-          }
-
           .mobile-header {
             display: flex !important;
           }
