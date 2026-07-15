@@ -24,6 +24,7 @@ export default function DashboardLayout({ children, onLogout }) {
   const location = useLocation();
   const { store, role, loading, error, session, member } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isPaymentsRoute = location.pathname === '/dashboard/payments';
 
   const handleLogout = () => {
     if (onLogout) {
@@ -430,7 +431,7 @@ export default function DashboardLayout({ children, onLogout }) {
       </aside>
 
       <main
-        className="dashboard-main"
+        className={`dashboard-main${isPaymentsRoute ? ' dashboard-main--payments' : ''}`}
         style={{
           flex: 1,
           marginLeft: '240px',
@@ -448,6 +449,19 @@ export default function DashboardLayout({ children, onLogout }) {
       </main>
 
       <style>{`
+        .dashboard-main > .dashboard-notification-layer {
+          position: fixed;
+          right: 24px;
+          bottom: 24px;
+          /* Floating action < notification backdrop < notification panel. */
+          z-index: 160;
+          pointer-events: none;
+        }
+
+        .dashboard-main > .dashboard-notification-layer .pf-notification-bell {
+          pointer-events: auto;
+        }
+
         @media (min-width: 769px) {
           .dashboard-layout {
             display: flex !important;
@@ -498,6 +512,17 @@ export default function DashboardLayout({ children, onLogout }) {
         }
 
         @media (max-width: 768px) {
+          .dashboard-main > .dashboard-notification-layer {
+            right: max(16px, env(safe-area-inset-right));
+            bottom: max(16px, env(safe-area-inset-bottom));
+          }
+
+          .dashboard-main > .dashboard-notification-layer .pf-notification-bell {
+            width: 52px;
+            height: 52px;
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.3);
+          }
+
           .mobile-header {
             display: flex !important;
           }

@@ -78,11 +78,6 @@
   --radius-md: 12px;
   --radius-lg: var(--radius-card);
   --radius-full: 9999px;
-
-  /* Overlay layers: floating action < dialog backdrop < dialog panel. */
-  --z-notification-fab: 160;
-  --z-notification-backdrop: 170;
-  --z-notification-panel: 180;
 }
 
 /* Global Reset & Base Styles */
@@ -1131,17 +1126,6 @@ a {
 }
 
 @media (max-width: 768px) {
-  .dashboard-notification-layer {
-    right: max(16px, env(safe-area-inset-right));
-    bottom: max(16px, env(safe-area-inset-bottom));
-  }
-
-  .dashboard-notification-layer .pf-notification-bell {
-    width: 52px;
-    height: 52px;
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.3);
-  }
-
   .metric-details-panel {
     border-radius: 26px;
     padding: 17px;
@@ -1296,18 +1280,6 @@ a {
   box-shadow: 0 16px 42px rgba(0, 0, 0, 0.18);
 }
 
-.dashboard-notification-layer {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: var(--z-notification-fab);
-  pointer-events: none;
-}
-
-.dashboard-notification-layer .pf-notification-bell {
-  pointer-events: auto;
-}
-
 .pf-notification-bell--mobile-floating {
   width: 52px;
   height: 52px;
@@ -1342,7 +1314,8 @@ a {
 .pf-notification-center-backdrop {
   position: fixed;
   inset: 0;
-  z-index: var(--z-notification-backdrop);
+  /* Notification overlays sit above the floating dashboard trigger. */
+  z-index: 170;
   border: none;
   background: rgba(4, 7, 12, 0.62);
   backdrop-filter: blur(7px);
@@ -1352,7 +1325,7 @@ a {
   position: fixed;
   top: 16px;
   right: 16px;
-  z-index: var(--z-notification-panel);
+  z-index: 180;
   width: min(420px, calc(100vw - 24px));
   max-height: calc(100dvh - 32px);
   display: grid;

@@ -391,7 +391,7 @@
 }
 
 @media (min-width: 981px) and (max-height: 800px) {
-  .dashboard-main:has(.payments-page) {
+  .dashboard-main--payments {
     padding-top: 22px !important;
     padding-bottom: 22px !important;
   }
