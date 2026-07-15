@@ -62,6 +62,7 @@ const initialProducts = [
     model: 'Energy XM2',
     size: '175/65 R14',
     rim: '14',
+    vehicle: 'Onix',
     condition: 'Novo',
     price: 'R$ 329,90',
     stock: 8,
@@ -73,6 +74,7 @@ const initialProducts = [
     model: 'Cinturato P1',
     size: '185/60 R15',
     rim: '15',
+    vehicle: 'HB20',
     condition: 'Novo',
     price: 'R$ 389,90',
     stock: 5,
@@ -84,6 +86,7 @@ const initialProducts = [
     model: 'EfficientGrip',
     size: '205/55 R16',
     rim: '16',
+    vehicle: 'Corolla',
     condition: 'Novo',
     price: 'R$ 489,90',
     stock: 3,
@@ -95,6 +98,7 @@ const initialProducts = [
     model: 'F-600',
     size: '175/70 R14',
     rim: '14',
+    vehicle: 'Gol',
     condition: 'Usado',
     price: 'R$ 189,90',
     stock: 2,
@@ -128,11 +132,21 @@ function getLeadTone(status) {
 function VitrinePanel({ products, onInterest }) {
   const [activeRim, setActiveRim] = useState('all');
   const [activeCondition, setActiveCondition] = useState('Todos');
+  const [query, setQuery] = useState('');
 
   const filteredProducts = products.filter((product) => {
     const matchesRim = activeRim === 'all' || product.rim === activeRim;
     const matchesCondition = activeCondition === 'Todos' || product.condition === activeCondition;
-    return product.active && matchesRim && matchesCondition;
+    const searchTerm = query.trim().toLocaleLowerCase('pt-BR');
+    const matchesSearch = !searchTerm || [
+      product.brand,
+      product.model,
+      product.size,
+      product.rim,
+      product.vehicle,
+    ].some((value) => value.toLocaleLowerCase('pt-BR').includes(searchTerm));
+
+    return product.active && matchesRim && matchesCondition && matchesSearch;
   });
 
   return (
@@ -149,10 +163,16 @@ function VitrinePanel({ products, onInterest }) {
         </span>
       </div>
 
-      <div className="demo-search" aria-label="Campo de busca demonstrativo">
+      <label className="demo-search">
         <Search size={16} />
-        <span>Digite medida, aro ou veículo</span>
-      </div>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Digite medida, aro ou veículo"
+          aria-label="Buscar pneu na vitrine simulada"
+        />
+      </label>
 
       <div className="demo-chip-row" aria-label="Filtros ficticios por aro">
         {rimFilters.map((filter) => (
@@ -209,7 +229,7 @@ function VitrinePanel({ products, onInterest }) {
       </div>
 
       {filteredProducts.length === 0 && (
-        <p className="demo-empty-state">Nenhum produto ficticio nesse filtro.</p>
+        <p className="demo-empty-state">Nenhum produto fictício corresponde à sua busca.</p>
       )}
     </div>
   );
