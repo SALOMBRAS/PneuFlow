@@ -4,6 +4,21 @@
   animation: payments-fade-in 360ms ease both;
 }
 
+@media (min-width: 981px) {
+  .payments-page {
+    margin-bottom: 0;
+  }
+
+  .payments-workspace {
+    align-items: stretch;
+  }
+
+  .payments-panel {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 .payments-header,
 .payments-panel__header,
 .payments-cycle__topline,
@@ -373,6 +388,110 @@
   .payments-history-item { align-items: flex-start; gap: 10px; }
   .payments-history-item__main > div { align-items: flex-start; flex-direction: column; gap: 5px; }
   .payments-history-item__amount { padding-top: 3px; }
+}
+
+@media (min-width: 981px) and (max-height: 800px) {
+  .dashboard-main:has(.payments-page) {
+    padding-top: 22px !important;
+    padding-bottom: 22px !important;
+  }
+
+  .payments-page {
+    min-height: calc(100dvh - 44px);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .payments-header {
+    margin-bottom: 14px;
+  }
+
+  .payments-header h1 {
+    margin: 4px 0 5px;
+    font-size: 2.2rem;
+  }
+
+  .payments-header p {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .payments-workspace {
+    min-height: 0;
+    gap: 16px;
+  }
+
+  .payments-panel {
+    padding: 18px 20px;
+  }
+
+  .payments-panel__header {
+    margin-bottom: 14px;
+  }
+
+  .payments-panel__header h2 {
+    font-size: 1.25rem;
+  }
+
+  .payments-plan-highlight {
+    padding: 12px;
+  }
+
+  .payments-plan-highlight__icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .payments-cycle {
+    padding: 14px 0;
+  }
+
+  .payments-cycle__track {
+    margin: 8px 0;
+  }
+
+  .payments-facts {
+    gap: 8px;
+    margin: 14px 0;
+  }
+
+  .payments-facts div,
+  .payments-manual-note {
+    padding: 10px;
+  }
+
+  .payments-actions {
+    margin-top: 14px;
+  }
+
+  .payments-checkout {
+    min-height: 44px;
+  }
+
+  .payments-detail-list {
+    margin-bottom: 14px;
+  }
+
+  .payments-detail-list > div {
+    padding: 9px 0;
+  }
+
+  .payments-history-heading {
+    margin-bottom: 8px;
+  }
+
+  .payments-history-item {
+    padding: 9px 0;
+  }
+
+  .payments-history-item__marker {
+    width: 32px;
+    height: 32px;
+  }
+
+  .payments-history-empty {
+    padding-top: 14px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -441,19 +441,8 @@ export default function DashboardLayout({ children, onLogout }) {
           width: 'calc(100% - 240px)'
         }}
       >
-        <div
-          style={{
-            width: '100%',
-            margin: '0 0 18px',
-            display: 'flex',
-            justifyContent: 'flex-end'
-          }}
-          className="dashboard-topbar"
-        >
+        <div className="dashboard-notification-layer">
           <NotificationBell />
-        </div>
-        <div className="dashboard-mobile-bell">
-          <NotificationBell mobileFloating />
         </div>
         {children}
       </main>
@@ -506,9 +495,6 @@ export default function DashboardLayout({ children, onLogout }) {
             width: calc(100% - 240px) !important;
           }
 
-          .dashboard-topbar {
-            width: 100% !important;
-          }
         }
 
         @media (max-width: 768px) {
@@ -564,17 +550,6 @@ export default function DashboardLayout({ children, onLogout }) {
         }
 
         @media (max-width: 640px) {
-          .dashboard-topbar {
-            display: none !important;
-          }
-
-          .dashboard-mobile-bell {
-            position: fixed;
-            right: 16px;
-            bottom: calc(16px + env(safe-area-inset-bottom));
-            z-index: 45;
-          }
-
           .dashboard-main > section[role="status"] {
             width: calc(100% - 24px) !important;
             padding: 14px !important;
@@ -587,11 +562,6 @@ export default function DashboardLayout({ children, onLogout }) {
           }
         }
 
-        @media (min-width: 641px) {
-          .dashboard-mobile-bell {
-            display: none !important;
-          }
-        }
       `}</style>
     </div>
   );
