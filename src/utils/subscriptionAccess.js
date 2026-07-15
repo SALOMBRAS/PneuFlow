@@ -12,6 +12,12 @@ function isValidDate(date) {
   return date instanceof Date && !Number.isNaN(date.getTime());
 }
 
+function parseDate(dateValue) {
+  if (dateValue === null || dateValue === undefined || dateValue === '') return null;
+  const date = new Date(dateValue);
+  return isValidDate(date) ? date : null;
+}
+
 export function endOfLocalDay(dateValue) {
   if (!dateValue) return null;
 
@@ -25,14 +31,17 @@ export function endOfLocalDay(dateValue) {
 export function getSubscriptionAccess(store, now = new Date()) {
   const status = store?.subscription_status || SUBSCRIPTION_STATUSES.TRIALING;
   const trialEndsAt = endOfLocalDay(store?.trial_ends_at);
-  const currentPeriodEnd = endOfLocalDay(store?.current_period_end);
+  // A paid period is an exact backend-confirmed timestamp. Only the legacy trial
+  // remains valid through its local calendar day.
+  const currentPeriodEnd = parseDate(store?.current_period_end);
   const nowDate = now instanceof Date ? now : new Date(now);
 
   const hasValidTrialEnd = isValidDate(trialEndsAt);
   const msRemaining = hasValidTrialEnd ? trialEndsAt.getTime() - nowDate.getTime() : 0;
   const daysRemaining = hasValidTrialEnd ? Math.max(0, Math.ceil(msRemaining / DAY_IN_MS)) : 0;
 
-  const isSubscriptionActive = status === SUBSCRIPTION_STATUSES.ACTIVE;
+  const hasValidCurrentPeriod = isValidDate(currentPeriodEnd) && nowDate < currentPeriodEnd;
+  const isSubscriptionActive = status === SUBSCRIPTION_STATUSES.ACTIVE && hasValidCurrentPeriod;
   const isTrialActive = status === SUBSCRIPTION_STATUSES.TRIALING && hasValidTrialEnd && nowDate <= trialEndsAt;
   const isTrialExpired = status !== SUBSCRIPTION_STATUSES.ACTIVE && hasValidTrialEnd && nowDate > trialEndsAt;
   const hasPaidAccess = isSubscriptionActive;
@@ -42,6 +51,7 @@ export function getSubscriptionAccess(store, now = new Date()) {
     status,
     trialEndsAt: hasValidTrialEnd ? trialEndsAt : null,
     currentPeriodEnd,
+    hasValidCurrentPeriod,
     msRemaining,
     daysRemaining,
     isTrialActive,
@@ -54,8 +64,10 @@ export function getSubscriptionAccess(store, now = new Date()) {
   };
 }
 
-export function formatSubscriptionDate(date) {
-  if (!date) return 'data indisponível';
+export function formatSubscriptionDate(dateValue) {
+  const date = parseDate(dateValue);
+  if (!date) return 'Não disponível';
+
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: 'long',

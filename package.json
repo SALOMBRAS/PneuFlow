@@ -14,6 +14,7 @@
     "android:run": "npm run build:android && cap run android",
     "android:apk:debug": "npm run build:android && cd android && gradlew.bat assembleDebug",
     "lint": "eslint .",
+    "test": "node --test tests/payments/**/*.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

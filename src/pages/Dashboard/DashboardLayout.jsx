@@ -14,10 +14,9 @@ import {
   Menu,
   X,
   Users,
-  CreditCard,
-  CalendarDays
+  CreditCard
 } from 'lucide-react';
-import { formatSubscriptionDate, getSubscriptionAccess, getTrialMessage } from '../../utils/subscriptionAccess';
+import { getSubscriptionAccess } from '../../utils/subscriptionAccess';
 import { getPublicWebUrl, isNativeApp } from '../../lib/runtime';
 
 export default function DashboardLayout({ children, onLogout }) {
@@ -112,6 +111,7 @@ export default function DashboardLayout({ children, onLogout }) {
     { name: 'Leads', tooltip: 'Clientes interessados e vendas no WhatsApp', path: '/dashboard/leads', icon: <MessageSquare size={18} />, roles: ['owner', 'seller'] },
     { name: 'Vendedores', tooltip: 'Equipe de vendas', path: '/dashboard/sellers', icon: <Users size={18} />, roles: ['owner'] },
     { name: 'Config. Vitrine', tooltip: 'Configurar a vitrine da loja', path: '/dashboard/settings', icon: <Settings size={18} />, roles: ['owner'] },
+    { name: 'Pagamentos', tooltip: 'Plano, vencimento e histórico de pagamentos', path: '/dashboard/payments', icon: <CreditCard size={18} />, roles: ['owner'] },
   ];
 
   const filteredMenuItems = menuItems.filter((item) => item.roles.includes(role));
@@ -145,8 +145,6 @@ export default function DashboardLayout({ children, onLogout }) {
 
   const baseUrl = getPublicWebUrl(`store/${store.slug}`);
   const publicStoreUrl = role === 'seller' && member?.ref_code ? `${baseUrl}?ref=${member.ref_code}` : baseUrl;
-  const trialMessage = getTrialMessage(subscriptionAccess);
-
   if (role === 'seller' && !member?.ref_code && !loading) {
     console.warn('Vendedor não possui código de indicação (ref_code).');
   }
@@ -443,82 +441,8 @@ export default function DashboardLayout({ children, onLogout }) {
           width: 'calc(100% - 240px)'
         }}
       >
-        {trialMessage && (
-          <section
-            role="status"
-            aria-live="polite"
-            style={{
-              margin: '0 auto 18px',
-              width: 'min(1120px, calc(100% - 32px))',
-              border: `1px solid ${subscriptionAccess.isUrgent ? 'rgba(245, 158, 11, 0.48)' : 'rgba(245, 158, 11, 0.24)'}`,
-              borderRadius: '18px',
-              padding: '16px',
-              background: subscriptionAccess.isUrgent
-                ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(15, 18, 27, 0.96))'
-                : 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 18, 27, 0.94))',
-              boxShadow: subscriptionAccess.isUrgent ? '0 18px 60px rgba(245, 158, 11, 0.10)' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '16px',
-              flexWrap: 'wrap'
-            }}
-          >
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: 0, flex: '1 1 320px' }}>
-              <div
-                aria-hidden="true"
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  display: 'grid',
-                  placeItems: 'center',
-                  borderRadius: '12px',
-                  background: 'rgba(245, 158, 11, 0.14)',
-                  color: 'var(--primary)',
-                  flex: '0 0 auto'
-                }}
-              >
-                <CalendarDays size={20} />
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <h2 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>
-                  {trialMessage.title}
-                </h2>
-                <p style={{ margin: '5px 0 0', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
-                  {trialMessage.body} Termina em {formatSubscriptionDate(subscriptionAccess.trialEndsAt)}.
-                  <strong style={{ color: 'var(--primary)' }}> Plano mensal: R$ 39,00.</strong>
-                </p>
-              </div>
-            </div>
-
-            <Link
-              to="/assinatura"
-              className="btn btn-primary"
-              style={{
-                minHeight: '44px',
-                whiteSpace: 'nowrap',
-                flex: '0 0 auto',
-                gap: '8px'
-              }}
-            >
-              <CreditCard size={16} />
-              Assinar PneuFlow
-            </Link>
-          </section>
-        )}
-        <div
-          style={{
-            width: '100%',
-            margin: trialMessage ? '0 0 18px' : '0 0 18px',
-            display: 'flex',
-            justifyContent: 'flex-end'
-          }}
-          className="dashboard-topbar"
-        >
+        <div className="dashboard-notification-layer">
           <NotificationBell />
-        </div>
-        <div className="dashboard-mobile-bell">
-          <NotificationBell mobileFloating />
         </div>
         {children}
       </main>
@@ -571,9 +495,6 @@ export default function DashboardLayout({ children, onLogout }) {
             width: calc(100% - 240px) !important;
           }
 
-          .dashboard-topbar {
-            width: 100% !important;
-          }
         }
 
         @media (max-width: 768px) {
@@ -629,17 +550,6 @@ export default function DashboardLayout({ children, onLogout }) {
         }
 
         @media (max-width: 640px) {
-          .dashboard-topbar {
-            display: none !important;
-          }
-
-          .dashboard-mobile-bell {
-            position: fixed;
-            right: 16px;
-            bottom: calc(16px + env(safe-area-inset-bottom));
-            z-index: 45;
-          }
-
           .dashboard-main > section[role="status"] {
             width: calc(100% - 24px) !important;
             padding: 14px !important;
@@ -652,11 +562,6 @@ export default function DashboardLayout({ children, onLogout }) {
           }
         }
 
-        @media (min-width: 641px) {
-          .dashboard-mobile-bell {
-            display: none !important;
-          }
-        }
       `}</style>
     </div>
   );

@@ -22,6 +22,7 @@ const Catalog = lazy(() => import('./pages/Dashboard/Catalog'));
 const Leads = lazy(() => import('./pages/Dashboard/Leads'));
 const StoreSettings = lazy(() => import('./pages/Dashboard/StoreSettings'));
 const Sellers = lazy(() => import('./pages/Dashboard/Sellers'));
+const Payments = lazy(() => import('./pages/Dashboard/Payments'));
 
 const routeFallback = (
   <div className="flex-center" style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: 'var(--text-primary)' }}>
@@ -82,6 +83,7 @@ export default function App() {
             <Route path="leads" element={<Leads />} />
             <Route path="sellers" element={<Sellers />} />
             <Route path="settings" element={<StoreSettings />} />
+            <Route path="payments" element={<Payments />} />
           </Route>
 
           <Route path="/seller-access" element={<SellerAccessShell />}>

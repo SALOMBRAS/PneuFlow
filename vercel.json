@@ -29,6 +29,18 @@
       "destination": "/api/mercadopago/create-preference"
     },
     {
+      "source": "/api/mercadopago/payment-status",
+      "destination": "/api/mercadopago/payment-status"
+    },
+    {
+      "source": "/api/mercadopago/payment-summary",
+      "destination": "/api/mercadopago/payment-summary"
+    },
+    {
+      "source": "/api/mercadopago/webhook",
+      "destination": "/api/mercadopago/webhook"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index.js"
     },
