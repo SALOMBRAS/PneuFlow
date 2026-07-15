@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, Clock, ShieldCheck, Zap } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AlertTriangle, Clock, ShieldCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getApiUrl } from '../lib/runtime';
 import { PAYMENT_STATUS_POLL_DELAYS, hasPaymentPollingTimedOut } from '../lib/paymentPolling';
 
 function statusMessage(status) {
-  if (status === 'approved') return { title: 'Pagamento confirmado', message: 'Seu pagamento foi confirmado pelo Mercado Pago. Abrindo o painel...', icon: <ShieldCheck size={26} />, color: 'var(--success)' };
-  if (['rejected', 'cancelled', 'expired'].includes(status)) return { title: 'Pagamento não aprovado', message: 'Nenhuma alteração foi feita na sua assinatura. Você pode tentar novamente.', icon: <AlertTriangle size={26} />, color: 'var(--error)' };
+  if (status === 'approved') return { title: 'Pagamento aprovado', message: 'Pagamento aprovado. Estamos liberando seu acesso.', icon: <ShieldCheck size={26} />, color: 'var(--success)' };
+  if (['rejected', 'cancelled', 'expired'].includes(status)) return { title: 'Pagamento não aprovado', message: 'O pagamento não foi aprovado. O acesso permanece bloqueado.', icon: <AlertTriangle size={26} />, color: 'var(--error)' };
   return { title: 'Estamos confirmando seu pagamento', message: 'A confirmação acontece de forma segura pelo Mercado Pago. Esta tela não libera o acesso sozinha.', icon: <Clock size={26} />, color: 'var(--primary)' };
 }
 
@@ -16,6 +16,7 @@ export default function SubscriptionReturn() {
   const [searchParams] = useSearchParams();
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [timedOut, setTimedOut] = useState(false);
+  const [retry, setRetry] = useState(0);
   const orderId = useMemo(() => searchParams.get('order') || sessionStorage.getItem('pneuflow:payment-order-id') || '', [searchParams]);
 
   useEffect(() => {
@@ -34,7 +35,8 @@ export default function SubscriptionReturn() {
         const nextStatus = payload.order?.status || 'pending';
         if (cancelled) return;
         setPaymentStatus(nextStatus);
-        if (nextStatus === 'approved') {
+        const periodEnd = payload.subscription?.currentPeriodEnd ? new Date(payload.subscription.currentPeriodEnd) : null;
+        if (nextStatus === 'approved' && periodEnd && periodEnd > new Date()) {
           sessionStorage.removeItem('pneuflow:payment-order-id');
           timeoutId = setTimeout(() => navigate('/dashboard', { replace: true }), 900);
           return;
@@ -53,7 +55,7 @@ export default function SubscriptionReturn() {
 
     poll();
     return () => { cancelled = true; clearTimeout(timeoutId); };
-  }, [navigate, orderId]);
+  }, [navigate, orderId, retry]);
 
   const content = statusMessage(paymentStatus);
   return (
@@ -63,8 +65,8 @@ export default function SubscriptionReturn() {
         <p style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '12px', textTransform: 'uppercase', margin: 0 }}>Retorno do pagamento</p>
         <h1 style={{ margin: '8px 0 12px', fontSize: 'clamp(28px, 5vw, 42px)', lineHeight: 1.05 }}>{content.title}</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '17px', lineHeight: 1.7, marginBottom: '10px' }}>{content.message}</p>
-        {timedOut && <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.6 }}>A confirmação pode levar alguns minutos. Atualize esta página mais tarde ou volte ao painel.</p>}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '24px' }}><Link to="/assinatura" className="btn btn-primary"><Zap size={16} />Voltar para assinatura</Link><Link to="/" className="btn btn-secondary">Voltar ao site</Link></div>
+        {paymentStatus === 'pending' && <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6 }}>A confirmação ainda está sendo processada pelo Mercado Pago.</p>}
+        {timedOut && <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '24px' }}><button type="button" className="btn btn-primary" onClick={() => navigate('/dashboard', { replace: true })}>Ir para o painel</button><button type="button" className="btn btn-secondary" onClick={() => { setTimedOut(false); setRetry((value) => value + 1); }}>Consultar novamente</button></div>}
       </section>
     </main>
   );

@@ -85,6 +85,28 @@ export function createOrderRepository(adminClient) {
       return data;
     },
 
+    async getSummaryForStore(storeId) {
+      const historyQuery = adminClient
+        .from('payment_orders')
+        .select('id, status, provider, amount_cents, currency, created_at, approved_at, period_start, period_end')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      const approvedQuery = adminClient
+        .from('payment_orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('store_id', storeId)
+        .eq('status', 'approved');
+      const [{ data: history, error: historyError }, { count: approvedPayments, error: approvedError }] = await Promise.all([historyQuery, approvedQuery]);
+      if (historyError) throw historyError;
+      if (approvedError) throw approvedError;
+      return {
+        approvedPayments: approvedPayments || 0,
+        lastPayment: (history || []).find((payment) => payment.status === 'approved') || null,
+        history: history || []
+      };
+    },
+
     async updateFromPayment(orderId, values) {
       const { error } = await adminClient
         .from('payment_orders')

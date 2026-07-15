@@ -31,7 +31,7 @@ export async function authenticateStoreOwner(req, clients) {
 
   const { data: store, error: storeError } = await clients.adminClient
     .from('stores')
-    .select('id, owner_id, nome, subscription_status, current_period_end')
+    .select('id, owner_id, nome, plano, created_at, subscription_status, trial_ends_at, current_period_end')
     .eq('owner_id', userData.user.id)
     .maybeSingle();
 

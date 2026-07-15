@@ -33,6 +33,10 @@
       "destination": "/api/mercadopago/payment-status"
     },
     {
+      "source": "/api/mercadopago/payment-summary",
+      "destination": "/api/mercadopago/payment-summary"
+    },
+    {
       "source": "/api/mercadopago/webhook",
       "destination": "/api/mercadopago/webhook"
     },

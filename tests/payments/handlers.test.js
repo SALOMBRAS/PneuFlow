@@ -4,6 +4,7 @@ import test from 'node:test';
 import { createPreferenceHandler } from '../../api/mercadopago/create-preference.js';
 import { createWebhookHandler } from '../../api/mercadopago/webhook.js';
 import { createPaymentStatusHandler } from '../../api/mercadopago/payment-status.js';
+import { createPaymentSummaryHandler, getPaymentOverview } from '../../api/mercadopago/payment-summary.js';
 import { calculateManualPeriod } from '../../api/mercadopago/_lib/period.js';
 import { validateMercadoPagoWebhookSignature } from '../../api/mercadopago/_lib/webhook-signature.js';
 import { PAYMENT_STATUS_POLL_DELAYS, hasPaymentPollingTimedOut } from '../../src/lib/paymentPolling.js';
@@ -160,6 +161,46 @@ test('payment status requires authentication and returns only the derived store 
   await handler(request({ method: 'GET', headers: { authorization: 'Bearer token' }, query: { order: 'order-1' } }), res);
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.order.id, 'order-1');
+});
+
+test('payment summary requires authentication and only reads the derived store', async () => {
+  const denied = createPaymentSummaryHandler({
+    getConfig: () => config,
+    createClients: () => ({ adminClient: {} }),
+    authenticate: async () => { throw authError('Autenticação obrigatória.', 401); }
+  });
+  const deniedResponse = response();
+  await denied(request({ method: 'GET' }), deniedResponse);
+  assert.equal(deniedResponse.statusCode, 401);
+
+  let requestedStoreId;
+  const handler = createPaymentSummaryHandler({
+    getConfig: () => config,
+    createClients: () => ({ adminClient: {} }),
+    authenticate: async () => ({ store: {
+      id: 'store-owner-only', plano: 'pro', subscription_status: 'active', created_at: '2026-01-01T00:00:00.000Z',
+      current_period_end: '2026-08-01T00:00:00.000Z', trial_ends_at: '2026-01-08T00:00:00.000Z'
+    } }),
+    createOrders: () => ({ getSummaryForStore: async (storeId) => {
+      requestedStoreId = storeId;
+      return { approvedPayments: 2, lastPayment: { id: 'order-2', status: 'approved' }, history: [{ id: 'order-2', status: 'approved' }] };
+    } }),
+    now: () => new Date('2026-07-14T00:00:00.000Z')
+  });
+  const res = response();
+  await handler(request({ method: 'GET', headers: { authorization: 'Bearer token' }, query: { store_id: 'other-store' } }), res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(requestedStoreId, 'store-owner-only');
+  assert.equal(res.body.subscription.displayStatus, 'active');
+  assert.equal(res.body.subscription.approvedPayments, 2);
+});
+
+test('payment overview centralizes trial, active, expiring, and expired labels', () => {
+  const now = new Date('2026-07-14T12:00:00.000Z');
+  assert.equal(getPaymentOverview({ subscription_status: 'trialing', trial_ends_at: '2026-07-16T12:00:00.000Z' }, 0, now).displayStatus, 'trialing');
+  assert.equal(getPaymentOverview({ subscription_status: 'active', current_period_end: '2026-08-16T12:00:00.000Z' }, 1, now).displayStatus, 'active');
+  assert.equal(getPaymentOverview({ subscription_status: 'active', current_period_end: '2026-07-16T12:00:00.000Z' }, 1, now).displayStatus, 'expiring');
+  assert.equal(getPaymentOverview({ subscription_status: 'past_due', current_period_end: '2026-07-13T12:00:00.000Z' }, 1, now).displayStatus, 'expired');
 });
 
 test('webhook signature rejects missing and invalid signatures', () => {

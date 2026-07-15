@@ -68,6 +68,19 @@ export function getPaymentConfig(env = process.env) {
   };
 }
 
+export function getPaymentSummaryConfig(env = process.env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY || !env.SUPABASE_PUBLISHABLE_KEY) {
+    return { enabled: false, reason: 'Resumo de pagamentos indisponível neste ambiente.' };
+  }
+
+  return {
+    enabled: true,
+    supabaseUrl: env.SUPABASE_URL,
+    serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+    publishableKey: env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY || ''
+  };
+}
+
 export function buildPaymentUrls(appUrl, orderId) {
   const safeOrderId = encodeURIComponent(orderId);
   const returnBase = `${appUrl}/assinatura/retorno?order=${safeOrderId}`;
