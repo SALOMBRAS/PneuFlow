@@ -844,6 +844,8 @@
 
   .landing-pricing-column--benefits {
     padding-top: 0;
+  }
+
   .landing-pricing-offerbar {
     align-items: flex-start;
     flex-direction: column;
@@ -909,6 +911,8 @@
 
   .landing-pricing-column--cta {
     gap: 12px;
+  }
+
   .landing-pricing-heading {
     align-items: flex-start;
   }
